@@ -1,4 +1,31 @@
 <<<<<<< HEAD
+
+## 📸 Screenshots
+
+### 🏠 Home Page
+
+![Home Page]("screenshots\Homepage.png")
+![Home Page]("screenshots\Homepage-1.png")
+![Home Page]("screenshots\Homepage-popup.png")
+
+---
+
+### 🔐 Admin Dashboard
+
+![Admin Dashboard](screenshots/admin-dashboard.png)
+
+---
+
+### 📚 Courses
+
+![Courses](screenshots/courses.png)
+
+---
+
+### 🏫 School Details
+
+![School Details](screenshots/school-page.png)
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
