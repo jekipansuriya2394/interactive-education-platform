@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- SEO Meta Tags -->
+    <title>Noble Education Vadodara | Coaching, Diploma, DDCET, NEET, JEE & Career Guidance</title>
+    <meta name="description" content="Noble Education in Vadodara provides coaching for school students, 11th and 12th Science, Diploma Engineering, DDCET, NEET, JEE, GUJCET, career guidance, and admission support with online and offline classes." />
+    <meta name="keywords" content="Noble Education Vadodara, Coaching classes in Vadodara, Diploma coaching Vadodara, DDCET coaching Vadodara, NEET coaching Vadodara, JEE coaching Vadodara, GUJCET coaching, Career guidance after 10th, Diploma admission guidance, 11th science coaching, 12th science coaching, Online offline coaching Vadodara" />
+    
+    <!-- Open Graph / Facebook / Twitter -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Noble Education Vadodara | Elite Coaching & Career Guidance" />
+    <meta property="og:description" content="Expert academic coaching, DDCET guidance, diploma engineering support, NEET/JEE/GUJCET classes, and pathfinding career counseling in Vadodara." />
+    <meta property="og:image" content="/images/logo.png" />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Google Translate Element Loader -->
+    <!-- Google Translate Element Loader & React Crash Fix -->
+    <script type="text/javascript">
+      window.googleTranslateElementInit = function() {
+        new google.translate.TranslateElement({
+          pageLanguage: 'en',
+          includedLanguages: 'en,gu,hi,mr,ta,te,kn,ml',
+          layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+          autoDisplay: false
+        }, 'google_translate_element');
+      }
+
+      // Prevents React from crashing (blank white canvas) when Google Translate mutates text nodes
+      if (typeof Node === 'function' && Node.prototype) {
+        const originalRemoveChild = Node.prototype.removeChild;
+        Node.prototype.removeChild = function(child) {
+          if (child.parentNode !== this) {
+            return child;
+          }
+          return originalRemoveChild.call(this, child);
+        };
+        const originalInsertBefore = Node.prototype.insertBefore;
+        Node.prototype.insertBefore = function(newNode, referenceNode) {
+          if (referenceNode && referenceNode.parentNode !== this) {
+            return newNode;
+          }
+          return originalInsertBefore.call(this, newNode, referenceNode);
+        };
+      }
+
+      // Forcefully remove Google Translate inline body/html layout shifts
+      const forceResetStyles = () => {
+        if (document.body && (document.body.style.top || document.body.style.marginTop)) {
+          document.body.style.top = '0px';
+          document.body.style.marginTop = '0px';
+        }
+        if (document.documentElement && (document.documentElement.style.top || document.documentElement.style.marginTop)) {
+          document.documentElement.style.top = '0px';
+          document.documentElement.style.marginTop = '0px';
+        }
+      };
+      
+      setInterval(forceResetStyles, 100);
+    </script>
+    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

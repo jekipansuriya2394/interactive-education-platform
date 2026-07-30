@@ -1,0 +1,813 @@
+{
+  "announcements": [
+    {
+      "emoji": "🚀",
+      "text": "11th Science Admission Open for 2026 Batch"
+    },
+    {
+      "emoji": "🔥",
+      "text": "JEE & NEET 2-Year Integrated Batches Started"
+    },
+    {
+      "emoji": "🎓",
+      "text": "Scholarship Exam Registration is now Open"
+    },
+    {
+      "emoji": "⚡",
+      "text": "Diploma Engineering & DDCET Classes Commenced"
+    },
+    {
+      "emoji": "📍",
+      "text": "Visit Waghodia Road Campus (Above Bank of India) or Call 9104206999"
+    }
+  ],
+  "testimonials": [
+    {
+      "name": "Rohan Patel",
+      "program": "DDCET Course",
+      "stars": 5,
+      "quote": "Noble Education provided the exact roadmap I needed for DDCET. The mock test series and engineering syllabus support helped me secure direct second-year degree admission in my dream branch."
+    },
+    {
+      "name": "Sneha Shah",
+      "program": "12th Science (PCM)",
+      "stars": 5,
+      "quote": "The teachers here simplify complex physics and maths equations like no other. Personal attention and doubt-solving desks after classes are truly exceptional."
+    },
+    {
+      "name": "Aman Verma",
+      "program": "Diploma IT Support",
+      "stars": 5,
+      "quote": "Balancing coding projects, practicals, and university exams was tough until I joined Noble. Their subject coaching and practical support made it look easy!"
+    },
+    {
+      "name": "Pooja Mehta",
+      "program": "Parent (10th Standard)",
+      "stars": 5,
+      "quote": "We were very confused about branch and stream choices after 10th. The detailed career counseling session here cleared all our worries. Truly a trusted institute."
+    },
+    {
+      "name": "Jayesh Parmar",
+      "program": "NEET Prep",
+      "stars": 5,
+      "quote": "Noble's intensive question practice sessions and constant revision schedule helped boost my confidence for competitive tests. High-quality study material!"
+    }
+  ],
+  "stats": [
+    {
+      "value": "19+",
+      "label": "Years Experience",
+      "description": "Trusted legacy of academic coaching in Vadodara"
+    },
+    {
+      "value": "5000+",
+      "label": "Students Guided",
+      "description": "Empowered from board preparations to final admissions"
+    },
+    {
+      "value": "98%",
+      "label": "Success Rate",
+      "description": "Consistently delivering high GTU, Board & NEET/JEE scores"
+    },
+    {
+      "value": "15+",
+      "label": "Expert Faculty Members",
+      "description": "Dedicated mentors for schools & engineering branches"
+    }
+  ],
+  "features": [
+    {
+      "icon": "FiCheckCircle",
+      "title": "Concept-Driven Explanation",
+      "description": "We focus on root-level theory explanations rather than rote learning. Our board work and standard diagram models build lasting understanding."
+    },
+    {
+      "icon": "FiUsers",
+      "title": "Batch Size & Personal Touch",
+      "description": "Every student gets personalized attention. Direct interaction with branch faculties to map progress and clarify doubts."
+    },
+    {
+      "icon": "FiAward",
+      "title": "Extensive Mock Series",
+      "description": "Regular tests simulate the actual pressure of Board and Entrance exams. Detailed performance reviews are logged for parents."
+    },
+    {
+      "icon": "FiCompass",
+      "title": "Admission Guidance (ACPDC/ACPC)",
+      "description": "We guide you from stream selection to choice filling checklist mapping to ensure optimal engineering college placements."
+    },
+    {
+      "icon": "FiCpu",
+      "title": "Hybrid Portal Infrastructure",
+      "description": "Seamless synchronization between offline classes and online portals. Access videos, mock test sheets, and class schedules anywhere."
+    },
+    {
+      "icon": "FiFileText",
+      "title": "GTU Specialized Coaching",
+      "description": "Detailed subject coaching mapping GTU standard syllabi. Handpicked topic solvers, notes, and final year projects assistance."
+    },
+    {
+      "icon": "FiCheckCircle",
+      "title": "MSU Special Batch",
+      "description": "Maharaja Sayajirao University (MSU) specialized semester coaching. Targeted exam preparation and complete syllabus mapping for engineering streams."
+    },
+    {
+      "icon": "FiUsers",
+      "title": "PU Special Batch",
+      "description": "Parul University (PU) dedicated coaching batches. Thorough support for semester exams, key concept building, and branch-specific scoring."
+    }
+  ],
+  "contactInfo": {
+    "phone1": "9104206999",
+    "phone2": "9104206888",
+    "whatsapp": "919104206999",
+    "address": "Above Bank Of India, 3rd Floor, Near Uma Char Rasta, Waghodia Road, Vadodara, Gujarat 390019",
+    "email": "info@nobleedu.in",
+    "mapUrl": "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3691.350070758773!2d73.22714197532522!3d22.302596542812175!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x395fc57f8b719dd5%3A0x8bf184b31ada46e0!2sNOBLE%20EDUCATION!5e0!3m2!1sen!2sin!4v1784185468234!5m2!1sen!2sin",
+    "timings": "Monday - Saturday: 8:00 AM - 8:30 PM, Sunday: Closed"
+  },
+  "popupConfig": {
+    "enabled": true,
+    "autoSlide": true,
+    "interval": 3000,
+    "link": "/contact",
+    "images": [
+      {
+        "id": "1784786987791",
+        "url": "https://drive.google.com/file/d/1ntTEEQbmpNa3-x69aCJw7LDYo76KIbwY/view?usp=sharing",
+        "title": "Slide 1",
+        "link": "/contact"
+      },
+      {
+        "id": "1784787002813",
+        "url": "https://drive.google.com/file/d/1rDAigx-jGXeXUcg5yK61cMfZ5tr9Pi_3/view?usp=sharing",
+        "title": "Slide 2",
+        "link": "/contact"
+      },
+      {
+        "id": "1784787015302",
+        "url": "https://drive.google.com/file/d/1SC8QYc16gG6eNJ6WkUMPDF964XiaRNsx/view?usp=sharing",
+        "title": "Slide 3",
+        "link": "/contact"
+      }
+    ]
+  },
+  "videoLectures": [
+    {
+      "id": "1",
+      "title": "Std 12 Biology - Apomixis & Polyembryony (Part 5)",
+      "youtubeUrl": "https://youtu.be/bSeqPiYv9Fc?si=4m0wyz-CtHPc91-E",
+      "category": "Std 12 Biology",
+      "description": "In-depth concept explanation of seed development without fertilization & polyembryony for NEET 2026."
+    },
+    {
+      "id": "2",
+      "title": "NEET & JEE Physics - Laws of Motion PYQ Revision",
+      "youtubeUrl": "https://youtu.be/v5c-IzP0G8Y?si=bfzS0mv5VnKxQEYm",
+      "category": "NEET/JEE Physics",
+      "description": "Solve top 20 previous year questions with short tricks and speed formulas."
+    },
+    {
+      "id": "3",
+      "title": "Class 10 Board Exam Science & Maths Strategy",
+      "youtubeUrl": "https://youtu.be/0Xb7n893IH4?si=JJAaC6rDSQf30qvo",
+      "category": "Class 10 Board",
+      "description": "Complete chapter-wise weightage analysis and high-scoring study roadmap."
+    }
+  ],
+  "results": [
+    {
+      "name": "Shital Kumavat",
+      "score": "99.60 PR",
+      "exam": "SSC Board 2025",
+      "branch": "10th Standard Topper",
+      "school": "Raghukul Vidyalay",
+      "image": "https://www.fluentu.com/blog/wp-content/uploads/site//4/african-american-young-mom-with-curly-hair-in-stylish-outfit-feeling-grateful-and-happy-receiving-surprise-gift-from-kid-holding-palms-on-heart-smiling.jpg",
+      "status": "A1-Grade Performer"
+    },
+    {
+      "name": "Prachi Parmar",
+      "score": "99.22 PR",
+      "exam": "SSC Board 2025",
+      "branch": "10th Standard Topper",
+      "school": "Royal School",
+      "image": "",
+      "status": "A1-Grade Performer"
+    },
+    {
+      "name": "Patel Harsh",
+      "score": "99.4 PR",
+      "exam": "12th Science Board",
+      "branch": "A-Group",
+      "school": "New Heaven Vidyalaya",
+      "image": "",
+      "status": "Admitted in LD College"
+    },
+    {
+      "name": "Shah Miti",
+      "score": "10.0 SPI",
+      "exam": "Diploma Sem-4 Computer",
+      "branch": "Computer Engineering",
+      "school": "New Heaven Vidyalaya",
+      "image": "",
+      "status": "Class First Rank"
+    },
+    {
+      "name": "Pratiksha Pandey",
+      "score": "97.52 PR",
+      "exam": "SSC Board 2025",
+      "branch": "10th Standard Topper",
+      "status": "Outstanding Score"
+    },
+    {
+      "name": "Jethi Suthar",
+      "score": "97.27 PR",
+      "exam": "SSC Board 2025",
+      "branch": "10th Standard Topper",
+      "status": "Outstanding Score"
+    },
+    {
+      "name": "Dhairya Darji",
+      "score": "97.14 PR",
+      "exam": "SSC Board 2025",
+      "branch": "10th Standard Topper",
+      "school": "New Heaven Vidyalaya",
+      "image": "",
+      "status": "Outstanding Score"
+    },
+    {
+      "name": "Rana Dev",
+      "score": "98.8 PR",
+      "exam": "GUJCET Exam",
+      "branch": "Maths Stream",
+      "status": "Top Merit Ranker"
+    },
+    {
+      "name": "Mehta Keyur",
+      "score": "Rank 12",
+      "exam": "DDCET Entrance",
+      "branch": "IT Branch Target",
+      "status": "Admission in VGEC"
+    },
+    {
+      "name": "Panchal Diya",
+      "score": "9.80 CPI",
+      "exam": "Degree Sem-6 IT",
+      "branch": "Information Technology",
+      "status": "Outstanding Project grade"
+    },
+    {
+      "name": "Dave Raj",
+      "score": "95% Score",
+      "exam": "Std 10 Boards",
+      "branch": "Foundation Batch",
+      "status": "Perfect Score in Maths"
+    }
+  ],
+  "gallery": [
+    {
+      "title": "Smart Learning Interactive Boards",
+      "category": "Classrooms",
+      "image": "/images/bg-gallery-hero.png"
+    },
+    {
+      "title": "Parent Counseling Career Seminar",
+      "category": "Seminars",
+      "image": "/images/bg-about-hero.png"
+    },
+    {
+      "title": "Mock Exam Practice Hall",
+      "category": "Activities",
+      "image": "/images/bg-results-hero.png"
+    },
+    {
+      "title": "DDCET Preparation Class Orientation",
+      "category": "Seminars",
+      "image": "/images/bg-contact-hero.png"
+    },
+    {
+      "title": "Science Lab Experiments Orientation",
+      "category": "Activities",
+      "image": "/images/bg-courses-hero.png"
+    },
+    {
+      "title": "ACPC Online Choice Filling Workshop",
+      "category": "Seminars",
+      "image": "/images/bg-admission-hero.png"
+    },
+    {
+      "title": "Event Welcome Reception Desk",
+      "category": "Events",
+      "image": "/images/gallery-event-welcome.jpg"
+    },
+    {
+      "title": "Student Felicitation Ceremony",
+      "category": "Events",
+      "image": "/images/gallery-event-student1.jpg"
+    },
+    {
+      "title": "Class Toppers Celebration Group",
+      "category": "Events",
+      "image": "/images/gallery-event-students.jpg"
+    },
+    {
+      "title": "Academic Achiever Portrait",
+      "category": "Events",
+      "image": "/images/gallery-event-student2.jpg"
+    },
+    {
+      "title": "Parent & Student Audience Hall",
+      "category": "Events",
+      "image": "/images/gallery-event-audience.jpg"
+    },
+    {
+      "title": "VIP Dignitaries & Guests",
+      "category": "Events",
+      "image": "/images/gallery-event-vips.jpg"
+    },
+    {
+      "title": "Inaugural Lamp Lighting Ceremony",
+      "category": "Events",
+      "image": "/images/gallery-event-lamp.jpg"
+    },
+    {
+      "title": "Felicitation Group Photo (Boys)",
+      "category": "Events",
+      "image": "/images/gallery-event-boys.jpg"
+    },
+    {
+      "title": "Felicitation Group Photo (Girls)",
+      "category": "Events",
+      "image": "/images/gallery-event-girls.jpg"
+    },
+    {
+      "title": "VIP Felicitation & Award Stage",
+      "category": "Events",
+      "image": "/images/gallery-event-felicitation.jpg"
+    },
+    {
+      "title": "Staff Coordinator Recognition",
+      "category": "Events",
+      "image": "/images/gallery-event-felicitation-staff.jpg"
+    },
+    {
+      "title": "Topper Felicitation (Saree)",
+      "category": "Events",
+      "image": "/images/gallery-event-felicitation-girl1.jpg"
+    },
+    {
+      "title": "Student Podium Speech",
+      "category": "Events",
+      "image": "/images/gallery-event-speech.jpg"
+    },
+    {
+      "title": "Students Stage Dance Performance",
+      "category": "Events",
+      "image": "/images/gallery-event-dance.jpg"
+    },
+    {
+      "title": "Topper Felicitation (Dress)",
+      "category": "Events",
+      "image": "/images/gallery-event-felicitation-girl2.jpg"
+    },
+    {
+      "title": "",
+      "category": "Classrooms",
+      "image": "https://media1.pbwwcdn.net/pages/photo-prints-printing-classic.webp"
+    },
+    {
+      "title": "",
+      "category": "Classrooms",
+      "image": "https://www.picturecorrect.com/wp-content/uploads/2016/09/ten-tips-for-better-photos.jpg"
+    },
+    {
+      "title": "",
+      "category": "Classrooms",
+      "image": "https://lh3.googleusercontent.com/SVjHnzqF8Fvx4NUgJOExvhAbJYQ7RYuDAFylE22ayWQ74LGEHnnb1ekhC8LpgdkblMPrh8-KEAeOR8BK3400sWtohXpzaSDTjSg=e365-pa-nu-s0"
+    },
+    {
+      "title": "",
+      "category": "Activities",
+      "image": "https://t4.ftcdn.net/jpg/01/31/55/69/360_F_131556918_yBx0ms1saqWLuaVm1wNX2OP0lXZvBrVz.jpg"
+    }
+  ],
+  "courses": [
+    {
+      "id": "school-8-10",
+      "category": "school",
+      "title": "Standard 8th to 10th (GSEB / CBSE)",
+      "subtitle": "Solid Foundation for Board Excellence",
+      "badge": "School Foundation",
+      "highlights": [
+        "Complete Science, Maths & English syllabus coverage",
+        "Weekly chapter-wise tests & performance tracking",
+        "Special foundation modules for future 11th Science/Diploma"
+      ],
+      "details": "Building robust fundamental concepts in Mathematics and Science for GSEB & CBSE students. Interactive classroom solving with exam-oriented test series."
+    },
+    {
+      "id": "science-11-12",
+      "category": "science",
+      "title": "Standard 11th & 12th Science (GSEB / CBSE)",
+      "subtitle": "Physics, Chemistry & Mathematics / Biology",
+      "badge": "Higher Secondary",
+      "highlights": [
+        "In-depth concept mastery for Physics & Chemistry",
+        "Special doubt-solving desks & formula revision workshops",
+        "GUJCET entrance exam orientation alongside boards"
+      ],
+      "details": "Comprehensive coaching for 11th and 12th Science students preparing for GSEB/CBSE Board Exams, GUJCET, and University Engineering/Medical admissions."
+    },
+    {
+      "id": "neet",
+      "category": "competitive",
+      "title": "NEET & JEE Main / Advanced Preparation",
+      "badge": "Competitive Entrance",
+      "subtitle": "Target Top Medical & Engineering Colleges",
+      "highlights": [
+        "Dedicated problem-solving strategies & speed tricks",
+        "Previous 15 years PYQ paper analysis & test series",
+        "Small batch focus for targeted rank improvements"
+      ],
+      "details": "Rigorous competitive exam training with high-yield study material, daily practice problems (DPP), and full-length mock test series."
+    },
+    {
+      "id": "diploma",
+      "category": "engineering",
+      "title": "Diploma Engineering Semester Classes",
+      "badge": "Diploma Engineering",
+      "subtitle": "GTU, MSU & Private University Semester Support",
+      "highlights": [
+        "Specialized coaching for Computer, IT, Mechanical, Civil & EC",
+        "Complete GTU syllabus mapping & solved paper banks",
+        "Final semester project guidance & practical support"
+      ],
+      "details": "Expert semester coaching for Diploma Engineering students across all major engineering branches in Vadodara."
+    },
+    {
+      "id": "ddcet",
+      "category": "engineering",
+      "title": "DDCET (Diploma to Degree Common Entrance Test)",
+      "badge": "DDCET Special",
+      "subtitle": "Direct 2nd Year B.E. / B.Tech Degree Admission",
+      "highlights": [
+        "Specialized DDCET syllabus coverage & practice mocks",
+        "Maths, Science & Engineering fundamentals revision",
+        "Choice filling guidance for ACPC Degree engineering admissions"
+      ],
+      "details": "Targeted entrance prep for Diploma students aiming for direct 2nd-year Degree Engineering admissions in top GTU & MSU colleges."
+    },
+    {
+      "id": "career-guidance",
+      "category": "guidance",
+      "title": "Admission Guidance & ACPC / ACPDC Choice Filling",
+      "badge": "Career Counseling",
+      "subtitle": "Expert Stream Selection & Merit List Mapping",
+      "highlights": [
+        "Personalized one-on-one student & parent counseling",
+        "Complete choice filling strategies for ACPC & ACPDC",
+        "Merit cut-off analysis for top colleges in Gujarat"
+      ],
+      "details": "Professional admission counseling to help students choose the right stream, branch, and college based on their merit score."
+    }
+  ],
+  "users": [
+    {
+      "id": "1",
+      "username": "admin",
+      "password": "admin123",
+      "role": "superadmin",
+      "permissions": [
+        "dashboard",
+        "announcements",
+        "results",
+        "gallery",
+        "testimonials",
+        "courses",
+        "stats",
+        "features",
+        "contactInfo",
+        "inquiries",
+        "settings"
+      ]
+    },
+    {
+      "id": "1784639129255",
+      "username": "manshi123",
+      "password": "123",
+      "role": "staff",
+      "permissions": [
+        "dashboard",
+        "inquiries:view"
+      ]
+    }
+  ],
+  "pageImages": {
+    "homeInfrastructure": [
+      {
+        "id": "hi1",
+        "title": "Institute Campus Premises",
+        "category": "Premises",
+        "image": "/images/hero-classroom.png",
+        "desc": "State-of-the-art coaching facilities on Waghodia Road"
+      },
+      {
+        "id": "hi2",
+        "title": "Dedicated Study & Doubt Desks",
+        "category": "Faculty",
+        "image": "/images/hero-counseling.png",
+        "desc": "1-on-1 personal guidance and doubt resolution"
+      },
+      {
+        "id": "hi3",
+        "title": "Interactive Board Setup",
+        "category": "Technology",
+        "image": "/images/bg-gallery-hero.png",
+        "desc": "Modern visual learning tools for maximum retention"
+      }
+    ],
+    "homeClassrooms": [
+      {
+        "id": "hc1",
+        "title": "School Foundation Classroom (8th-10th)",
+        "category": "School",
+        "image": "/images/hero-classroom.png",
+        "desc": "Interactive board coaching for Std 8 to 10"
+      },
+      {
+        "id": "hc2",
+        "title": "11th & 12th Science Theory & Lab Desk",
+        "category": "Science",
+        "image": "/images/bg-courses-hero.png",
+        "desc": "Comprehensive Physics, Chemistry & Biology coaching"
+      },
+      {
+        "id": "hc3",
+        "title": "NEET & JEE Competitive Batch Hall",
+        "category": "Competitive",
+        "image": "/images/bg-results-hero.png",
+        "desc": "Rigorous test series and PYQ practice halls"
+      },
+      {
+        "id": "hc4",
+        "title": "Diploma & Degree Engineering Tutorials",
+        "category": "Engineering",
+        "image": "/images/hero-engineering.png",
+        "desc": "Semester subject coaching & GTU exam guidance"
+      }
+    ],
+    "homeHighlights": [
+      {
+        "id": "hh1",
+        "title": "Class Toppers Celebration",
+        "category": "Events",
+        "image": "/images/gallery-event-students.jpg",
+        "desc": "Celebrating academic toppers in Vadodara"
+      },
+      {
+        "id": "hh2",
+        "title": "Student Speech at Podium",
+        "category": "Seminars",
+        "image": "/images/gallery-event-speech.jpg",
+        "desc": "Orientation & student speeches"
+      },
+      {
+        "id": "hh3",
+        "title": "Memento Stage Felicitation",
+        "category": "Events",
+        "image": "/images/gallery-event-felicitation.jpg",
+        "desc": "Annual award felicitation ceremony"
+      },
+      {
+        "id": "hh4",
+        "title": "Event Entrance Welcome Desk",
+        "category": "Campus",
+        "image": "/images/gallery-event-welcome.jpg",
+        "desc": "Waghodia Road campus event welcome"
+      }
+    ],
+    "home": [
+      {
+        "id": "h1",
+        "title": "Class Toppers Celebration",
+        "category": "Events",
+        "image": "/images/gallery-event-students.jpg",
+        "desc": "Celebrating academic toppers in Vadodara"
+      },
+      {
+        "id": "h2",
+        "title": "Student Speech at Podium",
+        "category": "Seminars",
+        "image": "/images/gallery-event-speech.jpg",
+        "desc": "Orientation & student speeches"
+      },
+      {
+        "id": "h3",
+        "title": "Memento Stage Felicitation",
+        "category": "Events",
+        "image": "/images/gallery-event-felicitation.jpg",
+        "desc": "Annual award felicitation ceremony"
+      },
+      {
+        "id": "h4",
+        "title": "Event Entrance Welcome Desk",
+        "category": "Campus",
+        "image": "/images/gallery-event-welcome.jpg",
+        "desc": "Waghodia Road campus event welcome"
+      }
+    ],
+    "about": [
+      {
+        "id": "a1",
+        "title": "Institute Campus Premises",
+        "category": "Premises",
+        "image": "/images/hero-classroom.png",
+        "desc": "State-of-the-art coaching facilities on Waghodia Road"
+      },
+      {
+        "id": "a2",
+        "title": "Dedicated Study & Doubt Desks",
+        "category": "Faculty",
+        "image": "/images/hero-counseling.png",
+        "desc": "1-on-1 personal guidance and doubt resolution"
+      },
+      {
+        "id": "a3",
+        "title": "Interactive Board Setup",
+        "category": "Technology",
+        "image": "/images/bg-gallery-hero.png",
+        "desc": "Modern visual learning tools for maximum retention"
+      }
+    ],
+    "courses": [
+      {
+        "id": "c1",
+        "title": "School Foundation Classroom (8th-10th)",
+        "category": "School",
+        "image": "/images/hero-classroom.png",
+        "desc": "Interactive board coaching for Std 8 to 10"
+      },
+      {
+        "id": "c2",
+        "title": "11th & 12th Science Theory & Lab Desk",
+        "category": "Science",
+        "image": "/images/bg-courses-hero.png",
+        "desc": "Comprehensive Physics, Chemistry & Biology coaching"
+      },
+      {
+        "id": "c3",
+        "title": "NEET & JEE Competitive Batch Hall",
+        "category": "Competitive",
+        "image": "/images/neet_repeater_banner.jpg",
+        "desc": "Rigorous test series and PYQ practice halls"
+      },
+      {
+        "id": "c4",
+        "title": "Diploma & Degree Engineering Tutorials",
+        "category": "Engineering",
+        "image": "/images/hero-engineering.png",
+        "desc": "Semester subject coaching & GTU exam guidance"
+      }
+    ],
+    "admission": [
+      {
+        "id": "ad1",
+        "title": "1-on-1 Career Stream Counseling Desk",
+        "category": "Counseling",
+        "image": "/images/hero-counseling.png",
+        "desc": "Personalized stream guidance for Std 10 & 12 students"
+      },
+      {
+        "id": "ad2",
+        "title": "ACPC Online Choice Filling Workshop",
+        "category": "Registration",
+        "image": "/images/bg-admission-hero.png",
+        "desc": "Step-by-step assistance for engineering college admissions"
+      },
+      {
+        "id": "ad3",
+        "title": "Parent Information & Guidance Sessions",
+        "category": "Seminars",
+        "image": "/images/bg-about-hero.png",
+        "desc": "Clear roadmap updates for parents and guardians"
+      }
+    ],
+    "studentCorner": [
+      {
+        "id": "sc1",
+        "title": "Quiet Self-Study Lounge & Revision Desk",
+        "category": "Study",
+        "image": "/images/bg-student-hero.png",
+        "desc": "Dedicated space for daily revision and practice"
+      },
+      {
+        "id": "sc2",
+        "title": "Weekly Mock Test Examination Hall",
+        "category": "Exams",
+        "image": "/images/bg-results-hero.png",
+        "desc": "Simulated exam hall environment for time management"
+      },
+      {
+        "id": "sc3",
+        "title": "Question Bank & Study Notes Library",
+        "category": "Resources",
+        "image": "/images/jee_mains_pyq_banner.jpg",
+        "desc": "Access 10+ years of previous year solved questions"
+      }
+    ],
+    "contact": [
+      {
+        "id": "ct1",
+        "title": "Waghodia Road Main Reception Desk",
+        "category": "Campus",
+        "image": "/images/gallery-event-welcome.jpg",
+        "desc": "Above Bank of India, Waghodia Road, Vadodara"
+      },
+      {
+        "id": "ct2",
+        "title": "Counseling & Help Desk Office",
+        "category": "Helpline",
+        "image": "/images/bg-contact-hero.png",
+        "desc": "Call 9104206999 for instant admission inquiries"
+      }
+    ]
+  },
+  "heroBanners": [
+    {
+      "id": "hb1",
+      "title": "SSC Board 2025 Toppers",
+      "highlightWord": "SSC Board 2025",
+      "subtitle": "Record-Breaking 99.60 PR in Vadodara",
+      "desc": "Our student Shital Kumavat secures A1-grade with 99.60 Percentile Rank. Noble Education delivers top board ranks consistently.",
+      "image": "/images/bg-results-banner.png",
+      "cardImage": "/images/shital-result.png",
+      "buttonText": "Book Free Counselling",
+      "buttonLink": "#inquiry-form"
+    },
+    {
+      "id": "hb2",
+      "title": "Admissions Open 2026-27",
+      "highlightWord": "Admissions Open",
+      "subtitle": "Std 8th to 12th Science (GSEB / CBSE)",
+      "desc": "Enroll in Vadodara's elite concept-based coaching. Expert faculty, personal attention, and rigorous test series to secure top board ranks.",
+      "image": "/images/hero-counseling.png",
+      "buttonText": "Book Free Counselling",
+      "buttonLink": "#inquiry-form"
+    },
+    {
+      "id": "hb3",
+      "title": "NEET & JEE Intensive Batches",
+      "highlightWord": "NEET & JEE",
+      "subtitle": "Dedicated Competitive Exam Preparation",
+      "desc": "Comprehensive study material, chapter-wise mock tests, and personalized doubt sessions by top competitive faculties.",
+      "image": "/images/hero-classroom.png",
+      "buttonText": "Book Free Counselling",
+      "buttonLink": "#inquiry-form"
+    },
+    {
+      "id": "hb4",
+      "title": "Diploma & Degree Engineering Coaching",
+      "highlightWord": "Engineering",
+      "subtitle": "GTU Semester & Competitive Entrance Prep",
+      "desc": "Expert engineering faculties guiding students with subject concept mastery and high scoring techniques.",
+      "image": "/images/hero-engineering.png",
+      "buttonText": "Book Free Counselling",
+      "buttonLink": "#inquiry-form"
+    }
+  ],
+  "partnerSchools": [
+    {
+      "id": "ps1",
+      "name": "Royal School",
+      "medium": "English Medium",
+      "standards": "Standards 8th, 9th, 10th, 11th and 12th Science",
+      "address": "Kamla Nagar Lake Road, Ajwa Road, Vadodara",
+      "mapUrl": "https://maps.google.com/?q=Royal+School+Kamla+Nagar+Lake+Road+Ajwa+Road+Vadodara",
+      "contact": "96382 56222",
+      "image": "https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=600&auto=format&fit=crop&q=80",
+      "description": "Premier integrated English Medium partner offering complete 8th to 12th Science preparation."
+    },
+    {
+      "id": "ps2",
+      "name": "Raghukul Vidyalay",
+      "medium": "Gujarati Medium",
+      "standards": "Standards 8th, 9th and 10th",
+      "address": "Opposite Balaji Township, New VIP Road, Vadodara",
+      "mapUrl": "https://maps.google.com/?q=Raghukul+Vidyalay+Opposite+Balaji+Township+New+VIP+Road+Vadodara",
+      "contact": "96382 56246",
+      "image": "https://images.unsplash.com/photo-1562774053-701939374585?w=600&auto=format&fit=crop&q=80",
+      "description": "Dedicated Gujarati Medium school foundation coaching for secondary board toppers."
+    },
+    {
+      "id": "ps3",
+      "name": "New Heaven Vidyalaya",
+      "medium": "Gujarati Medium",
+      "standards": "Standards 11th and 12th Science",
+      "address": "Vrundavan Char Rasta, Waghodia Road, Vadodara",
+      "mapUrl": "https://maps.google.com/?q=New+Heaven+Vidyalay+Vrundavan+Char+Rasta+Waghodia+Road+Vadodara",
+      "contact": "91042 06555",
+      "image": "https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?w=600&auto=format&fit=crop&q=80",
+      "description": "Specialized 11th & 12th Science Gujarati Medium board, GUJCET and NEET integrated coaching campus."
+    }
+  ]
+}
