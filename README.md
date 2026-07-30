@@ -4,9 +4,9 @@
 
 ### 🏠 Home Page
 
-![Home Page]("screenshots\Homepage.png")
-![Home Page]("screenshots\Homepage-1.png")
-![Home Page]("screenshots\Homepage-popup.png")
+![Home Page]("screenshots\homepage.png")
+![Home Page]("screenshots\homepage-1.png")
+![Home Page]("screenshots\homepage-popup.png")
 
 ---
 
