@@ -10,6 +10,7 @@ import {
 import { adminData } from '../utils/adminData';
 import { inquiryService } from '../utils/inquiryService';
 import { getEmbedImageUrl, detectImageUrlSource, handleImageError, FALLBACK_SLIDE_SVG } from '../utils/imageUrl';
+import { logoWhite, getLogoUrl } from '../utils/logo';
 import { jagannathPosterB64 } from '../data/jagannathB64';
 import { neetRepeaterB64 } from '../data/neetRepeaterB64';
 import { jeePyqB64 } from '../data/jeePyqB64';
@@ -81,9 +82,10 @@ function SectionHeader({ title, subtitle, action }) {
 
 // ─── Empty State ─────────────────────────────────────────────────────────────
 function EmptyState({ icon: Icon, message }) {
+  const IconComp = Icon || FiAlertTriangle;
   return (
     <div className="ap-empty">
-      <Icon size={40} />
+      <IconComp size={40} />
       <p>{message}</p>
     </div>
   );
@@ -92,11 +94,8 @@ function EmptyState({ icon: Icon, message }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════
-export default function AdminPanel() {
-  const [isLoggedIn, setIsLoggedIn] = useState(adminData.isLoggedIn());
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
+function AdminPanel({ onLogout }) {
+
   const [activeSection, setActiveSection] = useState(() => {
     try {
       return localStorage.getItem('noble_admin_active_section') || 'dashboard';
@@ -163,13 +162,72 @@ export default function AdminPanel() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [siteLogo, setSiteLogo] = useState(() => getLogoUrl(true));
+  const [customLogoInput, setCustomLogoInput] = useState('');
   const fileInputRef = useRef(null);
+  const logoInputRef = useRef(null);
 
   const showToast = (msg, type = 'success') => {
     const id = Date.now();
     setToasts(p => [...p, { id, msg, type }]);
   };
   const removeToast = (id) => setToasts(p => p.filter(t => t.id !== id));
+
+  const handleLogoFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select an image file (PNG, JPG, SVG, WebP)', 'error');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_W = 600;
+        const MAX_H = 200;
+        let w = img.width;
+        let h = img.height;
+        if (w > MAX_W || h > MAX_H) {
+          const ratio = Math.min(MAX_W / w, MAX_H / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/png', 0.95);
+        adminData.setData('siteLogo', dataUrl);
+        setSiteLogo(dataUrl);
+        showToast('New site logo saved! Updated across website & admin panel.');
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleSaveCustomLogoUrl = () => {
+    if (!customLogoInput.trim()) {
+      showToast('Please enter a valid image URL', 'error');
+      return;
+    }
+    const embedUrl = getEmbedImageUrl(customLogoInput.trim());
+    adminData.setData('siteLogo', embedUrl);
+    setSiteLogo(embedUrl);
+    setCustomLogoInput('');
+    showToast('Custom logo URL saved! Updated across website.');
+  };
+
+  const handleResetLogo = () => {
+    if (!window.confirm('Reset logo to default Noble Education brand logo?')) return;
+    adminData.setData('siteLogo', null);
+    setSiteLogo(logoWhite);
+    showToast('Brand logo reset to default.');
+  };
 
   const loadAll = () => {
     setAnnouncements(adminData.getData('announcements') || []);
@@ -188,45 +246,71 @@ export default function AdminPanel() {
     setHeroBanners(adminData.getData('heroBanners') || []);
     setPartnerSchools(adminData.getData('partnerSchools') || []);
     setSchoolPhotos(adminData.getData('schoolPhotos') || []);
+    setSiteLogo(getLogoUrl(true));
   };
 
-  useEffect(() => {
-    if (!isLoggedIn) return;
-    loadAll();
-  }, [isLoggedIn]);
 
-  const handleLogin = (e) => {
-    e.preventDefault();
-    if (!username.trim() || !password) {
-      setLoginError('Please enter both username and password.');
-      return;
-    }
-    const res = adminData.login(username, password);
-    if (res.success) {
-      setIsLoggedIn(true);
-      setLoginError('');
-      setUsername('');
-      setPassword('');
-      loadAll();
-    } else {
-      setLoginError(res.error);
-    }
+  const [sessionSeconds, setSessionSeconds] = useState(() => {
+    try { return adminData.getSessionRemainingSeconds() || 1800; } catch(e) { return 1800; }
+  });
+
+  useEffect(() => {
+    loadAll();
+    const currentRem = adminData.getSessionRemainingSeconds();
+    setSessionSeconds(currentRem > 0 ? currentRem : 1800);
+
+    const timer = setInterval(() => {
+      try {
+        const remaining = adminData.getSessionRemainingSeconds();
+        setSessionSeconds(remaining);
+        if (remaining <= 0) {
+          clearInterval(timer);
+          adminData.logout();
+          if (onLogout) onLogout();
+        }
+      } catch(e) {}
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleExtendSession = () => {
+    adminData.extendSession();
+    const remaining = adminData.getSessionRemainingSeconds();
+    setSessionSeconds(remaining > 0 ? remaining : 1800);
+    showToast('Session extended for 30 more minutes!');
+  };
+
+  const formatSessionTimer = (totalSeconds) => {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   const handleLogout = () => {
     adminData.logout();
-    setIsLoggedIn(false);
-    setActiveSection('dashboard');
-    setSidebarOpen(false);
+    if (onLogout) {
+      onLogout();
+    } else {
+      try {
+        const baseUrl = import.meta.env.BASE_URL || '/';
+        const target = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
+        window.location.href = window.location.origin + target;
+      } catch(e) {
+        window.location.href = '/';
+      }
+    }
   };
 
   // ─── NAV CONFIG ────────────────────────────────────────────────────────
-  const totalMediaBadgeCount = (schoolPhotos.length || 0) + (gallery.length || 0) + (heroBanners.length || 0);
+  const totalMediaBadgeCount = (Array.isArray(schoolPhotos) ? schoolPhotos.length : 0) + 
+    (Array.isArray(gallery) ? gallery.length : 0) + 
+    (Array.isArray(heroBanners) ? heroBanners.length : 0);
 
   const navItems = [
     { key: 'dashboard',     label: 'Dashboard',            icon: FiGrid,         color: '#3B82F6' },
     { key: 'allPhotos',     label: 'All Photos & Media',   icon: FiCamera,       color: '#8B5CF6', badge: totalMediaBadgeCount },
-    { key: 'partnerSchools',label: 'Partner Schools',     icon: FiBookOpen,     color: '#10B981', badge: partnerSchools.length },
+    { key: 'partnerSchools',label: 'Partner Schools',     icon: FiBookOpen,     color: '#10B981', badge: Array.isArray(partnerSchools) ? partnerSchools.length : 0 },
     { key: 'announcements', label: 'Announcements',        icon: FiVolume2,      color: '#F59E0B' },
     { key: 'results',       label: 'Student Results',      icon: FiAward,        color: '#10B981' },
     { key: 'testimonials',  label: 'Testimonials',         icon: FiMessageSquare,color: '#EC4899' },
@@ -234,7 +318,7 @@ export default function AdminPanel() {
     { key: 'stats',         label: 'Stats / Counters',     icon: FiTrendingUp,   color: '#F97316' },
     { key: 'features',      label: 'Why Choose Us',        icon: FiCheckCircle,  color: '#22D3EE' },
     { key: 'contactInfo',   label: 'Contact Info',         icon: FiPhone,        color: '#34D399' },
-    { key: 'inquiries',     label: 'Inquiries',            icon: FiInbox,        color: '#A78BFA', badge: inquiries.length },
+    { key: 'inquiries',     label: 'Inquiries',            icon: FiInbox,        color: '#A78BFA', badge: Array.isArray(inquiries) ? inquiries.length : 0 },
     { key: 'videos',        label: 'Video Lectures',       icon: FiVideo,        color: '#EF4444' },
     { key: 'settings',      label: 'Settings',             icon: FiSettings,     color: '#9CA3AF' },
   ];
@@ -242,53 +326,9 @@ export default function AdminPanel() {
   const currentNav = navItems.find(n => n.key === activeSection);
 
   // ═══════════════════════════════════════════════════════════════════════
-  // LOGIN SCREEN
-  // ═══════════════════════════════════════════════════════════════════════
-  if (!isLoggedIn) {
-    return (
-      <div className="ap-login-bg">
-        <style>{CSS}</style>
-        <div className="ap-login-card">
-          <div className="ap-login-logo-wrap">
-            <img src="/images/logo-white.png" alt="Noble Education" className="ap-login-logo" />
-          </div>
-          <h2 className="ap-login-title">Admin Panel</h2>
-          <p className="ap-login-sub">Noble Education · Secure Access</p>
-          <form onSubmit={handleLogin} className="ap-login-form">
-            <div className="ap-input-wrap" style={{ marginBottom: 12 }}>
-              <FiUsers className="ap-input-ico" style={{ top: '50%', transform: 'translateY(-50%)' }} />
-              <input
-                type="text" value={username}
-                onChange={e => setUsername(e.target.value)}
-                placeholder="Enter Username"
-                className="ap-input ap-input-padded"
-                autoFocus
-                required
-              />
-            </div>
-            <div className="ap-input-wrap">
-              <FiLock className="ap-input-ico" style={{ top: '50%', transform: 'translateY(-50%)' }} />
-              <input
-                type="password" value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="Enter Password"
-                className="ap-input ap-input-padded"
-                required
-              />
-            </div>
-            {loginError && <p className="ap-login-err">{loginError}</p>}
-            <button type="submit" className="ap-btn ap-btn-primary ap-btn-block" style={{ marginTop: 8 }}>
-              Sign In to Dashboard
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════
   // CRUD HANDLERS
   // ═══════════════════════════════════════════════════════════════════════
+
 
   // Announcements
   const saveAnn = (item) => {
@@ -532,29 +572,107 @@ export default function AdminPanel() {
     loadAll(); showToast('Reset complete.');
   };
 
+  // Sync controls surfaced in Settings
+  const [syncEnabled, setSyncEnabled] = useState(() => {
+    try { return adminData.getSyncEnabled(); } catch { return true; }
+  });
+
+  useEffect(() => {
+    try { adminData.setSyncEnabled(syncEnabled); } catch {}
+  }, [syncEnabled]);
+
+  const handleForceSync = async () => {
+    showToast('Starting sync...');
+    try {
+      await adminData.forceSync();
+      showToast('Sync to server triggered.');
+    } catch { showToast('Sync failed.', 'error'); }
+  };
+
+  const handleForceFetch = async () => {
+    showToast('Fetching latest from server...');
+    try {
+      const data = await adminData.forceFetch();
+      if (data) { loadAll(); showToast('Fetched and applied server data.'); }
+      else showToast('No data available or fetch failed.', 'error');
+    } catch { showToast('Fetch failed.', 'error'); }
+  };
+
   // ═══════════════════════════════════════════════════════════════════════
   // SECTION RENDERERS
   // ═══════════════════════════════════════════════════════════════════════
 
   // ─── DASHBOARD ──────────────────────────────────────────────────────────
+  const renderBrandLogoCustomizerCard = () => (
+    <div className="ap-card" style={{ marginBottom: 24, border: '1px solid #3B82F655', background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <h4 className="ap-card-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8, color: '#60A5FA' }}>
+            <FiCamera style={{ color: '#3B82F6' }} /> Website & Admin Brand Logo Customizer
+          </h4>
+          <p style={{ color: '#9CA3AF', fontSize: 13, margin: '4px 0 0' }}>
+            Upload your institution logo. Automatically resizes, auto-cuts, aligns & updates everywhere across Navbar, Footer, Loading Screen, and Admin Panel.
+          </p>
+        </div>
+        {adminData.getData('siteLogo') && (
+          <button type="button" className="ap-btn ap-btn-ghost ap-btn-sm" onClick={handleResetLogo} style={{ color: '#EF4444', borderColor: '#EF444444' }}>
+            <FiRefreshCw /> Reset to Default Logo
+          </button>
+        )}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16, alignItems: 'center' }}>
+        {/* Live Preview Dark Navy Header */}
+        <div style={{ background: '#1C2E60', padding: '16px 20px', borderRadius: 12, border: '1px solid #3B82F633', textAlign: 'center' }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: '#93C5FD', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 8 }}>Navbar / Footer Live Preview</span>
+          <div style={{ height: 52, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <img src={siteLogo} alt="Logo Preview" style={{ maxHeight: 42, maxWidth: 220, objectFit: 'contain' }} onError={e => { e.target.src = logoWhite; }} />
+          </div>
+        </div>
+
+        {/* Live Preview Dark Admin Sidebar */}
+        <div style={{ background: '#161B22', padding: '16px 20px', borderRadius: 12, border: '1px solid #30363D', textAlign: 'center' }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: '#8B949E', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 8 }}>Admin Sidebar Live Preview</span>
+          <div style={{ height: 52, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <img src={siteLogo} alt="Logo Preview" style={{ maxHeight: 36, maxWidth: 180, objectFit: 'contain' }} onError={e => { e.target.src = logoWhite; }} />
+          </div>
+        </div>
+
+        {/* Upload Actions */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <button type="button" className="ap-btn ap-btn-primary ap-btn-block" onClick={() => logoInputRef.current?.click()} style={{ background: '#2563EB', fontWeight: 700 }}>
+            <FiUpload /> Upload New Logo Image
+          </button>
+          <input ref={logoInputRef} type="file" accept="image/*" onChange={handleLogoFileUpload} style={{ display: 'none' }} />
+
+          <div style={{ display: 'flex', gap: 6 }}>
+            <input className="ap-input" style={{ fontSize: 12, padding: '8px 12px' }} placeholder="Or paste image / Google Drive URL..." value={customLogoInput} onChange={e => setCustomLogoInput(e.target.value)} />
+            <button type="button" className="ap-btn ap-btn-secondary ap-btn-sm" onClick={handleSaveCustomLogoUrl} style={{ whiteSpace: 'nowrap' }}>Save URL</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderDashboard = () => {
+
     const totalPagePhotos = Object.values(pageImages || {}).reduce((acc, arr) => acc + (Array.isArray(arr) ? arr.length : 0), 0);
 
     const cards = [
-      { label: 'Hero Banners', value: heroBanners.length, icon: FiLayers, color: '#3B82F6', bg: '#1E3A5F', section: 'heroBanners' },
-      { label: 'Total Inquiries', value: inquiries.length, icon: FiInbox, color: '#06B6D4', bg: '#083344', section: 'inquiries' },
-      { label: 'Gallery Photos', value: gallery.length, icon: FiImage, color: '#8B5CF6', bg: '#2D1B69', section: 'gallery' },
+      { label: 'Hero Banners', value: Array.isArray(heroBanners) ? heroBanners.length : 0, icon: FiLayers, color: '#3B82F6', bg: '#1E3A5F', section: 'heroBanners' },
+      { label: 'Total Inquiries', value: Array.isArray(inquiries) ? inquiries.length : 0, icon: FiInbox, color: '#06B6D4', bg: '#083344', section: 'inquiries' },
+      { label: 'Gallery Photos', value: Array.isArray(gallery) ? gallery.length : 0, icon: FiImage, color: '#8B5CF6', bg: '#2D1B69', section: 'gallery' },
       { label: 'Page Photos', value: totalPagePhotos, icon: FiCamera, color: '#F43F5E', bg: '#4C0519', section: 'pagePhotos' },
-      { label: 'Student Results', value: results.length, icon: FiAward, color: '#10B981', bg: '#064E3B', section: 'results' },
-      { label: 'Announcements', value: announcements.length, icon: FiVolume2, color: '#F59E0B', bg: '#451A03', section: 'announcements' },
-      { label: 'Testimonials', value: testimonials.length, icon: FiMessageSquare, color: '#EC4899', bg: '#500724', section: 'testimonials' },
-      { label: 'Features Listed', value: features.length, icon: FiCheckCircle, color: '#22D3EE', bg: '#083344', section: 'features' },
-      { label: 'Promo Popup', value: (popupConfig.enabled !== false) ? `${popupConfig.images?.length || 1} Slides` : 'Disabled', icon: FiStar, color: '#FBBF24', bg: '#453203', section: 'popup' },
-      { label: 'Video Lectures', value: videoLectures.length, icon: FiVideo, color: '#EF4444', bg: '#450A0A', section: 'videos' },
+      { label: 'Student Results', value: Array.isArray(results) ? results.length : 0, icon: FiAward, color: '#10B981', bg: '#064E3B', section: 'results' },
+      { label: 'Announcements', value: Array.isArray(announcements) ? announcements.length : 0, icon: FiVolume2, color: '#F59E0B', bg: '#451A03', section: 'announcements' },
+      { label: 'Testimonials', value: Array.isArray(testimonials) ? testimonials.length : 0, icon: FiMessageSquare, color: '#EC4899', bg: '#500724', section: 'testimonials' },
+      { label: 'Features Listed', value: Array.isArray(features) ? features.length : 0, icon: FiCheckCircle, color: '#22D3EE', bg: '#083344', section: 'features' },
+      { label: 'Promo Popup', value: (popupConfig?.enabled !== false) ? `${popupConfig?.images?.length || 1} Slides` : 'Disabled', icon: FiStar, color: '#FBBF24', bg: '#453203', section: 'popup' },
+      { label: 'Video Lectures', value: Array.isArray(videoLectures) ? videoLectures.length : 0, icon: FiVideo, color: '#EF4444', bg: '#450A0A', section: 'videos' },
     ];
     
     const filteredCards = cards.filter(c => adminData.hasPermission(c.section, 'view'));
-    const recent = inquiries.slice(0, 6);
+    const recent = Array.isArray(inquiries) ? inquiries.slice(0, 6) : [];
     const currentUser = adminData.getCurrentUser();
 
     const quickActions = [
@@ -594,6 +712,8 @@ export default function AdminPanel() {
         )}
 
         {adminData.hasPermission('inquiries', 'view') && (
+
+
           <div className="ap-card" style={{ marginTop: 28 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <h3 className="ap-card-title"><FiInbox style={{ marginRight: 8 }} />Recent Inquiries</h3>
@@ -1250,8 +1370,13 @@ export default function AdminPanel() {
     const isSuper = currentUser?.role === 'superadmin';
     return (
       <div>
-        <SectionHeader title="Settings" subtitle="Security, data backup, and system management" />
+        <SectionHeader title="Settings & Branding" subtitle="Brand logo customization, security, backup, and system options" />
+        
+        {renderBrandLogoCustomizerCard()}
+
+
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: 20 }}>
+
           <div className="ap-card">
             <h4 className="ap-card-title"><FiLock style={{ marginRight: 8 }} />Change Password</h4>
             <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -1286,6 +1411,20 @@ export default function AdminPanel() {
               <button className="ap-btn ap-btn-danger ap-btn-block" onClick={handleReset}><FiRefreshCw /> Reset All to Defaults</button>
             </div>
           )}
+
+          <div className="ap-card">
+            <h4 className="ap-card-title"><FiRefreshCw style={{ marginRight: 8 }} />Data Synchronisation</h4>
+            <p style={{ color: '#9CA3AF', fontSize: 14, marginBottom: 12 }}>Control automatic sync to remote server. Disable when running the site on static hosting without server-side API.</p>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <input type="checkbox" checked={syncEnabled} onChange={e => setSyncEnabled(e.target.checked)} />
+              <span style={{ color: '#C9D1D9', fontWeight: 700 }}>Enable remote sync</span>
+            </label>
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <button className="ap-btn ap-btn-secondary" onClick={handleForceFetch}><FiDownload /> Fetch Now</button>
+              <button className="ap-btn ap-btn-primary" onClick={handleForceSync}><FiUpload /> Push Now</button>
+            </div>
+            <p style={{ color: '#6B7280', fontSize: 12, marginTop: 10 }}>Last sync: {adminData.getLastSyncTime() ? new Date(adminData.getLastSyncTime()).toLocaleString() : 'Never'}. Last fetch: {adminData.getLastFetchTime() ? new Date(adminData.getLastFetchTime()).toLocaleString() : 'Never'}.</p>
+          </div>
         </div>
 
         {/* User Management & Role Permissions (superadmin only) */}
@@ -2258,6 +2397,7 @@ export default function AdminPanel() {
     const totalCount = (schoolPhotos.length || 0) + (gallery.length || 0) + (heroBanners.length || 0);
 
     const photoSubTabs = [
+      { key: 'brandLogo',    label: '🎨 Custom Brand Logo' },
       { key: 'schoolPhotos', label: '🏫 School Pages Photos', badge: schoolPhotos.length },
       { key: 'gallery',      label: '📸 Main Campus Gallery', badge: gallery.length },
       { key: 'pagePhotos',   label: '🖼️ Website Page Photos' },
@@ -2310,6 +2450,7 @@ export default function AdminPanel() {
         </div>
 
         {/* Render Selected Sub-Tab Content */}
+        {activePhotoSubTab === 'brandLogo' && renderBrandLogoCustomizerCard()}
         {activePhotoSubTab === 'schoolPhotos' && renderSchoolPhotos()}
         {activePhotoSubTab === 'gallery' && renderGallery()}
         {activePhotoSubTab === 'pagePhotos' && renderPagePhotos()}
@@ -2317,6 +2458,7 @@ export default function AdminPanel() {
         {activePhotoSubTab === 'popup' && renderPopup()}
       </div>
     );
+
   };
 
   const renderSection = () => {
@@ -2372,7 +2514,7 @@ export default function AdminPanel() {
       {/* Sidebar */}
       <aside className={`ap-sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="ap-sidebar-top">
-          <img src="/images/logo-white.png" alt="Noble Education" className="ap-sidebar-logo" />
+          <img src={siteLogo} alt="Noble Education" className="ap-sidebar-logo" style={{ maxHeight: 36, maxWidth: 180, objectFit: 'contain' }} onError={e => { e.target.src = logoWhite; }} />
           <div className="ap-sidebar-badge">Admin</div>
         </div>
         <nav className="ap-sidebar-nav">
@@ -2413,10 +2555,22 @@ export default function AdminPanel() {
             {sidebarOpen ? <FiX size={20} /> : <FiMenu size={20} />}
           </button>
           <div className="ap-topbar-title">
-            {currentNav && <currentNav.icon size={18} style={{ color: currentNav.color }} />}
+            {currentNav && currentNav.icon && React.createElement(currentNav.icon, { size: 18, style: { color: currentNav.color } })}
             <span>{currentNav?.label || 'Dashboard'}</span>
           </div>
-          <div className="ap-topbar-right">
+          <div className="ap-topbar-right" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              background: '#0F172A', border: '1px solid #1E293B',
+              padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700,
+              color: sessionSeconds < 300 ? '#EF4444' : '#94A3B8'
+            }}>
+              <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: sessionSeconds < 300 ? '#EF4444' : '#10B981' }}></span>
+              <span>Session: {formatSessionTimer(sessionSeconds)}</span>
+              <button type="button" onClick={handleExtendSession} style={{ background: '#2563EB', color: '#fff', border: 'none', padding: '2px 8px', borderRadius: 10, cursor: 'pointer', fontSize: 11, fontWeight: 800 }}>
+                +30m
+              </button>
+            </div>
             <a href="/" target="_blank" rel="noopener noreferrer" className="ap-topbar-link"><FiExternalLink size={16} /> Website</a>
           </div>
         </header>
@@ -3289,14 +3443,18 @@ const CSS = `
 
 /* ─── LOGIN ─────────────────────────────────────────── */
 .ap-login-bg {
-  min-height: 100vh;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100vw; height: 100vh;
+  z-index: 99999;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(ellipse 80% 60% at 50% 0%, #1E3A5F33, transparent), #0D1117;
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, #1E3A5F55, transparent), #0B132B;
   font-family: 'Inter', system-ui, sans-serif;
   padding: 24px;
 }
+
 .ap-login-card {
   background: #161B22;
   border: 1px solid #30363D;
@@ -3963,3 +4121,192 @@ const CSS = `
   .ap-login-card { padding: 32px 24px; }
 }
 `;
+
+// ═══════════════════════════════════════════════════════════════════════
+// STANDALONE LOGIN FORM COMPONENT
+// ═══════════════════════════════════════════════════════════════════════
+function AdminLoginForm({ onLoginSuccess }) {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const siteLogo = getLogoUrl(true);
+
+  const handleLoginSubmit = (e) => {
+    e.preventDefault();
+    const targetUser = username.trim();
+    const targetPass = password;
+    const res = adminData.login(targetUser, targetPass);
+    if (res.success) {
+      if (onLoginSuccess) onLoginSuccess();
+    } else {
+      setLoginError(res.error || 'Invalid username or password');
+    }
+  };
+
+  return (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'linear-gradient(135deg, #0B132B 0%, #1C2541 50%, #0B132B 100%)',
+      color: '#fff', fontFamily: 'Inter, system-ui, sans-serif', padding: 20, zIndex: 99999
+    }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        .ne-login-input { width:100%; padding:14px 16px 14px 44px; border-radius:12px; background:#0F172A; border:1px solid #1E293B; color:#fff; font-size:14px; font-family:Inter,system-ui,sans-serif; outline:none; transition:border-color .2s,box-shadow .2s; }
+        .ne-login-input:focus { border-color:#3B82F6; box-shadow:0 0 0 3px rgba(59,130,246,.15); }
+        .ne-login-input::placeholder { color:#475569; }
+        .ne-login-btn { width:100%; padding:14px; border-radius:12px; background:linear-gradient(135deg,#2563EB,#1D4ED8); color:#fff; font-size:15px; font-weight:700; border:none; cursor:pointer; transition:transform .15s,box-shadow .2s; font-family:Inter,system-ui,sans-serif; }
+        .ne-login-btn:hover { transform:translateY(-1px); box-shadow:0 8px 25px rgba(37,99,235,.4); }
+        .ne-login-btn:active { transform:translateY(0); }
+        @keyframes loginFadeIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+      `}</style>
+      <div style={{
+        background: 'linear-gradient(145deg, #1E293B, #162032)', border: '1px solid #2D3A52',
+        borderRadius: 24, padding: '44px 36px', maxWidth: 420, width: '100%',
+        boxShadow: '0 25px 60px -12px rgba(0,0,0,.6), 0 0 40px rgba(59,130,246,.06)',
+        animation: 'loginFadeIn .5s ease-out'
+      }}>
+        {/* Logo */}
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <img src={siteLogo} alt="Noble Education" style={{ maxHeight: 52, maxWidth: 240, objectFit: 'contain' }} onError={e => { e.target.src = logoWhite; }} />
+        </div>
+
+        {/* Title */}
+        <h2 style={{ fontSize: 24, fontWeight: 800, textAlign: 'center', margin: '0 0 4px', letterSpacing: '-0.02em' }}>Admin Control Panel</h2>
+        <p style={{ color: '#64748B', fontSize: 13, textAlign: 'center', margin: '0 0 32px' }}>Sign in with your credentials to continue</p>
+
+        {/* Form */}
+        <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94A3B8', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.05em' }}>Username</label>
+            <div style={{ position: 'relative' }}>
+              <FiUsers style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#475569', fontSize: 16 }} />
+              <input
+                type="text" value={username}
+                onChange={e => setUsername(e.target.value)}
+                placeholder="Enter your username"
+                className="ne-login-input"
+                autoFocus
+                required
+                autoComplete="off"
+              />
+            </div>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94A3B8', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.05em' }}>Password</label>
+            <div style={{ position: 'relative' }}>
+              <FiLock style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#475569', fontSize: 16 }} />
+              <input
+                type="password" value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                className="ne-login-input"
+                required
+                autoComplete="new-password"
+              />
+            </div>
+          </div>
+
+          {loginError && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px',
+              background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.25)',
+              borderRadius: 10, color: '#F87171', fontSize: 13, fontWeight: 500
+            }}>
+              <FiAlertTriangle size={14} /> {loginError}
+            </div>
+          )}
+
+          <button type="submit" className="ne-login-btn" style={{ marginTop: 4 }}>
+            Sign In to Dashboard
+          </button>
+        </form>
+
+        {/* Footer Info */}
+        <div style={{ textAlign: 'center', marginTop: 28, paddingTop: 20, borderTop: '1px solid #1E293B' }}>
+          <p style={{ color: '#475569', fontSize: 11, margin: 0 }}>Default: admin / admin123 · Session: 30 min</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// CONTAINER COMPONENT FOR LOGGED IN / LOGGED OUT STATES
+// ═══════════════════════════════════════════════════════════════════════
+function AdminPanelContainer() {
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    try { return adminData.isLoggedIn(); } catch(e) { return false; }
+  });
+
+  const handleLogout = () => {
+    adminData.logout();
+    setIsLoggedIn(false);
+    try {
+      const baseUrl = import.meta.env.BASE_URL || '/';
+      const target = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
+      window.location.href = window.location.origin + target;
+    } catch(e) {
+      window.location.href = '/';
+    }
+  };
+
+  if (!isLoggedIn) {
+    return <AdminLoginForm onLoginSuccess={() => setIsLoggedIn(true)} />;
+  }
+
+  return <AdminPanel onLogout={handleLogout} />;
+}
+
+class AdminErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('AdminPanel Error Boundary caught an error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: '#0B132B', color: '#fff', fontFamily: 'Inter, system-ui, sans-serif',
+          zIndex: 999999
+        }}>
+          <div style={{ textAlign: 'center', maxWidth: 400 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 12 }}>Admin Panel</h2>
+            <p style={{ color: '#9CA3AF', marginBottom: 24 }}>Something went wrong. Click below to reload.</p>
+            <button
+              onClick={() => window.location.reload()}
+              style={{
+                background: '#2563EB', color: '#fff', border: 'none', padding: '14px 28px',
+                borderRadius: 12, fontWeight: 700, fontSize: 15, cursor: 'pointer',
+                boxShadow: '0 4px 14px rgba(37,99,235,0.4)'
+              }}
+            >
+              Reload Admin Panel
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export default function AdminPanelWithErrorBoundary(props) {
+  return (
+    <AdminErrorBoundary>
+      <AdminPanelContainer {...props} />
+    </AdminErrorBoundary>
+  );
+}
+

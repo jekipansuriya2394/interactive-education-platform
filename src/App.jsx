@@ -22,9 +22,29 @@ import { FaWhatsapp } from 'react-icons/fa';
 import { contactData } from './data/contactData';
 import { adminData } from './utils/adminData';
 import PromoPopup from './components/PromoPopup';
+import { normalizePathFromLocation, navigate } from './utils/router';
+import { logoWhite, getLogoUrl } from './utils/logo';
 
 export default function App() {
-  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+  const [siteLogo, setSiteLogo] = useState(() => getLogoUrl(true));
+
+  useEffect(() => {
+    console.log('App mounted')
+    window.__noble_app_mounted = true
+    
+    // Check for admin redirect intent
+    try {
+      const adminIntent = sessionStorage.getItem('noble_admin_intent');
+      if (adminIntent === '/admin') {
+        sessionStorage.removeItem('noble_admin_intent');
+        // Navigate to admin after a tick
+        setTimeout(() => {
+          navigate('/admin');
+        }, 50);
+      }
+    } catch (e) {}
+  }, [])
+  const [currentPath, setCurrentPath] = useState(normalizePathFromLocation(window.location.pathname));
   const [isLoading, setIsLoading] = useState(true);
   const [dataVersion, setDataVersion] = useState(0);
 
@@ -36,25 +56,30 @@ export default function App() {
     document.documentElement.removeAttribute('data-theme');
 
     // Setup real-time database synchronisation listener (across tabs/devices)
-    const cleanupSync = adminData.initSync(() => {
-      setDataVersion(prev => prev + 1);
-    });
-
-    // Initial page load handler
-    const handleInitialLoad = () => {
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 400);
-    };
-
-    if (document.readyState === 'complete') {
-      handleInitialLoad();
-    } else {
-      window.addEventListener('load', handleInitialLoad);
+    let cleanupSync = () => {};
+    try {
+      cleanupSync = adminData.initSync(() => {
+        setDataVersion(prev => prev + 1);
+        setSiteLogo(getLogoUrl(true));
+      });
+    } catch (e) {
+      console.error('adminData.initSync failed', e);
     }
 
+
+    // Initial page load handler - ensure loading screen displays smoothly
+    const loadTimer = setTimeout(() => {
+      setIsLoading(false);
+    }, 700);
+
     const handleLocationChange = () => {
-      setCurrentPath(window.location.pathname);
+      const nextPath = normalizePathFromLocation(window.location.pathname);
+      setCurrentPath(nextPath);
+      
+      if (!nextPath.startsWith('/admin')) {
+        setIsLoading(true);
+        setTimeout(() => setIsLoading(false), 450);
+      }
       
       if (window.location.hash) {
         const id = window.location.hash.substring(1);
@@ -71,7 +96,10 @@ export default function App() {
 
     return () => {
       window.removeEventListener('popstate', handleLocationChange);
-      cleanupSync();
+      clearTimeout(loadTimer);
+      try {
+        cleanupSync && cleanupSync();
+      } catch {}
     };
   }, []);
 
@@ -106,10 +134,11 @@ export default function App() {
     }
   };
 
-  const isAdminPath = currentPath === '/admin';
+  const isAdminPath = currentPath === '/admin' || currentPath.startsWith('/admin');
 
   return (
-    <div key={dataVersion} className="bg-[#EEF1F5] text-[#1E293B] min-h-screen relative selection:bg-blue-600 selection:text-white flex flex-col justify-between">
+    <div key={dataVersion} className={`${isAdminPath ? 'bg-[#0B132B] text-white' : 'bg-[#EEF1F5] text-[#1E293B]'} min-h-screen relative selection:bg-blue-600 selection:text-white flex flex-col justify-between`}>
+
       {/* Sticky Navbar */}
       {!isAdminPath && <Navbar />}
 
@@ -136,18 +165,21 @@ export default function App() {
       </a>
 
       {/* Premium Page Transition Loader Overlay */}
-      {isLoading && (
-        <div className="fixed inset-0 bg-[#0E2146] z-[9999] flex flex-col items-center justify-center animate-fadeIn select-none pointer-events-auto">
+      {isLoading && !isAdminPath && (
+
+        <div id="noble-loading-overlay" className="fixed inset-0 bg-[#0E2146] z-[9999] flex flex-col items-center justify-center animate-fadeIn select-none pointer-events-auto">
           <div className="relative flex flex-col items-center space-y-6">
             {/* Glowing Aura backdrop */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-blue-500/10 rounded-full blur-2xl animate-pulse"></div>
             
             {/* Pulsing White Brand Logo */}
             <img 
-              src="/images/logo-white.png" 
+              src={siteLogo} 
               alt="Loading..." 
-              className="h-16 w-auto object-contain animate-pulse relative z-10"
+              className="h-16 max-w-[240px] w-auto object-contain animate-pulse relative z-10"
             />
+
+
             
             {/* Custom Spinner */}
             <div className="w-10 h-10 border-[3px] border-slate-700 border-t-[#DC2626] rounded-full animate-spin relative z-10"></div>

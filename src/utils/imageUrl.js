@@ -12,6 +12,16 @@ export function getEmbedImageUrl(raw) {
   if (!raw) return FALLBACK_SLIDE_SVG;
   const url = raw.trim();
 
+  // Local public assets (starting with '/') should be served under Vite base URL
+  if (url.startsWith('/')) {
+    try {
+      const base = import.meta.env.BASE_URL || '/';
+      const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base;
+      return cleanBase + url;
+    } catch {}
+  }
+
+
   // Skip data URIs (base64 uploads from device) — already embeddable
   if (url.startsWith('data:')) return url;
 

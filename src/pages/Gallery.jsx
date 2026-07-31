@@ -311,7 +311,7 @@ export default function Gallery() {
       {/* Hero Header */}
       <section
         className="py-20 text-white text-center relative overflow-hidden bg-cover bg-no-repeat"
-        style={{ backgroundImage: `url('/images/bg-gallery-hero.png')`, backgroundPosition: 'center 60%' }}
+        style={{ backgroundImage: `url('${getEmbedImageUrl('/images/bg-gallery-hero.png')}')`, backgroundPosition: 'center 60%' }}
       >
         <div className="absolute inset-0 bg-[#1C2E60]/75 w-full h-full" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">

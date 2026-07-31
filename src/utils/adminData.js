@@ -8,7 +8,9 @@ import { coursesData } from '../data/coursesData';
 const PREFIX = 'noble_admin_';
 
 const DEFAULTS = {
+  siteLogo: null,
   announcements: [
+
     { emoji: "🚀", text: "11th Science Admission Open for 2026 Batch" },
     { emoji: "🔥", text: "JEE & NEET 2-Year Integrated Batches Started" },
     { emoji: "🎓", text: "Scholarship Exam Registration is now Open" },
@@ -295,6 +297,10 @@ const DEFAULTS = {
 };
 
 export const adminData = {
+  // runtime sync control
+  syncEnabled: true,
+  _lastSyncSuccess: 0,
+  _lastFetchSuccess: 0,
   // ─── Role-Based Authentication & User Management ──────────────────
   getUsers() {
     try {
@@ -324,74 +330,164 @@ export const adminData = {
     return defaultUsers;
   },
 
+
   saveUsers(users) {
     return this.setData('users', users);
   },
 
   isLoggedIn() {
-    return sessionStorage.getItem(PREFIX + 'session') === 'true';
+    try {
+      if (sessionStorage.getItem(PREFIX + 'session') !== 'true') return false;
+      const expireTimeStr = sessionStorage.getItem(PREFIX + 'session_expire');
+      if (expireTimeStr) {
+        const expireTime = parseInt(expireTimeStr, 10);
+        if (isNaN(expireTime) || Date.now() > expireTime) {
+          this.logout();
+          return false;
+        }
+      }
+      const user = this.getCurrentUser();
+      return !!user;
+    } catch (e) {
+      return false;
+    }
+  },
+
+  getSessionRemainingSeconds() {
+    try {
+      if (sessionStorage.getItem(PREFIX + 'session') !== 'true') return 0;
+      const expireTimeStr = sessionStorage.getItem(PREFIX + 'session_expire');
+      if (!expireTimeStr) return 0;
+      const expireTime = parseInt(expireTimeStr, 10);
+      if (isNaN(expireTime)) return 0;
+      const remaining = Math.max(0, Math.floor((expireTime - Date.now()) / 1000));
+      if (remaining === 0) {
+        this.logout();
+      }
+      return remaining;
+    } catch (e) {
+      return 0;
+    }
+  },
+
+  extendSession() {
+    try {
+      const newExpire = Date.now() + 30 * 60 * 1000;
+      sessionStorage.setItem(PREFIX + 'session_expire', newExpire.toString());
+      return true;
+    } catch {}
+    return false;
   },
 
   getCurrentUser() {
     try {
       const userStr = sessionStorage.getItem(PREFIX + 'currentUser');
-      return userStr ? JSON.parse(userStr) : null;
-    } catch {
-      return null;
-    }
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        if (user && user.username) return user;
+      }
+    } catch {}
+    return null;
   },
 
+
   login(username, password) {
-    const users = this.getUsers();
-    const user = users.find(
-      u => u.username.toLowerCase() === username.trim().toLowerCase() && u.password === password
-    );
-    if (user) {
-      sessionStorage.setItem(PREFIX + 'session', 'true');
-      sessionStorage.setItem(PREFIX + 'currentUser', JSON.stringify(user));
-      return { success: true, user };
-    }
+    try {
+      const users = this.getUsers();
+      const user = users.find(
+        u => u && u.username && u.username.toLowerCase() === (username || '').trim().toLowerCase() && u.password === password
+      );
+      if (user) {
+        const expireTime = Date.now() + 30 * 60 * 1000;
+        sessionStorage.setItem(PREFIX + 'session', 'true');
+        sessionStorage.setItem(PREFIX + 'session_expire', expireTime.toString());
+        sessionStorage.setItem(PREFIX + 'currentUser', JSON.stringify(user));
+        return { success: true, user };
+      }
+    } catch (e) {}
     return { success: false, error: 'Invalid username or password' };
   },
 
   logout() {
-    sessionStorage.removeItem(PREFIX + 'session');
-    sessionStorage.removeItem(PREFIX + 'currentUser');
+    try {
+      sessionStorage.removeItem(PREFIX + 'session');
+      sessionStorage.removeItem(PREFIX + 'session_expire');
+      sessionStorage.removeItem(PREFIX + 'currentUser');
+    } catch {}
+    // Also clear any stale localStorage session data
+    try {
+      localStorage.removeItem(PREFIX + 'session');
+      localStorage.removeItem(PREFIX + 'session_expire');
+      localStorage.removeItem(PREFIX + 'currentUser');
+    } catch {}
   },
 
+
   hasPermission(permission, action = 'view') {
-    const user = this.getCurrentUser();
-    if (!user) return false;
-    if (user.role === 'superadmin') return true;
-    if (permission === 'allPhotos') {
-      const photoKeys = ['allPhotos', 'schoolPhotos', 'gallery', 'pagePhotos', 'heroBanners', 'popup'];
-      return photoKeys.some(k => user.permissions.includes(k) || user.permissions.includes(`${k}:view`));
+    try {
+      const user = this.getCurrentUser();
+      if (!user) return false;
+      if (user.role === 'superadmin') return true;
+      
+      const perms = Array.isArray(user.permissions) ? user.permissions : [];
+      if (permission === 'allPhotos') {
+        const photoKeys = ['allPhotos', 'schoolPhotos', 'gallery', 'pagePhotos', 'heroBanners', 'popup'];
+        return photoKeys.some(k => perms.includes(k) || perms.includes(`${k}:view`));
+      }
+      
+      if (perms.includes(permission)) return true;
+      const key = `${permission}:${action}`;
+      return perms.includes(key);
+    } catch {
+      return false;
     }
-    
-    // Support legacy permission lists (plain section names grant full access)
-    if (user.permissions.includes(permission)) return true;
-    
-    const key = `${permission}:${action}`;
-    return user.permissions.includes(key);
   },
 
   updateUserPassword(userId, newPassword) {
-    const users = this.getUsers();
-    const updated = users.map(u => u.id === userId ? { ...u, password: newPassword } : u);
-    this.saveUsers(updated);
-    
-    // Update current session if changed
-    const currentUser = this.getCurrentUser();
-    if (currentUser && currentUser.id === userId) {
-      currentUser.password = newPassword;
-      sessionStorage.setItem(PREFIX + 'currentUser', JSON.stringify(currentUser));
-    }
+    try {
+      const users = this.getUsers();
+      const updated = users.map(u => u.id === userId ? { ...u, password: newPassword } : u);
+      this.saveUsers(updated);
+      
+      const currentUser = this.getCurrentUser();
+      if (currentUser && currentUser.id === userId) {
+        currentUser.password = newPassword;
+        sessionStorage.setItem(PREFIX + 'currentUser', JSON.stringify(currentUser));
+      }
+    } catch (e) {}
   },
 
   // Key operations
   getAllKeys() {
     return Object.keys(DEFAULTS);
   },
+
+  // Sync control helpers
+  getSyncEnabled() {
+    try {
+      const stored = localStorage.getItem(PREFIX + 'syncEnabled');
+      if (stored !== null) return JSON.parse(stored);
+    } catch {}
+    return this.syncEnabled;
+  },
+
+  setSyncEnabled(value) {
+    try {
+      this.syncEnabled = !!value;
+      localStorage.setItem(PREFIX + 'syncEnabled', JSON.stringify(this.syncEnabled));
+    } catch {}
+  },
+
+  getLastSyncTime() { return this._lastSyncSuccess || 0; },
+  getLastFetchTime() { return this._lastFetchSuccess || 0; },
+
+  getSyncApiUrls() {
+    return ['https://jsonblob.com/api/jsonBlob/019fb7f4-bdd3-7c88-aeec-e6d4e8e5dbdf'];
+  },
+
+  // Force operations (return promises)
+  async forceSync() { try { return await this.syncToServer(); } catch { return false; } },
+  async forceFetch() { try { return await this.fetchFromServer(); } catch { return null; } },
 
   getData(key) {
     try {
@@ -405,9 +501,9 @@ export const adminData = {
             return {
               ...def,
               ...item,
-              address: item.address || def.address || 'Waghodia Road, Vadodara',
-              medium: item.medium || def.medium || 'English Medium',
-              contact: item.contact || def.contact || '91042 06999',
+              address: item?.address || def.address || 'Waghodia Road, Vadodara',
+              medium: item?.medium || def.medium || 'English Medium',
+              contact: item?.contact || def.contact || '91042 06999',
             };
           });
         }
@@ -415,8 +511,8 @@ export const adminData = {
       }
     } catch (e) {
       console.error(`Error loading data for ${key}`, e);
+      try { localStorage.removeItem(PREFIX + key); } catch {}
     }
-    // Return default without mutating localStorage or overwriting server sync
     return DEFAULTS[key] !== undefined ? DEFAULTS[key] : [];
   },
 
@@ -432,8 +528,8 @@ export const adminData = {
     try {
       localStorage.setItem(PREFIX + key, JSON.stringify(value));
       this.notifySubscribers(key, value);
-      // Immediately sync to server
-      this.syncToServer();
+      // Debounced cloud push — ensures rapid edits coalesce into a single upload
+      this._scheduleSyncPush();
       return true;
     } catch (e) {
       console.error(`Error writing data for ${key}`, e);
@@ -447,61 +543,97 @@ export const adminData = {
     }
   },
 
-  // ─── Local Network Synchronisation Engine ──────────────────────────────
+  // ─── Global Cloud Synchronisation Engine ──────────────────────────────
+  // Cloud API endpoint (JSONBlob free REST store — no signup, CORS-enabled)
+  CLOUD_URL: 'https://jsonblob.com/api/jsonBlob/019fb7f4-bdd3-7c88-aeec-e6d4e8e5dbdf',
+  KEYS_TO_SYNC: ['siteLogo', 'announcements', 'results', 'gallery', 'testimonials', 'stats', 'features', 'contactInfo', 'courses', 'users', 'popupConfig', 'videoLectures', 'pageImages', 'heroBanners', 'partnerSchools', 'schoolPhotos'],
+
+  _lastSyncTime: 0,
+  _lastFetchAttempt: 0,
+  _backoffDelay: 0,
+  _syncPushTimer: null,
+  _lastSyncSuccess: 0,
+  _lastFetchSuccess: 0,
+  minSyncInterval: 2000,
+  backoffBase: 2000,
+  maxBackoff: 30000,
+
+  // Debounce helper — waits 800ms after the last setData call, then pushes once
+  _scheduleSyncPush() {
+    if (this._syncPushTimer) clearTimeout(this._syncPushTimer);
+    this._syncPushTimer = setTimeout(() => {
+      this.syncToServer().then(ok => {
+        if (ok) console.log('[Cloud] ✅ Data pushed to cloud successfully');
+        else console.warn('[Cloud] ⚠️ Push to cloud failed');
+      });
+    }, 800);
+  },
+
+  _buildPayload() {
+    const payload = {};
+    this.KEYS_TO_SYNC.forEach(k => {
+      const val = localStorage.getItem(PREFIX + k);
+      if (val !== null) {
+        try { payload[k] = JSON.parse(val); } catch { payload[k] = val; }
+      } else if (DEFAULTS[k] !== undefined) {
+        payload[k] = DEFAULTS[k];
+      }
+    });
+    payload._lastUpdated = Date.now();
+    return payload;
+  },
+
   async syncToServer() {
     try {
-      const keysToSync = ['announcements', 'results', 'gallery', 'testimonials', 'stats', 'features', 'contactInfo', 'courses', 'users', 'popupConfig', 'videoLectures', 'pageImages', 'heroBanners', 'partnerSchools'];
-      const payload = {};
-      keysToSync.forEach(k => {
-        const val = localStorage.getItem(PREFIX + k);
-        if (val !== null) {
-          try {
-            payload[k] = JSON.parse(val);
-          } catch {
-            payload[k] = val;
-          }
-        } else if (DEFAULTS[k] !== undefined) {
-          payload[k] = DEFAULTS[k];
-        }
-      });
-      
-      await fetch('/api/sync-data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const payload = this._buildPayload();
+      const response = await fetch(this.CLOUD_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify(payload)
       });
+      if (response.ok) {
+        this._backoffDelay = 0;
+        this._lastSyncSuccess = Date.now();
+        return true;
+      }
+      console.warn('[Cloud] PUT failed:', response.status);
     } catch (e) {
-      // Graceful ignore
+      console.warn('[Cloud] syncToServer network error:', e.message);
     }
+    return false;
   },
 
   async fetchFromServer() {
     try {
-      const res = await fetch('/api/sync-data');
-      if (!res.ok) return null;
-      return await res.json();
-    } catch {
-      return null;
+      const response = await fetch(this.CLOUD_URL, {
+        headers: { 'Accept': 'application/json' },
+        cache: 'no-store'
+      });
+      if (response.ok) {
+        this._backoffDelay = 0;
+        this._lastFetchSuccess = Date.now();
+        return await response.json();
+      }
+      console.warn('[Cloud] GET failed:', response.status);
+    } catch (e) {
+      console.warn('[Cloud] fetchFromServer network error:', e.message);
     }
+    return null;
   },
 
   async syncFromServer() {
     const data = await this.fetchFromServer();
-    if (data && typeof data === 'object' && Object.keys(data).length > 0) {
+    if (data && typeof data === 'object' && Object.keys(data).length > 2) {
       let changed = false;
-      const keysToSync = ['announcements', 'results', 'gallery', 'testimonials', 'stats', 'features', 'contactInfo', 'courses', 'users', 'popupConfig', 'videoLectures', 'pageImages', 'heroBanners'];
-      keysToSync.forEach(k => {
+      this.KEYS_TO_SYNC.forEach(k => {
         const serverVal = data[k];
         if (serverVal !== undefined) {
           const serverValStr = typeof serverVal === 'string' ? serverVal : JSON.stringify(serverVal);
           const localValStr = localStorage.getItem(PREFIX + k);
           if (serverValStr !== localValStr) {
             localStorage.setItem(PREFIX + k, serverValStr);
-            try {
-              this.notifySubscribers(k, JSON.parse(serverValStr));
-            } catch {
-              this.notifySubscribers(k, serverValStr);
-            }
+            try { this.notifySubscribers(k, JSON.parse(serverValStr)); }
+            catch { this.notifySubscribers(k, serverValStr); }
             changed = true;
           }
         }
@@ -511,12 +643,16 @@ export const adminData = {
     return false;
   },
 
+  // Force operations (return promises)
+  async forceSync() { return await this.syncToServer(); },
+  async forceFetch() { return await this.fetchFromServer(); },
+
   initSync(onUpdate) {
-    // 1. Same-tab/same-window custom event listener (instant update everywhere)
+    // 1. Same-tab custom event listener (instant local update)
     const customHandler = () => onUpdate();
     window.addEventListener('noble_admin_data_change', customHandler);
 
-    // 2. Same-device multi-tab local listener (instant storage event)
+    // 2. Same-device multi-tab storage event listener
     const storageHandler = (e) => {
       if (!e.key || e.key.startsWith(PREFIX)) {
         onUpdate();
@@ -524,33 +660,49 @@ export const adminData = {
     };
     window.addEventListener('storage', storageHandler);
 
-    // 3. Initial sync immediately on mount
+    // 3. Immediate cloud pull on mount
     this.syncFromServer().then(changed => {
-      if (changed) onUpdate();
+      if (changed) {
+        console.log('[Cloud] Initial pull — updated local data from cloud');
+        onUpdate();
+      }
     }).catch(() => {});
 
-    // 4. Cross-device poll interval (1.0 second for rapid updates across mobile/tablets)
-    let isPolling = false;
-    const pollInterval = setInterval(async () => {
-      if (isPolling) return;
-      isPolling = true;
+    // 4. Continuous cloud poll loop (every 5s when tab is visible)
+    const self = this;
+    let stopped = false;
+    let pollTimer = null;
+    const POLL_ACTIVE = 5000;   // 5 seconds when tab is visible
+    const POLL_HIDDEN = 15000;  // 15 seconds when tab is hidden
+
+    const runPoll = async () => {
+      if (stopped) return;
       try {
-        const changed = await this.syncFromServer();
+        const changed = await self.syncFromServer();
         if (changed) {
+          console.log('[Cloud] Poll detected changes — updating UI');
           onUpdate();
         }
-      } catch {
-        // Ignore
-      } finally {
-        isPolling = false;
+      } catch {}
+      if (!stopped) {
+        const delay = document.hidden ? POLL_HIDDEN : POLL_ACTIVE;
+        pollTimer = setTimeout(runPoll, delay);
       }
-    }, 1000);
+    };
 
-    return () => {
+    // Start first poll after 2 seconds
+    pollTimer = setTimeout(runPoll, 2000);
+
+    // Cleanup
+    const cleanup = () => {
+      stopped = true;
+      if (pollTimer) clearTimeout(pollTimer);
+      if (self._syncPushTimer) clearTimeout(self._syncPushTimer);
       window.removeEventListener('noble_admin_data_change', customHandler);
       window.removeEventListener('storage', storageHandler);
-      clearInterval(pollInterval);
     };
+
+    return cleanup;
   },
 
   // Import / Export backup utilities

@@ -47,7 +47,7 @@ export default function Results() {
     <div className="pt-24 pb-20 bg-[#F4F6F9] bg-dots-pattern text-[#5A6472]">
       
       {/* Hero Header */}
-      <section className="py-20 text-white text-center relative overflow-hidden bg-cover bg-no-repeat" style={{ backgroundImage: `url('/images/bg-results-hero.png')`, backgroundPosition: 'center 60%' }}>
+      <section className="py-20 text-white text-center relative overflow-hidden bg-cover bg-no-repeat" style={{ backgroundImage: `url('${getEmbedImageUrl('/images/bg-results-hero.png')}')`, backgroundPosition: 'center 60%' }}>
         <div className="absolute inset-0 bg-[#1C2E60]/75 w-full h-full" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <span className="text-[#DC2626] font-extrabold tracking-widest text-xs uppercase bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20">
@@ -65,7 +65,7 @@ export default function Results() {
       {/* Featured Banner: SSC Board 2025 */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16">
         <div className="bg-[#1C2E60] rounded-3xl p-8 sm:p-12 text-white relative overflow-hidden shadow-xl border border-blue-900/50">
-          <div className="absolute inset-0 opacity-10 bg-cover bg-center" style={{ backgroundImage: `url('/images/bg-results-hero.png')` }}></div>
+          <div className="absolute inset-0 opacity-10 bg-cover bg-center" style={{ backgroundImage: `url('${getEmbedImageUrl('/images/bg-results-hero.png')}')` }}></div>
           <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             <div className="lg:col-span-7 space-y-4">
               <span className="bg-red-500/20 text-[#DC2626] border border-red-500/30 text-[10px] font-extrabold uppercase tracking-widest px-3 py-1.5 rounded-full inline-block">
@@ -100,7 +100,7 @@ export default function Results() {
             <div className="lg:col-span-5 flex justify-center">
               <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-4 max-w-xs shadow-2xl hover:scale-105 transition-transform duration-300">
                 <img 
-                  src="/images/shital-result.png" 
+                  src={import.meta.env.BASE_URL + 'images/shital-result.png'}
                   alt="Shital Kumavat - SSC Board 2025 Top Achiever 99.60 PR" 
                   className="rounded-2xl w-full h-auto object-cover select-none pointer-events-none"
                 />

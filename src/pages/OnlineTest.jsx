@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FiPlay, FiCheck, FiRefreshCw, FiAward } from 'react-icons/fi';
+import { getEmbedImageUrl } from '../utils/imageUrl';
 
 export default function OnlineTest() {
   const [testStarted, setTestStarted] = useState(false);
@@ -61,8 +62,8 @@ export default function OnlineTest() {
     <div className="pt-24 pb-20 bg-[#F4F6F9] text-[#5A6472]">
       
       {/* Hero Header */}
-      <section className="py-20 bg-gradient-to-br from-[#0A1E3D] via-[#1C2E60] to-[#0A1E3D] text-white text-center relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-500/5 via-transparent to-transparent pointer-events-none" />
+      <section className="py-20 text-white text-center relative overflow-hidden bg-cover bg-no-repeat" style={{ backgroundImage: `url('${getEmbedImageUrl('/images/bg-courses-hero.png')}')`, backgroundPosition: 'center 60%' }}>
+        <div className="absolute inset-0 bg-[#1C2E60]/85 w-full h-full" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <span className="text-[#DC2626] font-extrabold tracking-widest text-xs uppercase bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20">
             Online Test Portal

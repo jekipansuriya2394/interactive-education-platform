@@ -2,18 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { FiPhone, FiMapPin, FiMessageCircle, FiFacebook, FiInstagram, FiYoutube } from 'react-icons/fi';
 import { contactData } from '../data/contactData';
 import { adminData } from '../utils/adminData';
+import { logoWhite, getLogoUrl } from '../utils/logo';
 
 export default function Footer() {
   const [contact, setContact] = useState(() => adminData.getData('contactInfo') || contactData);
+  const [siteLogo, setSiteLogo] = useState(() => getLogoUrl(true));
 
   useEffect(() => {
-    const refreshContact = () => setContact(adminData.getData('contactInfo') || contactData);
-    refreshContact();
-    const cleanup = adminData.initSync(refreshContact);
+    const refresh = () => {
+      setContact(adminData.getData('contactInfo') || contactData);
+      setSiteLogo(getLogoUrl(true));
+    };
+    refresh();
+    const cleanup = adminData.initSync(refresh);
     return () => {
       if (typeof cleanup === 'function') cleanup();
     };
   }, []);
+
   const quickLinks = [
     { name: 'Home', href: '/' },
     { name: 'About Us', href: '/about' },
@@ -40,8 +46,10 @@ export default function Footer() {
         {/* Col 1: Brand Info */}
         <div className="lg:col-span-4">
           <div className="flex items-center mb-6">
-            <img src="/images/logo-white.png" alt="Noble Education Logo" className="h-10 w-auto object-contain" />
+            <img src={siteLogo} alt="Noble Education Logo" className="h-10 max-w-[200px] w-auto object-contain" />
+
           </div>
+
           <p className="text-zinc-400 text-sm leading-relaxed mb-6 font-light max-w-sm">
             Noble Education provides coaching, academic support, competitive exam preparation, and career guidance. We are your trusted partner for coaching, guidance & career success in Vadodara.
           </p>

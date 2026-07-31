@@ -1,38 +1,44 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { HiMenu, HiX, HiChevronDown, HiTranslate } from 'react-icons/hi';
 import { FiPhone, FiCalendar, FiMessageCircle, FiBookOpen, FiCompass, FiHeart, FiCpu, FiBriefcase, FiFileText, FiAward, FiTrendingUp, FiMapPin, FiUsers, FiCheckCircle, FiSettings, FiList, FiLock, FiPlay, FiMessageSquare } from 'react-icons/fi';
-import { navigate } from '../utils/router';
+import { navigate, normalizePathFromLocation } from '../utils/router';
 import { adminData } from '../utils/adminData';
+import { logoWhite, getLogoUrl } from '../utils/logo';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [hoveredMenu, setHoveredMenu] = useState(null);
   const [expandedMobileMenu, setExpandedMobileMenu] = useState(null);
-  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+  const [currentPath, setCurrentPath] = useState(normalizePathFromLocation(window.location.pathname));
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
+  const [siteLogo, setSiteLogo] = useState(() => getLogoUrl(true));
 
-  // Fetch live announcements from admin panel with real-time sync
+  // Fetch live announcements & logo from admin panel with real-time sync
   const [announcements, setAnnouncements] = useState(() => adminData.getData('announcements') || []);
 
   useEffect(() => {
-    const refreshAnn = () => setAnnouncements(adminData.getData('announcements') || []);
-    refreshAnn();
-    const cleanup = adminData.initSync(refreshAnn);
+    const refresh = () => {
+      setAnnouncements(adminData.getData('announcements') || []);
+      setSiteLogo(getLogoUrl(true));
+    };
+    refresh();
+    const cleanup = adminData.initSync(refresh);
     return () => {
       if (typeof cleanup === 'function') cleanup();
     };
   }, []);
 
+
   const languages = [
     { code: 'en', name: 'English' },
     { code: 'gu', name: 'ગુજરાતી' },
-    { code: 'hi', name: 'हिन्दी' },
-    { code: 'mr', name: 'मराठी' },
+    { code: 'hi', name: 'હિન્‍દી' },
+    { code: 'mr', name: 'મરાઠી' },
     { code: 'ta', name: 'தமிழ்' },
     { code: 'te', name: 'తెలుగు' },
     { code: 'ml', name: 'മലയാളം' },
-    { code: 'kn', name: 'ಕನ್ನಡ' }
+    { code: 'kn', name: 'કન્નડ' }
   ];
 
   const handleLangChange = (code) => {
@@ -62,7 +68,7 @@ export default function Navbar() {
     };
     
     const handleLocationChange = () => {
-      setCurrentPath(window.location.pathname);
+      setCurrentPath(normalizePathFromLocation(window.location.pathname));
     };
 
     window.addEventListener('scroll', handleScroll);
@@ -87,7 +93,7 @@ export default function Navbar() {
     setIsOpen(false);
     setHoveredMenu(null);
     navigate(path);
-    setCurrentPath(window.location.pathname);
+    setCurrentPath(normalizePathFromLocation(window.location.pathname));
   };
 
   const handleMouseEnter = (menuName) => {
@@ -181,6 +187,7 @@ export default function Navbar() {
         }
       ]
     },
+    { name: 'Admin', href: '/admin', icon: FiLock },
     { name: 'Contact', href: '/contact' }
   ];
 
@@ -213,8 +220,9 @@ export default function Navbar() {
             
             {/* Left: Logo */}
             <div className="flex-shrink-0 cursor-pointer flex items-center" onClick={(e) => handleNav(e, '/')}>
-              <img src="/images/logo-white.png" alt="Noble Education" className="h-[38px] md:h-[45px] w-auto object-contain" />
+              <img src={siteLogo} alt="Noble Education" className="h-[38px] md:h-[45px] max-w-[220px] w-auto object-contain" />
             </div>
+
 
             {/* Center: Desktop Menu (Vertically aligned) */}
             <div className="hidden lg:flex items-center gap-2 xl:gap-4.5 h-full flex-shrink-0">
