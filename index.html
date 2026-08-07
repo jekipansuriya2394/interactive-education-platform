@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <link rel="icon" type="image/svg+xml" href="/interactive-education-platform/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <script type="text/javascript">
+      // Force auto-reload if asset chunk fails due to new deployment
+      window.addEventListener('error', function(e) {
+        if (e && e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK')) {
+          if (!sessionStorage.getItem('noble_asset_reloaded')) {
+            sessionStorage.setItem('noble_asset_reloaded', 'true');
+            window.location.reload(true);
+          }
+        }
+      }, true);
+    </script>
+
+    
+    <!-- GitHub Pages SPA Route Restorer -->
+    <script type="text/javascript">
+      (function(l) {
+        if (l.search[1] === 'p') {
+          var decoded = l.search.slice(1).split('&').map(function(s) {
+            return s.replace(/~and~/g, '&');
+          }).filter(function(s) {
+            return s.slice(0, 2) === 'p=';
+          })[0];
+          if (decoded) {
+            var path = decodeURIComponent(decoded.slice(2));
+            var q = l.search.slice(1).split('&').filter(function(s) {
+              return s.slice(0, 2) === 'q=';
+            })[0];
+            var search = q ? '?' + q.slice(2).replace(/~and~/g, '&') : '';
+            var basePath = l.pathname.endsWith('/') ? l.pathname.slice(0, -1) : l.pathname;
+            var cleanPath = path.startsWith('/') ? path : '/' + path;
+            window.history.replaceState(null, null, basePath + cleanPath + search + l.hash);
+          }
+        }
+      }(window.location));
+    </script>
+
+
+    <!-- SEO Meta Tags -->
+    <title>Noble Education Vadodara | Coaching, Diploma, DDCET, NEET, JEE & Career Guidance</title>
+    <meta name="description" content="Noble Education in Vadodara provides coaching for school students, 11th and 12th Science, Diploma Engineering, DDCET, NEET, JEE, GUJCET, career guidance, and admission support with online and offline classes." />
+    <meta name="keywords" content="Noble Education Vadodara, Coaching classes in Vadodara, Diploma coaching Vadodara, DDCET coaching Vadodara, NEET coaching Vadodara, JEE coaching Vadodara, GUJCET coaching, Career guidance after 10th, Diploma admission guidance, 11th science coaching, 12th science coaching, Online offline coaching Vadodara" />
+    
+    <!-- Open Graph / Facebook / Twitter -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Noble Education Vadodara | Elite Coaching & Career Guidance" />
+    <meta property="og:description" content="Expert academic coaching, DDCET guidance, diploma engineering support, NEET/JEE/GUJCET classes, and pathfinding career counseling in Vadodara." />
+    <meta property="og:image" content="/interactive-education-platform/images/logo.png" />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Google Translate Element Loader -->
+    <!-- Google Translate Element Loader & React Crash Fix -->
+    <script type="text/javascript">
+      window.googleTranslateElementInit = function() {
+        new google.translate.TranslateElement({
+          pageLanguage: 'en',
+          includedLanguages: 'en,gu,hi,mr,ta,te,kn,ml',
+          layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+          autoDisplay: false
+        }, 'google_translate_element');
+      }
+
+      // Prevents React from crashing (blank white canvas) when Google Translate mutates text nodes
+      if (typeof Node === 'function' && Node.prototype) {
+        const originalRemoveChild = Node.prototype.removeChild;
+        Node.prototype.removeChild = function(child) {
+          if (child.parentNode !== this) {
+            return child;
+          }
+          return originalRemoveChild.call(this, child);
+        };
+        const originalInsertBefore = Node.prototype.insertBefore;
+        Node.prototype.insertBefore = function(newNode, referenceNode) {
+          if (referenceNode && referenceNode.parentNode !== this) {
+            return newNode;
+          }
+          return originalInsertBefore.call(this, newNode, referenceNode);
+        };
+      }
+
+      // Forcefully remove Google Translate inline body/html layout shifts
+      const forceResetStyles = () => {
+        if (document.body && (document.body.style.top || document.body.style.marginTop)) {
+          document.body.style.top = '0px';
+          document.body.style.marginTop = '0px';
+        }
+        if (document.documentElement && (document.documentElement.style.top || document.documentElement.style.marginTop)) {
+          document.documentElement.style.top = '0px';
+          document.documentElement.style.marginTop = '0px';
+        }
+      };
+      
+      setInterval(forceResetStyles, 100);
+    </script>
+    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+    <script type="module" crossorigin src="/interactive-education-platform/assets/index-BywxgIWt.js"></script>
+    <link rel="stylesheet" crossorigin href="/interactive-education-platform/assets/index-DUw9xzqM.css">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      (function(){
+        const removeOverlay = () => {
+          const el = document.getElementById('noble-loading-overlay');
+          if (el) { el.style.display = 'none'; window.__noble_loader_removed_by_fallback = true; return true; }
+          return false;
+        };
+        let attempts = 0;
+        const iv = setInterval(() => {
+          if (removeOverlay() || attempts++ > 24) clearInterval(iv);
+        }, 500);
+        setTimeout(() => { removeOverlay(); }, 12000);
+      })();
+    </script>
+  </body>
+</html>
