@@ -4,12 +4,13 @@ import { contactData } from '../data/contactData';
 import { statsData } from '../data/statsData';
 import { featuresData } from '../data/featuresData';
 import { coursesData } from '../data/coursesData';
-import { getFirebaseUrl, setFirebaseUrl } from './firebaseConfig';
-import { gitSyncService } from '../services/gitSyncService';
+import { getFirebaseUrl } from './firebaseConfig';
+import { commitContent } from '../services/gitSyncService';
 
 const PREFIX = 'noble_admin_';
 
 const DEFAULTS = {
+  blogPosts: [],
   siteLogo: null,
   announcements: [
 
@@ -538,7 +539,7 @@ export const adminData = {
       this.syncToServer();
       // 2. Commit & push changes to Git Repository via Worker API
       try {
-        gitSyncService.commitContent(key, value, `cms: update ${key} content`);
+        commitContent(`content/${key}.json`, value, `chore(cms): update ${key} content`).catch(() => {});
       } catch (e) {}
       return true;
     } catch (e) {

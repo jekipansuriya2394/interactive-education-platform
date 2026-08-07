@@ -1,42 +1,35 @@
-name: Deploy Production Website to GitHub Pages
-
+name: Deploy to GitHub Pages
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
-
 permissions:
   contents: write
   pages: write
   id-token: write
-
 concurrency:
-  group: "pages"
+  group: pages
   cancel-in-progress: true
-
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js Environment
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '20'
           cache: 'npm'
-
-      - name: Install Dependencies
-        run: npm ci
-
-      - name: Build Vite Website & CMS
-        run: npm run build
-
-      - name: Deploy to GitHub Pages Branch (gh-pages)
+      - run: npm ci
+      - run: npm run build
+        env:
+          VITE_WORKER_URL: ${{ secrets.VITE_WORKER_URL }}
+          VITE_GH_OWNER: jekipansuriya2394
+          VITE_GH_REPO: interactive-education-platform
+          VITE_GH_BRANCH: main
+      - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
           force_orphan: true
+          cname: ''

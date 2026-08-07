@@ -16,6 +16,7 @@ import Contact from './pages/Contact';
 import SchoolDetail from './pages/SchoolDetail';
 
 import AdminPanel from './pages/AdminPanel';
+import BlogPage from './components/BlogPage';
 
 import { FiPhone, FiFileText } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
@@ -127,6 +128,8 @@ export default function App() {
         return <OnlineTest />;
       case '/contact':
         return <Contact />;
+      case '/blog':
+        return <BlogPage />;
       case '/admin':
         return <AdminPanel />;
       default:

@@ -9,7 +9,7 @@ import {
 } from 'react-icons/fi';
 import { adminData } from '../utils/adminData';
 import { inquiryService } from '../utils/inquiryService';
-import { gitSyncService } from '../services/gitSyncService';
+import { commitContent, getDeploymentStatus, getCommitLog, uploadMedia, checkWorkerHealth } from '../services/gitSyncService';
 import { getWorkerUrl, setWorkerUrl } from '../services/apiClient';
 import { getEmbedImageUrl, detectImageUrlSource, handleImageError, FALLBACK_SLIDE_SVG } from '../utils/imageUrl';
 import { logoWhite, getLogoUrl } from '../utils/logo';
@@ -125,6 +125,18 @@ function AdminPanel({ onLogout }) {
   const [heroBanners, setHeroBanners] = useState(() => adminData.getData('heroBanners') || []);
   const [partnerSchools, setPartnerSchools] = useState(() => adminData.getData('partnerSchools') || []);
   const [schoolPhotos, setSchoolPhotos] = useState(() => adminData.getData('schoolPhotos') || []);
+  const [blogPosts, setBlogPosts] = useState(() => adminData.getData('blogPosts') || []);
+  const [deploymentRuns, setDeploymentRuns] = useState([]);
+  const [commitLog, setCommitLog] = useState([]);
+  const [workerHealth, setWorkerHealth] = useState({ ok: null, latencyMs: 0 });
+  const [auditLog, setAuditLog] = useState([]);
+  const [seoConfig, setSeoConfig] = useState(() => {
+    try { const r = localStorage.getItem('noble_seo_config'); return r ? JSON.parse(r) : {}; } catch { return {}; }
+  });
+  const [editingBlogPost, setEditingBlogPost] = useState(null);
+  const [mediaFiles, setMediaFiles] = useState([]);
+  const [mediaUploading, setMediaUploading] = useState(false);
+  const [deploymentLoading, setDeploymentLoading] = useState(false);
   const [schoolPhotoFilter, setSchoolPhotoFilter] = useState('All');
   const [editingSchoolPhoto, setEditingSchoolPhoto] = useState(null);
   const [activePhotoSubTab, setActivePhotoSubTab] = useState('schoolPhotos');
@@ -248,7 +260,13 @@ function AdminPanel({ onLogout }) {
     setHeroBanners(adminData.getData('heroBanners') || []);
     setPartnerSchools(adminData.getData('partnerSchools') || []);
     setSchoolPhotos(adminData.getData('schoolPhotos') || []);
+    setBlogPosts(adminData.getData('blogPosts') || []);
     setSiteLogo(getLogoUrl(true));
+    // Load audit log from localStorage
+    try {
+      const raw = localStorage.getItem('noble_cms_audit_log');
+      setAuditLog(raw ? JSON.parse(raw) : []);
+    } catch { setAuditLog([]); }
   };
 
 
@@ -319,6 +337,11 @@ function AdminPanel({ onLogout }) {
     { key: 'courses',       label: 'Courses',              icon: FiBookOpen,     color: '#06B6D4' },
     { key: 'stats',         label: 'Stats / Counters',     icon: FiTrendingUp,   color: '#F97316' },
     { key: 'features',      label: 'Why Choose Us',        icon: FiCheckCircle,  color: '#22D3EE' },
+    { key: 'blog',          label: 'Blog Posts',           icon: FiFileText,     color: '#A78BFA', badge: Array.isArray(blogPosts) ? blogPosts.length : 0 },
+    { key: 'mediaLibrary',  label: 'Media Library',        icon: FiImage,        color: '#F472B6' },
+    { key: 'seo',           label: 'SEO Manager',          icon: FiSearch,       color: '#34D399' },
+    { key: 'deployment',    label: 'Deployment Status',    icon: FiExternalLink, color: '#60A5FA' },
+    { key: 'auditLog',      label: 'Audit Log',            icon: FiLayers,       color: '#94A3B8' },
     { key: 'contactInfo',   label: 'Contact Info',         icon: FiPhone,        color: '#34D399' },
     { key: 'inquiries',     label: 'Inquiries',            icon: FiInbox,        color: '#A78BFA', badge: Array.isArray(inquiries) ? inquiries.length : 0 },
     { key: 'videos',        label: 'Video Lectures',       icon: FiVideo,        color: '#EF4444' },
@@ -1403,6 +1426,424 @@ function AdminPanel({ onLogout }) {
       </div>
     );
   };
+
+  // ─── BLOG POSTS ──────────────────────────────────────────────────────────
+  const slugify = (text) => text.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').substring(0, 60);
+
+  const saveBlogPost = (post) => {
+    const isEdit = !!post._index !== undefined && post._index >= 0;
+    const slug = post.slug || slugify(post.title);
+    const now  = new Date().toISOString();
+    const clean = { slug, title: post.title, excerpt: post.excerpt, content: post.content,
+      featuredImage: post.featuredImage || '', category: post.category || 'General',
+      author: post.author || 'Noble Education', authorAvatar: post.authorAvatar || '',
+      publishedAt: post.publishedAt || now, updatedAt: now,
+      status: post.status || 'draft', tags: post.tags || [], readTimeMinutes: post.readTimeMinutes || 3,
+      seo: { metaTitle: post.seo?.metaTitle || post.title, metaDescription: post.seo?.metaDescription || post.excerpt }
+    };
+    const updated = isEdit
+      ? blogPosts.map((p, i) => i === post._index ? clean : p)
+      : [...blogPosts, clean];
+    adminData.setData('blogPosts', updated);
+    setBlogPosts(updated);
+    setEditingBlogPost(null);
+    showToast(`Blog post "${clean.title}" ${clean.status === 'published' ? 'published' : 'saved as draft'}!`);
+  };
+
+  const deleteBlogPost = (i) => {
+    if (!window.confirm('Delete this blog post?')) return;
+    const updated = blogPosts.filter((_, x) => x !== i);
+    adminData.setData('blogPosts', updated);
+    setBlogPosts(updated);
+    showToast('Blog post deleted.', 'error');
+  };
+
+  const renderBlog = () => {
+    const BLOG_CATS = ['General', 'Education Tips', 'Exam Guides', 'Results', 'Events', 'Announcements'];
+    const emptyPost = { title:'', slug:'', excerpt:'', content:'', featuredImage:'', category:'General', author:'Noble Education', status:'draft', tags:[], readTimeMinutes:3, seo:{metaTitle:'',metaDescription:''} };
+
+    if (editingBlogPost !== null) {
+      const post = { ...emptyPost, ...(editingBlogPost === 'new' ? {} : editingBlogPost) };
+      const isNew = editingBlogPost === 'new';
+      return (
+        <div style={{ maxWidth: 780, padding: '0 0 40px' }}>
+          <button onClick={() => setEditingBlogPost(null)} className="ap-btn-secondary" style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <FiArrowLeft size={14} /> Back to Posts
+          </button>
+          <SectionHeader title={isNew ? 'New Blog Post' : `Edit: ${post.title}`} subtitle="Fill all fields. Draft posts are saved but not shown on the live site." />
+          <div className="ap-card" style={{ marginTop: 16 }}>
+            <div className="ap-form-grid">
+              <div className="ap-form-col">
+                <label className="ap-label">Title *</label>
+                <input className="ap-input" defaultValue={post.title} id="bp-title" placeholder="Post title..." />
+              </div>
+              <div className="ap-form-col">
+                <label className="ap-label">Slug (URL)</label>
+                <input className="ap-input" defaultValue={post.slug} id="bp-slug" placeholder="auto-generated-from-title" />
+              </div>
+              <div className="ap-form-col">
+                <label className="ap-label">Category</label>
+                <select className="ap-input" defaultValue={post.category} id="bp-cat">
+                  {BLOG_CATS.map(c => <option key={c}>{c}</option>)}
+                </select>
+              </div>
+              <div className="ap-form-col">
+                <label className="ap-label">Status</label>
+                <select className="ap-input" defaultValue={post.status} id="bp-status">
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
+                </select>
+              </div>
+              <div className="ap-form-col" style={{ gridColumn: '1/-1' }}>
+                <label className="ap-label">Featured Image URL</label>
+                <input className="ap-input" defaultValue={post.featuredImage} id="bp-img" placeholder="https://... or /images/..." />
+              </div>
+              <div className="ap-form-col">
+                <label className="ap-label">Author</label>
+                <input className="ap-input" defaultValue={post.author} id="bp-author" />
+              </div>
+              <div className="ap-form-col">
+                <label className="ap-label">Read Time (minutes)</label>
+                <input className="ap-input" type="number" min="1" max="60" defaultValue={post.readTimeMinutes} id="bp-rt" />
+              </div>
+              <div className="ap-form-col" style={{ gridColumn: '1/-1' }}>
+                <label className="ap-label">Excerpt (shown in listing)</label>
+                <textarea className="ap-input" rows={2} defaultValue={post.excerpt} id="bp-excerpt" placeholder="Short summary of the post..." />
+              </div>
+              <div className="ap-form-col" style={{ gridColumn: '1/-1' }}>
+                <label className="ap-label">Content (HTML supported)</label>
+                <textarea className="ap-input" rows={10} defaultValue={post.content} id="bp-content" placeholder="<p>Full post content here...</p>" style={{ fontFamily: 'monospace', fontSize: 13 }} />
+              </div>
+              <div className="ap-form-col">
+                <label className="ap-label">SEO Meta Title</label>
+                <input className="ap-input" defaultValue={post.seo?.metaTitle} id="bp-seo-title" />
+              </div>
+              <div className="ap-form-col">
+                <label className="ap-label">SEO Meta Description</label>
+                <input className="ap-input" defaultValue={post.seo?.metaDescription} id="bp-seo-desc" />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+              <button className="ap-btn-primary" onClick={() => {
+                const g = (id) => document.getElementById(id)?.value || '';
+                const title = g('bp-title');
+                if (!title.trim()) { showToast('Title is required', 'error'); return; }
+                const draft = {
+                  ...post,
+                  _index: isNew ? undefined : post._index,
+                  title, slug: g('bp-slug') || slugify(title),
+                  excerpt: g('bp-excerpt'), content: g('bp-content'),
+                  featuredImage: g('bp-img'), category: g('bp-cat'),
+                  author: g('bp-author'), status: g('bp-status'),
+                  readTimeMinutes: parseInt(g('bp-rt')) || 3,
+                  seo: { metaTitle: g('bp-seo-title') || title, metaDescription: g('bp-seo-desc') }
+                };
+                saveBlogPost(draft);
+              }}>
+                <FiSave size={14} /> Save Post
+              </button>
+              <button className="ap-btn-secondary" onClick={() => setEditingBlogPost(null)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        <SectionHeader title="Blog Posts" subtitle={`${blogPosts.length} post(s) — published posts appear on the /blog page`}
+          action={<button className="ap-btn-primary" onClick={() => setEditingBlogPost('new')}><FiPlus size={14}/> New Post</button>}
+        />
+        {blogPosts.length === 0 ? (
+          <EmptyState icon={FiFileText} message="No blog posts yet. Click 'New Post' to get started." />
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 16 }}>
+            {blogPosts.map((p, i) => (
+              <div key={i} className="ap-card" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                {p.featuredImage && <img src={p.featuredImage} alt="" style={{ width: 80, height: 56, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }} />}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: '#fff', marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <span style={{ fontSize: 11, background: p.status === 'published' ? '#059669' : '#B45309', color: '#fff', borderRadius: 4, padding: '2px 8px', fontWeight: 700 }}>{p.status?.toUpperCase()}</span>
+                    <span style={{ fontSize: 11, color: '#94A3B8' }}>{p.category}</span>
+                    <span style={{ fontSize: 11, color: '#64748B' }}>{p.publishedAt ? new Date(p.publishedAt).toLocaleDateString('en-IN') : ''}</span>
+                    <span style={{ fontSize: 11, color: '#64748B' }}>{p.readTimeMinutes} min read</span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                  <button className="ap-icon-btn" title="Edit" onClick={() => setEditingBlogPost({ ...p, _index: i })}><FiEdit2 size={15}/></button>
+                  <button className="ap-icon-btn ap-icon-btn-danger" title="Delete" onClick={() => deleteBlogPost(i)}><FiTrash2 size={15}/></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ─── MEDIA LIBRARY ──────────────────────────────────────────────────────
+  const mediaInputRef = useRef(null);
+  const MEDIA_FOLDERS = ['hero', 'gallery', 'faculty', 'courses', 'events', 'documents', 'uploads'];
+
+  const [mediaFolder, setMediaFolder] = useState('gallery');
+
+  const handleMediaUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setMediaUploading(true);
+    let successCount = 0;
+    for (const file of files) {
+      try {
+        const result = await uploadMedia(file, mediaFolder);
+        if (result.success || result.path) {
+          successCount++;
+          setMediaFiles(prev => [...prev, { name: file.name, path: result.path || `/images/${mediaFolder}/${file.name}`, size: file.size, type: file.type, uploadedAt: new Date().toISOString() }]);
+        }
+      } catch (err) {
+        showToast(`Upload failed for ${file.name}: ${err.message}`, 'error');
+      }
+    }
+    setMediaUploading(false);
+    if (successCount > 0) showToast(`${successCount} file(s) uploaded to /images/${mediaFolder}/ successfully!`);
+    e.target.value = '';
+  };
+
+  const renderMediaLibrary = () => (
+    <div>
+      <SectionHeader title="Media Library" subtitle="Upload images to the GitHub repository. They'll be live after deployment." />
+      <div className="ap-card" style={{ marginBottom: 20 }}>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+          <div>
+            <label className="ap-label">Target Folder</label>
+            <select className="ap-input" value={mediaFolder} onChange={e => setMediaFolder(e.target.value)} style={{ minWidth: 160 }}>
+              {MEDIA_FOLDERS.map(f => <option key={f} value={f}>/images/{f}/</option>)}
+            </select>
+          </div>
+          <div>
+            <button className="ap-btn-primary" disabled={mediaUploading} onClick={() => mediaInputRef.current?.click()}>
+              {mediaUploading ? <><FiRefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }}/> Uploading...</> : <><FiUpload size={14}/> Upload Files</>}
+            </button>
+            <input ref={mediaInputRef} type="file" multiple accept="image/*,application/pdf" style={{ display: 'none' }} onChange={handleMediaUpload} />
+          </div>
+        </div>
+        <p style={{ fontSize: 12, color: '#64748B', marginTop: 8 }}>
+          Supported: JPG, PNG, WebP, SVG, PDF. Images are committed to /public/images/{mediaFolder}/ in your repository and go live after the next GitHub Actions deploy.
+        </p>
+      </div>
+      {mediaFiles.length > 0 ? (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(140px,1fr))', gap: 12 }}>
+          {mediaFiles.map((f, i) => (
+            <div key={i} className="ap-card" style={{ padding: 10, textAlign: 'center' }}>
+              {f.type?.startsWith('image/') ? (
+                <img src={f.path} alt={f.name} style={{ width: '100%', height: 80, objectFit: 'cover', borderRadius: 6, marginBottom: 6 }} />
+              ) : (
+                <div style={{ height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1E293B', borderRadius: 6, marginBottom: 6 }}>
+                  <FiFileText size={32} color="#64748B" />
+                </div>
+              )}
+              <div style={{ fontSize: 11, color: '#94A3B8', wordBreak: 'break-all' }}>{f.name}</div>
+              <div style={{ fontSize: 10, color: '#475569', marginTop: 4 }}>{(f.size / 1024).toFixed(1)} KB</div>
+              <button className="ap-icon-btn ap-icon-btn-danger" title="Copy Path" style={{ marginTop: 6, width: '100%', fontSize: 11 }}
+                onClick={() => { navigator.clipboard?.writeText(f.path); showToast('Path copied!'); }}>
+                <FiLink size={11} /> Copy Path
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <EmptyState icon={FiImage} message="No files uploaded in this session. Upload files above to add them to your repo." />
+      )}
+    </div>
+  );
+
+  // ─── SEO MANAGER ────────────────────────────────────────────────────────
+  const SEO_PAGES = ['home', 'about', 'courses', 'gallery', 'results', 'contact', 'blog', 'admission'];
+
+  const saveSeoConfig = () => {
+    const config = { pages: {} };
+    SEO_PAGES.forEach(page => {
+      config.pages[page] = {
+        title:           document.getElementById(`seo-${page}-title`)?.value || '',
+        description:     document.getElementById(`seo-${page}-desc`)?.value || '',
+        ogImage:         document.getElementById(`seo-${page}-img`)?.value || '',
+        canonical:       document.getElementById(`seo-${page}-canonical`)?.value || '',
+      };
+    });
+    config.default = {
+      title:       document.getElementById('seo-default-title')?.value || 'Noble Education',
+      description: document.getElementById('seo-default-desc')?.value || '',
+      ogImage:     document.getElementById('seo-default-img')?.value || '',
+    };
+    try { localStorage.setItem('noble_seo_config', JSON.stringify(config)); } catch {}
+    setSeoConfig(config);
+    adminData.setData('seoConfig', config);
+    showToast('SEO configuration saved! Changes will go live after next deploy.');
+  };
+
+  const renderSEO = () => (
+    <div>
+      <SectionHeader title="SEO Manager" subtitle="Manage meta titles, descriptions, and Open Graph images for every page."
+        action={<button className="ap-btn-primary" onClick={saveSeoConfig}><FiSave size={14}/> Save All SEO</button>}
+      />
+      <div className="ap-card" style={{ marginBottom: 20 }}>
+        <h3 style={{ color: '#fff', fontSize: 14, fontWeight: 700, marginBottom: 12 }}>🌐 Site-Wide Defaults</h3>
+        <div className="ap-form-grid">
+          <div className="ap-form-col">
+            <label className="ap-label">Default Meta Title</label>
+            <input className="ap-input" id="seo-default-title" defaultValue={seoConfig?.default?.title || 'Noble Education — Vadodara\'s Premier Coaching Institute'} />
+          </div>
+          <div className="ap-form-col">
+            <label className="ap-label">Default OG Image URL</label>
+            <input className="ap-input" id="seo-default-img" defaultValue={seoConfig?.default?.ogImage || ''} placeholder="/images/og-default.jpg" />
+          </div>
+          <div className="ap-form-col" style={{ gridColumn: '1/-1' }}>
+            <label className="ap-label">Default Meta Description</label>
+            <textarea className="ap-input" rows={2} id="seo-default-desc" defaultValue={seoConfig?.default?.description || 'Noble Education — Vadodara\'s top-ranked coaching for Std 8-12 Science, NEET, JEE, Diploma, Degree and more.'} />
+          </div>
+        </div>
+      </div>
+      {SEO_PAGES.map(page => (
+        <div key={page} className="ap-card" style={{ marginBottom: 12 }}>
+          <h3 style={{ color: '#fff', fontSize: 14, fontWeight: 700, marginBottom: 12, textTransform: 'capitalize' }}>📄 /{page} Page</h3>
+          <div className="ap-form-grid">
+            <div className="ap-form-col">
+              <label className="ap-label">Meta Title</label>
+              <input className="ap-input" id={`seo-${page}-title`} defaultValue={seoConfig?.pages?.[page]?.title || ''} placeholder={`Noble Education — ${page.charAt(0).toUpperCase() + page.slice(1)}`} />
+            </div>
+            <div className="ap-form-col">
+              <label className="ap-label">OG Image URL</label>
+              <input className="ap-input" id={`seo-${page}-img`} defaultValue={seoConfig?.pages?.[page]?.ogImage || ''} placeholder="/images/og-home.jpg" />
+            </div>
+            <div className="ap-form-col">
+              <label className="ap-label">Meta Description</label>
+              <textarea className="ap-input" rows={2} id={`seo-${page}-desc`} defaultValue={seoConfig?.pages?.[page]?.description || ''} placeholder="150-160 character description..." />
+            </div>
+            <div className="ap-form-col">
+              <label className="ap-label">Canonical URL</label>
+              <input className="ap-input" id={`seo-${page}-canonical`} defaultValue={seoConfig?.pages?.[page]?.canonical || ''} placeholder={`https://jekipansuriya2394.github.io/interactive-education-platform/${page}`} />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  // ─── DEPLOYMENT STATUS ────────────────────────────────────────────────────
+  const loadDeploymentData = async () => {
+    setDeploymentLoading(true);
+    try {
+      const [runsRes, logRes, healthRes] = await Promise.allSettled([
+        getDeploymentStatus(), getCommitLog(), checkWorkerHealth()
+      ]);
+      if (runsRes.status === 'fulfilled' && runsRes.value?.runs) setDeploymentRuns(runsRes.value.runs);
+      if (logRes.status === 'fulfilled' && logRes.value?.commits) setCommitLog(logRes.value.commits);
+      if (healthRes.status === 'fulfilled') setWorkerHealth(healthRes.value);
+    } catch { /* ignore */ }
+    setDeploymentLoading(false);
+  };
+
+  const STATUS_COLORS = { success: '#059669', failure: '#DC2626', in_progress: '#F59E0B', queued: '#6366F1', completed: '#059669' };
+  const STATUS_EMOJI  = { success: '✅', failure: '❌', in_progress: '🔄', queued: '⏳', cancelled: '⛔', completed: '✅' };
+
+  const renderDeployment = () => (
+    <div>
+      <SectionHeader title="Deployment Status" subtitle="Live GitHub Actions runs and commit history from your repository."
+        action={<button className="ap-btn-secondary" onClick={loadDeploymentData} disabled={deploymentLoading}>
+          <FiRefreshCw size={14} style={deploymentLoading ? { animation: 'spin 1s linear infinite' } : {}} /> Refresh
+        </button>}
+      />
+      {/* Worker Health */}
+      <div className="ap-card" style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ width: 12, height: 12, borderRadius: '50%', background: workerHealth.ok === null ? '#64748B' : workerHealth.ok ? '#059669' : '#DC2626', flexShrink: 0 }} />
+        <div>
+          <div style={{ fontWeight: 700, color: '#fff', fontSize: 14 }}>
+            Cloudflare Worker: {workerHealth.ok === null ? 'Not checked' : workerHealth.ok ? '● Online' : '● Offline'}
+          </div>
+          {workerHealth.latencyMs > 0 && <div style={{ fontSize: 12, color: '#64748B' }}>Latency: {workerHealth.latencyMs}ms</div>}
+        </div>
+        <button className="ap-btn-secondary" style={{ marginLeft: 'auto' }} onClick={loadDeploymentData}>Check Status</button>
+      </div>
+      {/* GitHub Actions Runs */}
+      <h3 style={{ color: '#fff', fontSize: 14, fontWeight: 700, marginBottom: 12 }}>🚀 Recent Deployments</h3>
+      {deploymentRuns.length === 0 ? (
+        <div className="ap-card" style={{ textAlign: 'center', padding: 32 }}>
+          <p style={{ color: '#64748B', fontSize: 14 }}>
+            {deploymentLoading ? 'Loading...' : 'Click "Refresh" to load GitHub Actions deployment runs. Make sure your Worker URL is configured in Settings.'}
+          </p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+          {deploymentRuns.map((run, i) => (
+            <div key={i} className="ap-card" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: 20 }}>{STATUS_EMOJI[run.conclusion || run.status] || '⚪'}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 600, color: '#fff', fontSize: 14 }}>{run.name}</div>
+                <div style={{ fontSize: 12, color: '#64748B' }}>
+                  {run.status} {run.conclusion ? `· ${run.conclusion}` : ''} · {run.created_at ? new Date(run.created_at).toLocaleString('en-IN') : ''}
+                </div>
+              </div>
+              {run.html_url && (
+                <a href={run.html_url} target="_blank" rel="noopener noreferrer" className="ap-btn-secondary" style={{ fontSize: 12, padding: '4px 10px' }}>
+                  <FiExternalLink size={12}/> View
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+      {/* Commit Log */}
+      <h3 style={{ color: '#fff', fontSize: 14, fontWeight: 700, marginBottom: 12 }}>📝 Recent Commits</h3>
+      {commitLog.length === 0 ? (
+        <p style={{ color: '#64748B', fontSize: 13 }}>No commit data. Click Refresh after configuring your Worker URL.</p>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {commitLog.map((c, i) => (
+            <div key={i} className="ap-card" style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+              <code style={{ fontSize: 11, color: '#60A5FA', background: '#0F172A', borderRadius: 4, padding: '2px 6px', flexShrink: 0 }}>{c.sha?.substring(0,7)}</code>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 500, color: '#E2E8F0', fontSize: 13 }}>{c.message?.split('\n')[0]}</div>
+                <div style={{ fontSize: 11, color: '#64748B' }}>{c.author} · {c.date ? new Date(c.date).toLocaleString('en-IN') : ''}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  // ─── AUDIT LOG ──────────────────────────────────────────────────────────
+  const ACTION_COLORS = { login:'#059669', logout:'#64748B', save:'#3B82F6', delete:'#DC2626', upload:'#8B5CF6', deploy:'#F59E0B', error:'#EF4444' };
+
+  const renderAuditLog = () => (
+    <div>
+      <SectionHeader title="Audit Log" subtitle={`${auditLog.length} entries — tracks all admin actions (stored locally on this device)`}
+        action={<button className="ap-btn-secondary ap-btn-danger" onClick={() => {
+          if (!window.confirm('Clear all audit log entries?')) return;
+          localStorage.removeItem('noble_cms_audit_log');
+          setAuditLog([]);
+          showToast('Audit log cleared.', 'error');
+        }}><FiTrash2 size={14}/> Clear Log</button>}
+      />
+      {auditLog.length === 0 ? (
+        <EmptyState icon={FiLayers} message="No audit log entries yet. Actions like save, delete, login, and logout are recorded here." />
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 16 }}>
+          {auditLog.map((entry, i) => (
+            <div key={i} className="ap-card" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px' }}>
+              <span style={{ fontSize: 11, background: ACTION_COLORS[entry.action] || '#475569', color: '#fff', borderRadius: 4, padding: '2px 8px', fontWeight: 700, minWidth: 56, textAlign: 'center', textTransform: 'uppercase' }}>
+                {entry.action}
+              </span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, color: '#E2E8F0' }}>{entry.details}</div>
+                <div style={{ fontSize: 11, color: '#64748B' }}>by {entry.user} ({entry.role}) · {entry.timestamp ? new Date(entry.timestamp).toLocaleString('en-IN') : ''}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 
   // ─── SETTINGS ───────────────────────────────────────────────────────────
   // ─── SETTINGS ───────────────────────────────────────────────────────────
@@ -2550,6 +2991,11 @@ function AdminPanel({ onLogout }) {
       case 'popup':         return renderPopup();
       case 'videos':        return renderVideoLectures();
       case 'settings':      return renderSettings();
+      case 'blog':          return renderBlog();
+      case 'mediaLibrary':  return renderMediaLibrary();
+      case 'seo':           return renderSEO();
+      case 'deployment':    return renderDeployment();
+      case 'auditLog':      return renderAuditLog();
       default:              return renderDashboard();
     }
   };

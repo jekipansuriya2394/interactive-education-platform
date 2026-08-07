@@ -1,48 +1,117 @@
-<<<<<<< HEAD
+# Noble Education GitOps Headless CMS
 
-## 📸 Screenshots
+Noble Education GitOps Headless CMS is a modern content management system that leverages GitHub as the single source of truth for content, paired with a React frontend and a Cloudflare Worker for secure API interactions.
 
-### 🏠 Home Page
+![Deploy Status](https://github.com/jekipansuriya2394/interactive-education-platform/actions/workflows/deploy.yml/badge.svg)
 
-![Home Page](screenshots/homepage-popup.png)
-![Home Page](screenshots/homepage.png)
-![Home Page](screenshots/homepage-1.png)
+## Architecture Overview
 
----
+```mermaid
+graph LR
+    A[React Frontend] -->|Auth/Content APIs| B(Cloudflare Worker)
+    B -->|GitHub API via PAT| C{GitHub Repository}
+    C -->|Triggers on push| D[GitHub Actions]
+    D -->|Builds & Publishes| E[GitHub Pages]
+```
 
-### 🔐 Admin Dashboard
+## Prerequisites
 
-![Admin Dashboard](screenshots/admin-dashboard.png)
+- Node.js version 20+
+- Git installed locally
+- Cloudflare account (for Cloudflare Workers)
+- GitHub Personal Access Token (PAT) with repository write access
 
----
+## Quick Start (Local Development)
 
-### 📚 Courses
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/jekipansuriya2394/interactive-education-platform.git
+   cd interactive-education-platform
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Create a `.env` file based on `.env.example` and set up environment variables.
+4. Start the local development server:
+   ```bash
+   npm run dev
+   ```
 
-![Courses](screenshots/courses.png)
+## Environment Variables
 
----
+For the React frontend, configure the following in your `.env`:
 
-### 🏫 School Details
+- `VITE_WORKER_URL`: The URL of your deployed Cloudflare Worker (e.g., `https://api.yourdomain.workers.dev`).
+- `VITE_GH_OWNER`: Your GitHub username or organization name.
+- `VITE_GH_REPO`: The GitHub repository name.
 
-![School Details](screenshots/school-page.png)
+## Cloudflare Worker Deployment
 
-# React + Vite
+Follow these steps to deploy the Cloudflare Worker which acts as the API backend:
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+1. Navigate to the worker directory:
+   ```bash
+   cd worker
+   ```
+2. Login to Wrangler CLI:
+   ```bash
+   npx wrangler login
+   ```
+3. Store your GitHub Personal Access Token (PAT):
+   ```bash
+   npx wrangler secret put GH_PAT
+   ```
+4. Store a secure JWT Secret:
+   ```bash
+   npx wrangler secret put JWT_SECRET
+   ```
+5. Configure Admin Users via JSON:
+   ```bash
+   npx wrangler secret put ADMIN_USERS
+   ```
+   *Format example:* `[{"username":"admin","hash":"<sha256_hash>","role":"Super Admin"}]`
+6. Deploy the worker:
+   ```bash
+   npx wrangler deploy
+   ```
 
-Currently, two official plugins are available:
+## GitHub Secrets Setup
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+To enable seamless deployments via GitHub Actions, configure the following secrets in your GitHub repository (Settings > Secrets and variables > Actions):
 
-## React Compiler
+- `VITE_WORKER_URL`: The deployed Cloudflare Worker URL.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Admin Panel Usage
 
-## Expanding the Oxlint configuration
+- **URL:** Navigate to `/admin` on your deployed application.
+- **Credentials:** Use the username and password corresponding to the `ADMIN_USERS` configured in the worker.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
-=======
-# interactive-education-platform
-A modern 3D educational platform built with React, Vite, Three.js, Tailwind CSS, and Framer Motion featuring an admin dashboard, student portal, partner schools, and inquiry management.
->>>>>>> 3abdd79fd48afeec6c49667ea7b2a83e7a0392b1
+## Content System
+
+Content is managed entirely through JSON files located in the `content/` directory (e.g., `content/pages.json`, `content/blog/*.json`). This GitOps approach ensures all changes are versioned and auditable.
+
+## Media Uploads
+
+Media files can be uploaded via the Admin Panel. 
+- **Size Limit:** Recommended maximum upload size is 5MB to ensure optimal Git repository size and performance.
+- **Conversion:** Images are processed and recommended to be in WebP format for fast web delivery.
+
+## Roles & Permissions
+
+| Role | Permissions |
+| :--- | :--- |
+| **Super Admin** | Full access to all content, user management, and system settings. |
+| **Admin** | Create, edit, and publish content. Manage media uploads. |
+| **Editor** | Draft and edit content only. |
+| **Viewer** | Read-only access to the admin dashboard. |
+
+## Security Notes
+
+- Authentication is managed via JSON Web Tokens (JWT).
+- **Never expose your GitHub PAT in the frontend.** All GitHub API interactions happen securely via the Cloudflare Worker.
+
+## Contributing & License
+
+Contributions are welcome! Please open an issue or submit a pull request.
+Licensed under the MIT License.

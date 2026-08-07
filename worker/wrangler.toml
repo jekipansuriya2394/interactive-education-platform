@@ -1,12 +1,16 @@
+account_id = "6f00bb489856f571158efaf2d25b9c26"
 name = "noble-cms-api"
 main = "index.js"
-compatibility_date = "2024-01-01"
+compatibility_date = "2024-09-23"
+workers_dev = true
 
 [vars]
 GH_OWNER = "jekipansuriya2394"
 GH_REPO = "interactive-education-platform"
-ADMIN_USER = "admin"
+GH_BRANCH = "main"
+CORS_ORIGIN = "https://jekipansuriya2394.github.io"
 
-# Store sensitive secrets via command:
-# wrangler secret put GH_PAT
-# wrangler secret put ADMIN_PASS
+# Secrets to set via: wrangler secret put <NAME>
+# GH_PAT
+# JWT_SECRET
+# ADMIN_USERS
