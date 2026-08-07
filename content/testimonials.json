@@ -1,0 +1,26 @@
+[
+  {
+    "id": "t1",
+    "name": "Shital Kumavat",
+    "program": "SSC Board 2025 (99.60 PR)",
+    "stars": 5,
+    "quote": "The concept-based teaching and continuous mock tests at Noble Education were key to my 99.60 percentile score in Std 10th boards!",
+    "school": "Royal School, Vadodara"
+  },
+  {
+    "id": "t2",
+    "name": "Rohan Patel",
+    "program": "DDCET Engineering Entrance",
+    "stars": 5,
+    "quote": "Noble Education provided the exact roadmap I needed for DDCET. The test series helped me secure direct second-year degree admission in my target engineering branch.",
+    "school": "Diploma IT Student"
+  },
+  {
+    "id": "t3",
+    "name": "Sneha Shah",
+    "program": "12th Science (PCM)",
+    "stars": 5,
+    "quote": "The faculties simplify complex physics and maths equations like no other. Personal attention and doubt-solving lounges made a huge difference.",
+    "school": "New Heaven Vidyalaya"
+  }
+]

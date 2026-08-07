@@ -1,0 +1,22 @@
+[
+  {
+    "id": "faq-1",
+    "question": "What courses are offered at Noble Education?",
+    "answer": "We offer structured coaching for Std 8th-10th Secondary Boards, 11th-12th Science (PCM & PCB), NEET Medical, JEE Main, GUJCET, DDCET Entrance, and Diploma/Degree Engineering semester subjects."
+  },
+  {
+    "id": "faq-2",
+    "question": "How do I register for ACPC / ACPDC admission counseling?",
+    "answer": "You can visit our main Waghodia Road campus or book a free counseling appointment on our website. Our counselors guide you through PIN purchase, document upload, and merit choice filling."
+  },
+  {
+    "id": "faq-3",
+    "question": "Are there online test practice facilities available?",
+    "answer": "Yes! All enrolled students receive credentials to access our online mock test portal featuring OMR practice, instant score analytics, and detailed answer explanations."
+  },
+  {
+    "id": "faq-4",
+    "question": "What are the office timings for campus visits?",
+    "answer": "Our administrative desk is open Monday to Saturday from 8:00 AM to 8:00 PM, and Sunday from 9:00 AM to 1:00 PM."
+  }
+]

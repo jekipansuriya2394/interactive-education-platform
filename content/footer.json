@@ -1,0 +1,13 @@
+{
+  "aboutText": "Noble Education is a premier educational institute in Vadodara dedicated to concept-based teaching for Secondary Boards, 11th-12th Science, NEET, JEE, DDCET, and Engineering Degree/Diploma courses.",
+  "copyrightText": "© 2026 Noble Education. All Rights Reserved. Built with Concept-Based Excellence.",
+  "quickLinks": [
+    { "label": "Home", "url": "/" },
+    { "label": "About Us", "url": "/about" },
+    { "label": "Academic Programs", "url": "/courses" },
+    { "label": "Admission Guidance", "url": "/admission-guidance" },
+    { "label": "Student Results", "url": "/results" },
+    { "label": "Photo Gallery", "url": "/gallery" },
+    { "label": "Contact Us", "url": "/contact" }
+  ]
+}

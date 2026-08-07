@@ -1,0 +1,25 @@
+{
+  "enabled": true,
+  "title": "Admissions Open 2026-27",
+  "subtitle": "Book Free Counseling & Academic Aptitude Evaluation",
+  "badgeText": "NEW BATCHES",
+  "image": "/images/popup_banner.jpg",
+  "buttonText": "Register Now",
+  "link": "#inquiry-form",
+  "slides": [
+    {
+      "id": "s1",
+      "title": "SSC Board 2025 Topper - 99.60 PR",
+      "subtitle": "Shital Kumavat Secures A1-Grade in Vadodara",
+      "image": "/images/bg-results-banner.png",
+      "link": "/results"
+    },
+    {
+      "id": "s2",
+      "title": "11th & 12th Science Concept Batches",
+      "subtitle": "Integrated Coaching for Board + NEET / JEE / GUJCET",
+      "image": "/images/hero-classroom.png",
+      "link": "/courses#science"
+    }
+  ]
+}

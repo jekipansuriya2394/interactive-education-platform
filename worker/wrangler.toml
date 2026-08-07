@@ -1,0 +1,12 @@
+name = "noble-cms-api"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+GH_OWNER = "jekipansuriya2394"
+GH_REPO = "interactive-education-platform"
+ADMIN_USER = "admin"
+
+# Store sensitive secrets via command:
+# wrangler secret put GH_PAT
+# wrangler secret put ADMIN_PASS

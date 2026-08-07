@@ -1,0 +1,26 @@
+[
+  {
+    "id": "fac1",
+    "name": "Prof. Jekipansuriya",
+    "role": "Founder & Mathematics Head",
+    "qualification": "M.E. (Computer Engineering), 19+ Yrs Exp.",
+    "bio": "Specialist in Higher Engineering Mathematics, DDCET entrance tricks, and secondary board foundation math.",
+    "image": "/images/faculty/founder.jpg"
+  },
+  {
+    "id": "fac2",
+    "name": "Dr. R. K. Sharma",
+    "role": "Senior Physics Mentor",
+    "qualification": "Ph.D. in Physics, 15+ Yrs Exp.",
+    "bio": "Expert in JEE/NEET Physics problem solving, conceptual mechanics, and electrodynamics.",
+    "image": "/images/faculty/physics-head.jpg"
+  },
+  {
+    "id": "fac3",
+    "name": "Prof. Anjali Patel",
+    "role": "Chemistry & Biology Specialist",
+    "qualification": "M.Sc. Chemistry, 12+ Yrs Exp.",
+    "bio": "Specializes in organic chemistry reaction mechanisms and NEET biology preparation.",
+    "image": "/images/faculty/chemistry-head.jpg"
+  }
+]

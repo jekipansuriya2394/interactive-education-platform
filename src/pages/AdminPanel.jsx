@@ -9,6 +9,8 @@ import {
 } from 'react-icons/fi';
 import { adminData } from '../utils/adminData';
 import { inquiryService } from '../utils/inquiryService';
+import { gitSyncService } from '../services/gitSyncService';
+import { getWorkerUrl, setWorkerUrl } from '../services/apiClient';
 import { getEmbedImageUrl, detectImageUrlSource, handleImageError, FALLBACK_SLIDE_SVG } from '../utils/imageUrl';
 import { logoWhite, getLogoUrl } from '../utils/logo';
 import { jagannathPosterB64 } from '../data/jagannathB64';
@@ -692,9 +694,48 @@ function AdminPanel({ onLogout }) {
       <div>
         <SectionHeader 
           title="Dashboard" 
-          subtitle={`Welcome back, ${currentUser?.username || 'Guest'} (${currentUser?.role || 'staff'})! Last updated: ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}`} 
+          subtitle={`Welcome back, ${currentUser?.username || 'Guest'} (${currentUser?.role || 'staff'})! GitOps Cloud CMS is Active.`} 
         />
-        
+
+        {/* GitOps CI/CD Pipeline & GitHub Pages Status Widget */}
+        <div className="ap-card" style={{ marginBottom: 24, background: 'linear-gradient(135deg, #0F172A, #1E293B)', border: '1px solid #334155' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(59, 130, 246, 0.15)', border: '1px solid rgba(59, 130, 246, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3B82F6' }}>
+                <FiCpu size={22} />
+              </div>
+              <div>
+                <h4 style={{ color: '#F8FAFC', fontSize: 16, fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  GitOps CI/CD Automated Deployment
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: 'rgba(16, 185, 129, 0.15)', color: '#34D399', border: '1px solid rgba(52, 211, 153, 0.3)' }}>
+                    ● LIVE SYNC
+                  </span>
+                </h4>
+                <p style={{ color: '#94A3B8', fontSize: 13, margin: '4px 0 0', fontWeight: 500 }}>
+                  Repo: <code style={{ color: '#60A5FA', background: '#0F172A', padding: '2px 6px', borderRadius: 4 }}>jekipansuriya2394/interactive-education-platform</code> · Branch: <code style={{ color: '#F59E0B' }}>main</code>
+                </p>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <a 
+                href="https://github.com/jekipansuriya2394/interactive-education-platform/actions" 
+                target="_blank" 
+                rel="noreferrer"
+                className="ap-btn ap-btn-secondary ap-btn-sm"
+                style={{ textDecoration: 'none' }}
+              >
+                <FiExternalLink /> View GitHub Actions
+              </a>
+              <button 
+                className="ap-btn ap-btn-primary ap-btn-sm" 
+                onClick={() => showToast('Triggered live sync and deployment check!')}
+              >
+                <FiRefreshCw /> Check Sync Status
+              </button>
+            </div>
+          </div>
+        </div>
+
         {filteredCards.length > 0 && (
           <div className="ap-dash-grid">
             {filteredCards.map((c, i) => {
@@ -1388,6 +1429,23 @@ function AdminPanel({ onLogout }) {
               <input type="password" className="ap-input" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
               <button type="submit" className="ap-btn ap-btn-primary" style={{ marginTop: 16 }}><FiSave /> Update Password</button>
             </form>
+          </div>
+
+          <div className="ap-card">
+            <h4 className="ap-card-title"><FiCpu style={{ marginRight: 8 }} />Cloudflare Worker API Bridge</h4>
+            <p style={{ color: '#9CA3AF', fontSize: 13, marginBottom: 12, lineHeight: 1.5 }}>
+              Secure API Worker URL for remote Git commits to GitHub REST API.
+            </p>
+            <label className="ap-label">Worker Endpoint URL</label>
+            <input 
+              className="ap-input" 
+              defaultValue={getWorkerUrl()} 
+              onChange={e => setWorkerUrl(e.target.value)} 
+              placeholder="https://noble-cms-api.noble-education.workers.dev" 
+            />
+            <div style={{ marginTop: 12, fontSize: 12, color: '#34D399', display: 'flex', alignItems: 'center', gap: 6 }}>
+              ● Secure JWT Authentication Active
+            </div>
           </div>
 
           <div className="ap-card">

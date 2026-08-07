@@ -1,0 +1,9 @@
+{
+  "siteTitle": "Noble Education | Concept Based Coaching Vadodara",
+  "defaultLanguage": "en",
+  "enableAnnouncements": true,
+  "enablePopupBanner": true,
+  "autoSessionTimeoutMinutes": 30,
+  "enableCloudSync": true,
+  "maxUploadSizeMB": 10
+}

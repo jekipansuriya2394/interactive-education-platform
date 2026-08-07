@@ -1,0 +1,62 @@
+[
+  {
+    "id": "std-8-10",
+    "name": "School Foundation (Std 8th to 10th)",
+    "category": "school",
+    "tagline": "Strong Foundation for Secondary Boards",
+    "description": "Interactive board coaching for Maths, Science & English with emphasis on fundamental concepts and exam problem solving.",
+    "subjects": "Mathematics, Science, English, SS",
+    "mode": "Offline + Interactive Boards",
+    "features": [
+      "Small Batch Sizes",
+      "Weekly Chapter Tests",
+      "Regular Parent-Teacher Meetings",
+      "Doubt Resolution Desk"
+    ]
+  },
+  {
+    "id": "std-11-12-science",
+    "name": "11th & 12th Science (GSEB / CBSE)",
+    "category": "science",
+    "tagline": "Board Exam & Competitive Foundation",
+    "description": "In-depth theory and numerical guidance for A-Group (PCM) and B-Group (PCB) students aiming for top board percentile ranks.",
+    "subjects": "Physics, Chemistry, Mathematics, Biology",
+    "mode": "Offline Classroom + Online Mocks",
+    "features": [
+      "Theory & Numerical Worksheets",
+      "Board PYQ Practice Sessions",
+      "Practical Lab Guidance",
+      "Special Focus on Board Exemplars"
+    ]
+  },
+  {
+    "id": "neet-jee-competitive",
+    "name": "NEET, JEE & GUJCET Coaching",
+    "category": "competitive",
+    "tagline": "Rigorous Entrance Test Preparation",
+    "description": "Targeted test series, speed-building tricks, and mock test analysis for NEET Medical & JEE Engineering entrance exams.",
+    "subjects": "Physics, Chemistry, Mathematics, Biology",
+    "mode": "Offline Competitive Batches",
+    "features": [
+      "10,000+ Topic Wise MCQs",
+      "Full Syllabus Simulated Mocks",
+      "Performance Analytics Reports",
+      "1-on-1 Strategy Meetings"
+    ]
+  },
+  {
+    "id": "diploma-degree-engineering",
+    "name": "Diploma & Degree Engineering Coaching",
+    "category": "engineering",
+    "tagline": "GTU Semester & DDCET Mastery",
+    "description": "Semester subject tutorials for Computer, IT, Mechanical, Civil, Electrical streams and DDCET direct 2nd-year degree entrance.",
+    "subjects": "Applied Maths, Basic Electronics, Programming, Circuit Theory, DDCET Syllabus",
+    "mode": "Offline / Subject-wise Batches",
+    "features": [
+      "GTU Exam Question Bank",
+      "Practical Code & Lab Guidance",
+      "DDCET Dedicated Test Series",
+      "Flexible Evening Batches"
+    ]
+  }
+]

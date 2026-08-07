@@ -4,6 +4,8 @@ import { contactData } from '../data/contactData';
 import { statsData } from '../data/statsData';
 import { featuresData } from '../data/featuresData';
 import { coursesData } from '../data/coursesData';
+import { getFirebaseUrl, setFirebaseUrl } from './firebaseConfig';
+import { gitSyncService } from '../services/gitSyncService';
 
 const PREFIX = 'noble_admin_';
 
@@ -482,7 +484,11 @@ export const adminData = {
   getLastFetchTime() { return this._lastFetchSuccess || 0; },
 
   getSyncApiUrls() {
-    return ['https://jsonblob.com/api/jsonBlob/019fb7f4-bdd3-7c88-aeec-e6d4e8e5dbdf'];
+    const firebaseUrl = getFirebaseUrl();
+    const urls = [
+      `${firebaseUrl}/data.json`
+    ];
+    return urls;
   },
 
   // Force operations (return promises)
@@ -528,8 +534,12 @@ export const adminData = {
     try {
       localStorage.setItem(PREFIX + key, JSON.stringify(value));
       this.notifySubscribers(key, value);
-      // Debounced cloud push — ensures rapid edits coalesce into a single upload
-      this._scheduleSyncPush();
+      // 1. Sync to Cloud Realtime DB
+      this.syncToServer();
+      // 2. Commit & push changes to Git Repository via Worker API
+      try {
+        gitSyncService.commitContent(key, value, `cms: update ${key} content`);
+      } catch (e) {}
       return true;
     } catch (e) {
       console.error(`Error writing data for ${key}`, e);
@@ -543,97 +553,90 @@ export const adminData = {
     }
   },
 
-  // ─── Global Cloud Synchronisation Engine ──────────────────────────────
-  // Cloud API endpoint (JSONBlob free REST store — no signup, CORS-enabled)
-  CLOUD_URL: 'https://jsonblob.com/api/jsonBlob/019fb7f4-bdd3-7c88-aeec-e6d4e8e5dbdf',
-  KEYS_TO_SYNC: ['siteLogo', 'announcements', 'results', 'gallery', 'testimonials', 'stats', 'features', 'contactInfo', 'courses', 'users', 'popupConfig', 'videoLectures', 'pageImages', 'heroBanners', 'partnerSchools', 'schoolPhotos'],
-
+  // ─── Real-Time Cloud Network Synchronisation Engine ──────────────────────────
   _lastSyncTime: 0,
   _lastFetchAttempt: 0,
-  _backoffDelay: 0,
-  _syncPushTimer: null,
-  _lastSyncSuccess: 0,
-  _lastFetchSuccess: 0,
-  minSyncInterval: 2000,
-  backoffBase: 2000,
-  maxBackoff: 30000,
-
-  // Debounce helper — waits 800ms after the last setData call, then pushes once
-  _scheduleSyncPush() {
-    if (this._syncPushTimer) clearTimeout(this._syncPushTimer);
-    this._syncPushTimer = setTimeout(() => {
-      this.syncToServer().then(ok => {
-        if (ok) console.log('[Cloud] ✅ Data pushed to cloud successfully');
-        else console.warn('[Cloud] ⚠️ Push to cloud failed');
-      });
-    }, 800);
-  },
-
-  _buildPayload() {
-    const payload = {};
-    this.KEYS_TO_SYNC.forEach(k => {
-      const val = localStorage.getItem(PREFIX + k);
-      if (val !== null) {
-        try { payload[k] = JSON.parse(val); } catch { payload[k] = val; }
-      } else if (DEFAULTS[k] !== undefined) {
-        payload[k] = DEFAULTS[k];
-      }
-    });
-    payload._lastUpdated = Date.now();
-    return payload;
-  },
+  minSyncInterval: 1500,
 
   async syncToServer() {
     try {
-      const payload = this._buildPayload();
-      const response = await fetch(this.CLOUD_URL, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify(payload)
+      if (!this.getSyncEnabled()) return;
+      const now = Date.now();
+      this._lastSyncTime = now;
+
+      const keysToSync = ['siteLogo', 'announcements', 'results', 'gallery', 'testimonials', 'stats', 'features', 'contactInfo', 'courses', 'users', 'popupConfig', 'videoLectures', 'pageImages', 'heroBanners', 'partnerSchools', 'schoolPhotos'];
+      const payload = {};
+      keysToSync.forEach(k => {
+        const val = localStorage.getItem(PREFIX + k);
+        if (val !== null) {
+          try {
+            payload[k] = JSON.parse(val);
+          } catch {
+            payload[k] = val;
+          }
+        } else if (DEFAULTS[k] !== undefined) {
+          payload[k] = DEFAULTS[k];
+        }
       });
-      if (response.ok) {
-        this._backoffDelay = 0;
-        this._lastSyncSuccess = Date.now();
-        return true;
+
+      const urls = this.getSyncApiUrls();
+      for (const url of urls) {
+        try {
+          const response = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (response.ok) {
+            this._lastSyncSuccess = Date.now();
+            return true;
+          }
+        } catch (e) {}
       }
-      console.warn('[Cloud] PUT failed:', response.status);
-    } catch (e) {
-      console.warn('[Cloud] syncToServer network error:', e.message);
-    }
+    } catch (e) {}
     return false;
   },
 
   async fetchFromServer() {
     try {
-      const response = await fetch(this.CLOUD_URL, {
-        headers: { 'Accept': 'application/json' },
-        cache: 'no-store'
-      });
-      if (response.ok) {
-        this._backoffDelay = 0;
-        this._lastFetchSuccess = Date.now();
-        return await response.json();
+      if (!this.getSyncEnabled()) return null;
+      const now = Date.now();
+      this._lastFetchAttempt = now;
+
+      const urls = this.getSyncApiUrls();
+      for (const url of urls) {
+        try {
+          const res = await fetch(url);
+          if (res.ok) {
+            this._lastFetchSuccess = Date.now();
+            const json = await res.json();
+            return json;
+          }
+        } catch (e) {}
       }
-      console.warn('[Cloud] GET failed:', response.status);
-    } catch (e) {
-      console.warn('[Cloud] fetchFromServer network error:', e.message);
+      return null;
+    } catch {
+      return null;
     }
-    return null;
   },
 
   async syncFromServer() {
     const data = await this.fetchFromServer();
-    if (data && typeof data === 'object' && Object.keys(data).length > 2) {
+    if (data && typeof data === 'object' && Object.keys(data).length > 0) {
       let changed = false;
-      this.KEYS_TO_SYNC.forEach(k => {
+      const keysToSync = ['siteLogo', 'announcements', 'results', 'gallery', 'testimonials', 'stats', 'features', 'contactInfo', 'courses', 'users', 'popupConfig', 'videoLectures', 'pageImages', 'heroBanners', 'partnerSchools', 'schoolPhotos'];
+      keysToSync.forEach(k => {
         const serverVal = data[k];
         if (serverVal !== undefined) {
           const serverValStr = typeof serverVal === 'string' ? serverVal : JSON.stringify(serverVal);
           const localValStr = localStorage.getItem(PREFIX + k);
           if (serverValStr !== localValStr) {
             localStorage.setItem(PREFIX + k, serverValStr);
-            try { this.notifySubscribers(k, JSON.parse(serverValStr)); }
-            catch { this.notifySubscribers(k, serverValStr); }
+            try {
+              this.notifySubscribers(k, JSON.parse(serverValStr));
+            } catch {
+              this.notifySubscribers(k, serverValStr);
+            }
             changed = true;
           }
         }
@@ -643,16 +646,12 @@ export const adminData = {
     return false;
   },
 
-  // Force operations (return promises)
-  async forceSync() { return await this.syncToServer(); },
-  async forceFetch() { return await this.fetchFromServer(); },
-
   initSync(onUpdate) {
-    // 1. Same-tab custom event listener (instant local update)
+    // 1. Same-tab/same-window custom event listener (instant update everywhere)
     const customHandler = () => onUpdate();
     window.addEventListener('noble_admin_data_change', customHandler);
 
-    // 2. Same-device multi-tab storage event listener
+    // 2. Same-device multi-tab local listener (instant storage event)
     const storageHandler = (e) => {
       if (!e.key || e.key.startsWith(PREFIX)) {
         onUpdate();
@@ -660,44 +659,46 @@ export const adminData = {
     };
     window.addEventListener('storage', storageHandler);
 
-    // 3. Immediate cloud pull on mount
+    // 3. Initial sync immediately on mount
     this.syncFromServer().then(changed => {
-      if (changed) {
-        console.log('[Cloud] Initial pull — updated local data from cloud');
-        onUpdate();
-      }
+      if (changed) onUpdate();
     }).catch(() => {});
 
-    // 4. Continuous cloud poll loop (every 5s when tab is visible)
+    // 4. Cross-device adaptive poll loop with jitter, backoff and visibility awareness
     const self = this;
     let stopped = false;
     let pollTimer = null;
-    const POLL_ACTIVE = 5000;   // 5 seconds when tab is visible
-    const POLL_HIDDEN = 15000;  // 15 seconds when tab is hidden
+
+    const scheduleNext = (delay) => {
+      if (stopped) return;
+      const jitter = Math.floor(Math.random() * 1000);
+      pollTimer = setTimeout(runPoll, Math.max(1000, delay + jitter));
+    };
 
     const runPoll = async () => {
       if (stopped) return;
+      // Pause polling while tab is hidden to reduce network noise
+      if (document.hidden) {
+        scheduleNext(5000);
+        return;
+      }
       try {
         const changed = await self.syncFromServer();
-        if (changed) {
-          console.log('[Cloud] Poll detected changes — updating UI');
-          onUpdate();
-        }
-      } catch {}
-      if (!stopped) {
-        const delay = document.hidden ? POLL_HIDDEN : POLL_ACTIVE;
-        pollTimer = setTimeout(runPoll, delay);
+        if (changed) onUpdate();
+      } catch {
+        // ignore
       }
+      const nextDelay = self._backoffDelay && self._backoffDelay > 0 ? self._backoffDelay : self.minSyncInterval;
+      scheduleNext(nextDelay);
     };
 
-    // Start first poll after 2 seconds
-    pollTimer = setTimeout(runPoll, 2000);
+    // Start the poll loop
+    scheduleNext(0);
 
-    // Cleanup
+    // Stopper & cleanup
     const cleanup = () => {
       stopped = true;
       if (pollTimer) clearTimeout(pollTimer);
-      if (self._syncPushTimer) clearTimeout(self._syncPushTimer);
       window.removeEventListener('noble_admin_data_change', customHandler);
       window.removeEventListener('storage', storageHandler);
     };

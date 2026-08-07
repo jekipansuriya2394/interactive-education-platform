@@ -1,0 +1,39 @@
+{
+  "hero": {
+    "badge": "19+ Years of Academic Excellence in Vadodara",
+    "heading": "Empowering Students for Board Ranks & Engineering Careers",
+    "subheading": "Concept-based coaching for Std 8th-10th, 11th-12th Science (GSEB/CBSE), NEET, JEE, DDCET, and Diploma/Degree Engineering.",
+    "primaryCta": "Book Free Counseling",
+    "primaryCtaLink": "#inquiry-form",
+    "secondaryCta": "Explore Courses",
+    "secondaryCtaLink": "/courses"
+  },
+  "stats": [
+    { "label": "Years Experience", "value": "19+", "suffix": "Years" },
+    { "label": "Top Board Rankers", "value": "2500+", "suffix": "Students" },
+    { "label": "Partner Schools", "value": "3+", "suffix": "Campuses" },
+    { "label": "Success Rate", "value": "99.4%", "suffix": "Pass" }
+  ],
+  "whyChooseUs": [
+    {
+      "icon": "FiTarget",
+      "title": "Concept-Based Teaching",
+      "description": "Interactive visual board learning for maximum retention and deep conceptual understanding."
+    },
+    {
+      "icon": "FiUsers",
+      "title": "Small Batch Size",
+      "description": "Individual attention with dedicated doubt-solving lounges and personal faculty mentorship."
+    },
+    {
+      "icon": "FiAward",
+      "title": "Proven Track Record",
+      "description": "Consistently producing top percentile rankers in SSC, HSC Science, GUJCET & DDCET."
+    },
+    {
+      "icon": "FiBookOpen",
+      "title": "Comprehensive Material",
+      "description": "Curated chapter-wise theory booklets, question banks, and simulated online test series."
+    }
+  ]
+}

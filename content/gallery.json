@@ -1,0 +1,8 @@
+[
+  { "id": "g1", "title": "Smart Learning Interactive Classrooms", "category": "Classrooms", "image": "/images/bg-gallery-hero.png" },
+  { "id": "g2", "title": "Parent & Career Counseling Seminar", "category": "Seminars", "image": "/images/bg-about-hero.png" },
+  { "id": "g3", "title": "Mock Examination Practice Hall", "category": "Activities", "image": "/images/bg-results-hero.png" },
+  { "id": "g4", "title": "DDCET Preparation Batch Orientation", "category": "Seminars", "image": "/images/bg-contact-hero.png" },
+  { "id": "g5", "title": "Science Experiment Orientation Session", "category": "Activities", "image": "/images/bg-courses-hero.png" },
+  { "id": "g6", "title": "ACPC Choice Filling Guidance Workshop", "category": "Seminars", "image": "/images/bg-admission-hero.png" }
+]

@@ -1,0 +1,10 @@
+[
+  { "id": "n1", "label": "Home", "path": "/" },
+  { "id": "n2", "label": "About Us", "path": "/about" },
+  { "id": "n3", "label": "Programs", "path": "/courses" },
+  { "id": "n4", "label": "Admissions 2026", "path": "/admission-guidance" },
+  { "id": "n5", "label": "Topper Results", "path": "/results" },
+  { "id": "n6", "label": "Gallery", "path": "/gallery" },
+  { "id": "n7", "label": "Student Corner", "path": "/student-corner" },
+  { "id": "n8", "label": "Contact", "path": "/contact" }
+]
