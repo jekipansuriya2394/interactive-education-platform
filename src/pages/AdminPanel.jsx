@@ -4880,11 +4880,6 @@ function AdminLoginForm({ onLoginSuccess }) {
             Sign In to Dashboard
           </button>
         </form>
-
-        {/* Footer Info */}
-        <div style={{ textAlign: 'center', marginTop: 28, paddingTop: 20, borderTop: '1px solid #1E293B' }}>
-          <p style={{ color: '#475569', fontSize: 11, margin: 0 }}>Protected Admin Portal · Session: 30 min</p>
-        </div>
       </div>
     </div>
   );
