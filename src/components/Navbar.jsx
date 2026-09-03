@@ -187,7 +187,6 @@ export default function Navbar() {
         }
       ]
     },
-    { name: 'Admin', href: '/admin', icon: FiLock },
     { name: 'Contact', href: '/contact' }
   ];
 
