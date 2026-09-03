@@ -27,6 +27,11 @@ function localPath(pathname) {
 }
 
 export const navigate = (path) => {
+  // If navigating to a hash route like #/admin, normalize to /admin
+  if (path.startsWith('#/')) {
+    path = path.slice(1);
+  }
+
   // Handle hash scroll redirection
   if (path.includes('#')) {
     const parts = path.split('#');
@@ -57,5 +62,27 @@ export const navigate = (path) => {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
-export const normalizePathFromLocation = (pathname) => localPath(pathname || window.location.pathname);
+export const normalizePathFromLocation = (pathname) => {
+  if (typeof window !== 'undefined' && window.location.hash) {
+    const rawHash = window.location.hash; // e.g. "#/admin", "#admin", "#inquiry-form"
+
+    // If hash starts with "#/" (standard hash routing like #/admin or #/about)
+    if (rawHash.startsWith('#/')) {
+      const route = rawHash.slice(1); // e.g. "/admin"
+      return localPath(route);
+    }
+
+    // Also support #admin, #about, #courses, #results, etc.
+    const cleanHash = rawHash.replace(/^#/, '');
+    const knownRoutes = [
+      'admin', 'about', 'courses', 'admission-guidance', 'results',
+      'gallery', 'student-corner', 'online-test', 'contact', 'blog', 'school'
+    ];
+    if (knownRoutes.some(r => cleanHash === r || cleanHash.startsWith(r + '/') || cleanHash.startsWith(r + '?'))) {
+      return '/' + cleanHash;
+    }
+  }
+
+  return localPath(pathname || (typeof window !== 'undefined' ? window.location.pathname : '/'));
+};
 

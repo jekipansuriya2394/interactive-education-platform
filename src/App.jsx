@@ -45,8 +45,9 @@ export default function App() {
       }
     } catch (e) {}
   }, [])
-  const [currentPath, setCurrentPath] = useState(normalizePathFromLocation(window.location.pathname));
-  const [isLoading, setIsLoading] = useState(true);
+  const initialPath = normalizePathFromLocation(window.location.pathname);
+  const [currentPath, setCurrentPath] = useState(initialPath);
+  const [isLoading, setIsLoading] = useState(() => !initialPath.startsWith('/admin'));
   const [dataVersion, setDataVersion] = useState(0);
 
   const contact = adminData.getData('contactInfo') || contactData;
@@ -80,23 +81,30 @@ export default function App() {
       if (!nextPath.startsWith('/admin')) {
         setIsLoading(true);
         setTimeout(() => setIsLoading(false), 450);
+      } else {
+        setIsLoading(false);
       }
       
-      if (window.location.hash) {
+      if (window.location.hash && !window.location.hash.startsWith('#/')) {
         const id = window.location.hash.substring(1);
-        setTimeout(() => {
-          const element = document.getElementById(id);
-          if (element) {
-            element.scrollIntoView({ behavior: 'smooth' });
-          }
-        }, 150);
+        const knownRoutes = ['admin', 'about', 'courses', 'admission-guidance', 'results', 'gallery', 'student-corner', 'online-test', 'contact', 'blog', 'school'];
+        if (!knownRoutes.some(r => id === r || id.startsWith(r + '/'))) {
+          setTimeout(() => {
+            const element = document.getElementById(id);
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth' });
+            }
+          }, 150);
+        }
       }
     };
 
     window.addEventListener('popstate', handleLocationChange);
+    window.addEventListener('hashchange', handleLocationChange);
 
     return () => {
       window.removeEventListener('popstate', handleLocationChange);
+      window.removeEventListener('hashchange', handleLocationChange);
       clearTimeout(loadTimer);
       try {
         cleanupSync && cleanupSync();
