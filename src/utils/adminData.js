@@ -309,7 +309,29 @@ export const adminData = {
     try {
       const usersStr = localStorage.getItem(PREFIX + 'users');
       if (usersStr) {
-        return JSON.parse(usersStr);
+        const parsed = JSON.parse(usersStr);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Auto-migrate default admin credentials to new requested email/password
+          let updated = false;
+          const migrated = parsed.map(u => {
+            if (u.id === '1' || u.role === 'superadmin' || u.username === 'admin') {
+              if (u.username !== 'nobleedudigital@gmail.com' || u.password !== 'Noble2026@') {
+                updated = true;
+                return {
+                  ...u,
+                  username: 'nobleedudigital@gmail.com',
+                  password: 'Noble2026@'
+                };
+              }
+            }
+            return u;
+          });
+          if (updated) {
+            localStorage.setItem(PREFIX + 'users', JSON.stringify(migrated));
+            this.syncKeyToServer('users', migrated).catch(() => {});
+          }
+          return migrated;
+        }
       }
     } catch (e) {
       console.error('Error loading users', e);
@@ -318,8 +340,8 @@ export const adminData = {
     const defaultUsers = [
       {
         id: '1',
-        username: 'admin',
-        password: 'admin123',
+        username: 'nobleedudigital@gmail.com',
+        password: 'Noble2026@',
         role: 'superadmin',
         permissions: [
           'dashboard', 'announcements', 'results', 'gallery', 
@@ -327,9 +349,17 @@ export const adminData = {
           'contactInfo', 'inquiries', 'settings', 'popup',
           'videos', 'pagePhotos'
         ]
+      },
+      {
+        id: '1784639129255',
+        username: 'manshi123',
+        password: '123',
+        role: 'staff',
+        permissions: ['dashboard', 'inquiries:view']
       }
     ];
     localStorage.setItem(PREFIX + 'users', JSON.stringify(defaultUsers));
+    this.syncKeyToServer('users', defaultUsers).catch(() => {});
     return defaultUsers;
   },
 
@@ -397,8 +427,12 @@ export const adminData = {
   login(username, password) {
     try {
       const users = this.getUsers();
+      const input = (username || '').trim().toLowerCase();
       const user = users.find(
-        u => u && u.username && u.username.toLowerCase() === (username || '').trim().toLowerCase() && u.password === password
+        u => u && u.username && (
+          u.username.toLowerCase() === input ||
+          (input === 'admin' && (u.username === 'nobleedudigital@gmail.com' || u.role === 'superadmin'))
+        ) && u.password === password
       );
       if (user) {
         const expireTime = Date.now() + 30 * 60 * 1000;

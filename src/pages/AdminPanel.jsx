@@ -2171,7 +2171,7 @@ function AdminPanel({ onLogout }) {
               { label: 'Role', value: currentUser?.role || 'staff' },
               { label: 'Logged In As', value: currentUser?.username || 'Guest' },
               { label: 'Accessible At', value: '/admin' },
-              { label: 'Default Password', value: 'admin123' },
+              { label: 'Admin Email', value: 'nobleedudigital@gmail.com' },
             ].map((info, i) => (
               <div key={i} style={{ background: '#0F172A', padding: '12px 16px', borderRadius: 10 }}>
                 <p style={{ color: '#6B7280', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 4px' }}>{info.label}</p>
@@ -4843,7 +4843,7 @@ function AdminLoginForm({ onLoginSuccess }) {
               <input
                 type="text" value={username}
                 onChange={e => setUsername(e.target.value)}
-                placeholder="Enter your username"
+                placeholder="nobleedudigital@gmail.com"
                 className="ne-login-input"
                 autoFocus
                 required
@@ -4883,7 +4883,7 @@ function AdminLoginForm({ onLoginSuccess }) {
 
         {/* Footer Info */}
         <div style={{ textAlign: 'center', marginTop: 28, paddingTop: 20, borderTop: '1px solid #1E293B' }}>
-          <p style={{ color: '#475569', fontSize: 11, margin: 0 }}>Default: admin / admin123 · Session: 30 min</p>
+          <p style={{ color: '#475569', fontSize: 11, margin: 0 }}>Protected Admin Portal · Session: 30 min</p>
         </div>
       </div>
     </div>

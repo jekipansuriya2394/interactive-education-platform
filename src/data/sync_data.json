@@ -474,8 +474,8 @@
   "users": [
     {
       "id": "1",
-      "username": "admin",
-      "password": "admin123",
+      "username": "nobleedudigital@gmail.com",
+      "password": "Noble2026@",
       "role": "superadmin",
       "permissions": [
         "dashboard",
