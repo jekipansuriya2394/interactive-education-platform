@@ -34,6 +34,20 @@ const DEFAULTS = {
     { name: "Panchal Diya", score: "9.80 CPI", exam: "Degree Sem-6 IT", branch: "Information Technology", status: "Outstanding Project grade", school: "Royal School, Vadodara", image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&auto=format&fit=crop&q=80" }
   ],
   gallery: [
+    {
+      title: "Campus Tour & Interactive Smart Classrooms",
+      category: "Videos",
+      mediaType: "video",
+      videoUrl: "https://www.youtube.com/watch?v=3JZ_D3ELwOQ",
+      image: "https://img.youtube.com/vi/3JZ_D3ELwOQ/hqdefault.jpg"
+    },
+    {
+      title: "Student Felicitation & Annual Celebrations",
+      category: "Videos",
+      mediaType: "video",
+      videoUrl: "https://www.youtube.com/watch?v=2Vv-BfVoq4g",
+      image: "https://img.youtube.com/vi/2Vv-BfVoq4g/hqdefault.jpg"
+    },
     { title: "Smart Learning Interactive Boards", category: "Classrooms", image: "/images/bg-gallery-hero.png" },
     { title: "Parent Counseling Career Seminar", category: "Seminars", image: "/images/bg-about-hero.png" },
     { title: "Mock Exam Practice Hall", category: "Activities", image: "/images/bg-results-hero.png" },
@@ -554,7 +568,12 @@ export const adminData = {
   async forceSync() { try { return await this.syncToServer(); } catch { return false; } },
   async forceFetch() { try { return await this.fetchFromServer(); } catch { return null; } },
 
+  _memoryCache: {},
+
   getData(key) {
+    if (this._memoryCache && this._memoryCache[key] !== undefined) {
+      return this._memoryCache[key];
+    }
     try {
       const data = localStorage.getItem(PREFIX + key);
       if (data !== null) {
@@ -590,22 +609,30 @@ export const adminData = {
   },
 
   setData(key, value) {
+    if (!this._memoryCache) this._memoryCache = {};
+    this._memoryCache[key] = value;
+
     try {
       localStorage.setItem(PREFIX + key, JSON.stringify(value));
-      this.notifySubscribers(key, value);
-      // 1. Instantly push this specific section to Cloud Database
-      this.syncKeyToServer(key, value).catch(() => {});
-      // 2. Also keep full background sync up-to-date
-      this.syncToServer().catch(() => {});
-      // 3. Commit & push changes to Git Repository via Worker API
-      try {
-        commitContent(`content/${key}.json`, value, `chore(cms): update ${key} content`).catch(() => {});
-      } catch (e) {}
-      return true;
     } catch (e) {
-      console.error(`Error writing data for ${key}`, e);
-      return false;
+      console.warn(`[adminData] localStorage write skipped for ${key} (quota limit):`, e);
     }
+
+    try {
+      this.notifySubscribers(key, value);
+    } catch {}
+
+    // 1. Instantly push this specific section to Cloud Database
+    this.syncKeyToServer(key, value).catch(err => {
+      console.error(`[adminData] Error syncing ${key} to cloud:`, err);
+    });
+    // 2. Also keep full background sync up-to-date
+    this.syncToServer().catch(() => {});
+    // 3. Commit & push changes to Git Repository via Worker API
+    try {
+      commitContent(`content/${key}.json`, value, `chore(cms): update ${key} content`).catch(() => {});
+    } catch (e) {}
+    return true;
   },
 
   resetData(key) {

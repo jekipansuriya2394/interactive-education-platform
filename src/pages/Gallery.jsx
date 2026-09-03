@@ -39,6 +39,84 @@ function GalleryImg({ src, alt, className, style }) {
   );
 }
 
+function GalleryMediaThumb({ item, isVid }) {
+  const videoSrc = item?.videoUrl || (isVid ? (item?.image || item?.url) : '');
+  const ytMatch = (videoSrc || '').match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+
+  // 1. YouTube link -> official high-res YouTube thumbnail
+  if (ytMatch && ytMatch[1]) {
+    const ytThumb = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
+    return (
+      <div className="relative overflow-hidden bg-slate-900 aspect-video rounded-3xl">
+        <img
+          src={ytThumb}
+          alt={item.title || 'Video'}
+          className="w-full h-full object-cover rounded-3xl group-hover:scale-[1.02] transition-transform duration-300"
+          onError={(e) => {
+            if (item.image && e.target.src !== item.image) e.target.src = item.image;
+          }}
+        />
+        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/35 transition-colors flex items-center justify-center">
+          <div className="w-14 h-14 rounded-full bg-red-600 text-white flex items-center justify-center shadow-xl shadow-red-600/60 group-hover:scale-110 transition-transform">
+            <FiPlay size={24} style={{ marginLeft: 2 }} />
+          </div>
+        </div>
+        <span className="absolute top-4 left-4 bg-red-600 text-white text-[11px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-md z-10">
+          <FiVideo size={12} /> Video
+        </span>
+      </div>
+    );
+  }
+
+  // 2. Direct video (MP4 / WebM / data URI) without image thumbnail
+  if (isVid && videoSrc && (!item.image || item.image.startsWith('data:video/'))) {
+    return (
+      <div className="relative overflow-hidden rounded-3xl bg-slate-900" style={{ minHeight: 200 }}>
+        <video
+          src={videoSrc}
+          muted
+          playsInline
+          preload="metadata"
+          className="w-full h-auto object-cover rounded-3xl group-hover:scale-[1.02] transition-transform duration-300 pointer-events-none"
+          style={{ minHeight: 200, maxHeight: 380, display: 'block' }}
+        />
+        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/35 transition-colors flex items-center justify-center">
+          <div className="w-14 h-14 rounded-full bg-red-600 text-white flex items-center justify-center shadow-xl shadow-red-600/60 group-hover:scale-110 transition-transform">
+            <FiPlay size={24} style={{ marginLeft: 2 }} />
+          </div>
+        </div>
+        <span className="absolute top-4 left-4 bg-red-600 text-white text-[11px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-md z-10">
+          <FiVideo size={12} /> Video
+        </span>
+      </div>
+    );
+  }
+
+  // 3. Video with custom image thumbnail
+  if (isVid && item.image) {
+    return (
+      <div className="relative overflow-hidden">
+        <GalleryImg src={item.image} alt={item.title} />
+        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/35 transition-colors flex items-center justify-center">
+          <div className="w-14 h-14 rounded-full bg-red-600 text-white flex items-center justify-center shadow-xl shadow-red-600/60 group-hover:scale-110 transition-transform">
+            <FiPlay size={24} style={{ marginLeft: 2 }} />
+          </div>
+        </div>
+        <span className="absolute top-4 left-4 bg-red-600 text-white text-[11px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-md z-10">
+          <FiVideo size={12} /> Video
+        </span>
+      </div>
+    );
+  }
+
+  // 4. Default standard photo
+  return (
+    <div className="relative overflow-hidden">
+      <GalleryImg src={item.image || item.url || item.src} alt={item.title} />
+    </div>
+  );
+}
+
 export default function Gallery() {
   const [activeFilter, setActiveFilter] = useState('All');
   const [items, setItems] = useState(() => adminData.getData('gallery') || []);
@@ -50,6 +128,9 @@ export default function Gallery() {
     const refreshGallery = () => setItems(adminData.getData('gallery') || []);
     refreshGallery();
     const cleanup = adminData.initSync(refreshGallery);
+    adminData.syncFromServer().then(changed => {
+      if (changed) refreshGallery();
+    });
     return () => {
       if (typeof cleanup === 'function') cleanup();
     };
@@ -409,21 +490,7 @@ export default function Gallery() {
                   className="break-inside-avoid bg-white border border-slate-200/60 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group cursor-pointer relative"
                   title={isVid ? "Click to play video" : "Click to view full screen photo"}
                 >
-                  <div className="relative overflow-hidden">
-                    <GalleryImg src={item.image || item.url || item.src} alt={item.title} />
-                    {isVid && (
-                      <>
-                        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center">
-                          <div className="w-14 h-14 rounded-full bg-red-600 text-white flex items-center justify-center shadow-xl shadow-red-600/60 group-hover:scale-110 transition-transform">
-                            <FiPlay size={24} style={{ marginLeft: 2 }} />
-                          </div>
-                        </div>
-                        <span className="absolute top-4 left-4 bg-red-600 text-white text-[11px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-md">
-                          <FiVideo size={12} /> Video
-                        </span>
-                      </>
-                    )}
-                  </div>
+                  <GalleryMediaThumb item={item} isVid={isVid} />
                   {item.title && (
                     <div className="px-5 py-4">
                       <p className="font-bold text-[#0f172a] text-sm">{item.title}</p>

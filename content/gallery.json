@@ -1,4 +1,6 @@
 [
+  { "id": "gv1", "title": "Campus Tour & Interactive Smart Classrooms", "category": "Videos", "mediaType": "video", "videoUrl": "https://www.youtube.com/watch?v=3JZ_D3ELwOQ", "image": "https://img.youtube.com/vi/3JZ_D3ELwOQ/hqdefault.jpg" },
+  { "id": "gv2", "title": "Student Felicitation & Annual Celebrations", "category": "Videos", "mediaType": "video", "videoUrl": "https://www.youtube.com/watch?v=2Vv-BfVoq4g", "image": "https://img.youtube.com/vi/2Vv-BfVoq4g/hqdefault.jpg" },
   { "id": "g1", "title": "Smart Learning Interactive Classrooms", "category": "Classrooms", "image": "/images/bg-gallery-hero.png" },
   { "id": "g2", "title": "Parent & Career Counseling Seminar", "category": "Seminars", "image": "/images/bg-about-hero.png" },
   { "id": "g3", "title": "Mock Examination Practice Hall", "category": "Activities", "image": "/images/bg-results-hero.png" },
