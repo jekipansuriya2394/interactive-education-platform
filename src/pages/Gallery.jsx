@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { FiImage, FiAlertTriangle, FiX, FiChevronLeft, FiChevronRight, FiLoader, FiPlay, FiVideo } from 'react-icons/fi';
 import { adminData } from '../utils/adminData';
-import { getEmbedImageUrl, getYouTubeEmbedUrl, isVideoMedia, isActualImage } from '../utils/imageUrl';
+import { getEmbedImageUrl, getYouTubeEmbedUrl, isVideoMedia, isActualImage, getEmbedMediaUrl } from '../utils/imageUrl';
 
 function GalleryImg({ src, alt, className, style }) {
   const embedSrc = getEmbedImageUrl(src);
@@ -15,25 +15,25 @@ function GalleryImg({ src, alt, className, style }) {
   );
 
   return (
-    <div style={{ position: 'relative', minHeight: status !== 'ok' ? 160 : 'auto', width: '100%' }}>
-      {status !== 'error' && (
-        <img
-          src={embedSrc}
-          alt={alt || 'Gallery Photo'}
-          className={className || "w-full h-auto object-cover rounded-3xl group-hover:scale-[1.015] transition-transform duration-300"}
-          onLoad={() => setStatus('ok')}
-          onError={() => setStatus('error')}
-          style={style || { display: status === 'error' ? 'none' : 'block' }}
-        />
-      )}
+    <div className="relative w-full overflow-hidden rounded-3xl bg-slate-100" style={{ minHeight: status === 'loading' ? 180 : 'auto' }}>
       {status === 'loading' && (
-        <div className="w-full rounded-3xl bg-slate-100 animate-pulse" style={{ height: 200 }} />
+        <div className="absolute inset-0 bg-slate-200 animate-pulse rounded-3xl" />
       )}
-      {status === 'error' && (
-        <div className="w-full rounded-3xl bg-red-50 border border-red-100 flex flex-col items-center justify-center gap-2 text-center px-4" style={{ height: 160 }}>
+      {status === 'error' ? (
+        <div className="w-full h-44 bg-red-50 border border-red-100 flex flex-col items-center justify-center gap-2 text-center px-4 rounded-3xl">
           <FiAlertTriangle size={24} className="text-red-400" />
           <p className="text-xs text-red-500 font-semibold">Image could not be loaded</p>
         </div>
+      ) : (
+        <img
+          src={embedSrc}
+          alt={alt || 'Gallery Photo'}
+          className={className || "w-full h-auto object-cover rounded-3xl group-hover:scale-[1.015] transition-transform duration-300 block"}
+          onLoad={() => setStatus('ok')}
+          onError={() => setStatus('error')}
+          style={style}
+          loading="lazy"
+        />
       )}
     </div>
   );
@@ -86,8 +86,8 @@ function GalleryMediaThumb({ item, isVid }) {
     );
   }
 
-  // 2. Video with a legitimate image poster
-  if (isVid && item.image && isActualImage(item.image)) {
+  // 2. Video with custom image poster (if not default hero background)
+  if (isVid && item.image && isActualImage(item.image) && !item.image.includes('bg-gallery-hero')) {
     return (
       <div className="relative overflow-hidden" style={frameStyle}>
         <GalleryImg src={item.image} alt={item.title} />
@@ -103,19 +103,36 @@ function GalleryMediaThumb({ item, isVid }) {
     );
   }
 
-  // 3. Direct local video (MP4 / WebM / data URI / server path) -> Render native hardware <video> preview
+  // 3. Direct local video (MP4 / WebM / data URI / server path) -> Render native hardware <video> preview with hover play
   if (isVid && videoSrc) {
+    const resolvedVideo = getEmbedMediaUrl(videoSrc);
     return (
-      <div className="relative overflow-hidden rounded-3xl bg-slate-900" style={frameStyle}>
+      <div
+        className="relative overflow-hidden rounded-3xl bg-slate-900 group/vid"
+        style={frameStyle}
+        onMouseEnter={(e) => {
+          try {
+            const v = e.currentTarget.querySelector('video');
+            if (v) v.play().catch(() => {});
+          } catch {}
+        }}
+        onMouseLeave={(e) => {
+          try {
+            const v = e.currentTarget.querySelector('video');
+            if (v) { v.pause(); v.currentTime = 0; }
+          } catch {}
+        }}
+      >
         <video
-          src={videoSrc}
+          src={resolvedVideo}
           muted
           playsInline
+          loop
           preload="metadata"
           className="w-full h-auto rounded-3xl group-hover:scale-[1.02] transition-transform duration-300 pointer-events-none"
           style={{ display: 'block', maxHeight: isShorts ? '520px' : 'none', ...(isShorts || isSquare || isLandscape ? { height: '100%', objectFit: 'cover' } : {}) }}
         />
-        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/35 transition-colors flex items-center justify-center">
+        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors flex items-center justify-center">
           <div className="w-14 h-14 rounded-full bg-red-600 text-white flex items-center justify-center shadow-xl shadow-red-600/60 group-hover:scale-110 transition-transform">
             <FiPlay size={24} style={{ marginLeft: 2 }} />
           </div>
@@ -433,13 +450,13 @@ export default function Gallery() {
               </div>
             ) : (
               <video
-                key={rawVideoSrc}
-                src={rawVideoSrc}
+                key={getEmbedMediaUrl(rawVideoSrc)}
+                src={getEmbedMediaUrl(rawVideoSrc)}
                 controls
                 autoPlay
                 playsInline
                 preload="auto"
-                poster={currentEmbedSrc && isActualImage(currentEmbedSrc) ? currentEmbedSrc : undefined}
+                poster={currentEmbedSrc && isActualImage(currentEmbedSrc) && !currentEmbedSrc.includes('bg-gallery-hero') ? currentEmbedSrc : undefined}
                 onLoadedData={() => setLightboxLoading(false)}
                 onCanPlay={() => setLightboxLoading(false)}
                 onLoadedMetadata={() => setLightboxLoading(false)}
@@ -460,8 +477,8 @@ export default function Gallery() {
                   background: '#000'
                 }}
               >
-                <source src={rawVideoSrc} type="video/mp4" />
-                <source src={rawVideoSrc} type="video/webm" />
+                <source src={getEmbedMediaUrl(rawVideoSrc)} type="video/mp4" />
+                <source src={getEmbedMediaUrl(rawVideoSrc)} type="video/webm" />
                 Your browser does not support the video tag.
               </video>
             )
@@ -556,14 +573,14 @@ export default function Gallery() {
             <p className="text-zinc-400 text-xs mt-1">Photos can be added from the Admin Panel.</p>
           </div>
         ) : (
-          <div className="columns-1 sm:columns-2 md:columns-3 gap-6 space-y-6">
+          <div className="columns-1 sm:columns-2 lg:columns-3 gap-6">
             {filteredItems.map((item, idx) => {
               const isVid = item.mediaType === 'video' || item.category === 'Videos' || isVideoMedia(item);
               return (
                 <div
                   key={idx}
                   onClick={() => setSelectedIndex(idx)}
-                  className="break-inside-avoid bg-white border border-slate-200/60 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group cursor-pointer relative"
+                  className="break-inside-avoid mb-6 bg-white border border-slate-200/60 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group cursor-pointer relative"
                   title={isVid ? "Click to play video" : "Click to view full screen photo"}
                 >
                   <GalleryMediaThumb item={item} isVid={isVid} />

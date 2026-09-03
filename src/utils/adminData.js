@@ -39,7 +39,7 @@ const DEFAULTS = {
       category: "Videos",
       mediaType: "video",
       videoUrl: "/images/campus-tour.mp4",
-      image: "/images/bg-gallery-hero.png",
+      image: "",
       aspectRatio: "16/9"
     },
     {

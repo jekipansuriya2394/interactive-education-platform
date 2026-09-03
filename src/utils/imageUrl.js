@@ -28,7 +28,7 @@ export function getEmbedImageUrl(raw) {
   // ── YouTube Video / Shorts Thumbnail ──────────────────────────────────────
   const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
   if (ytMatch && ytMatch[1]) {
-    return `https://img.youtube.com/vi/${ytMatch[1]}/maxresdefault.jpg`;
+    return `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
   }
 
   // ── Google Drive ─────────────────────────────────────────────────────────
@@ -171,5 +171,26 @@ export function isActualImage(url) {
   if (url.startsWith('/images/') || url.startsWith('http://') || url.startsWith('https://')) return true;
   return false;
 }
+
+/**
+ * Resolves local and remote media / video URLs, prepending Vite base URL when needed
+ */
+export function getEmbedMediaUrl(raw) {
+  if (!raw || typeof raw !== 'string') return '';
+  let url = raw.trim();
+  if (url.startsWith('data:')) return url;
+  if (url.startsWith('images/') || url.startsWith('videos/')) url = '/' + url;
+  if (url.startsWith('/')) {
+    try {
+      const base = import.meta.env.BASE_URL || '/';
+      const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base;
+      return cleanBase + url;
+    } catch {
+      return url;
+    }
+  }
+  return url;
+}
+
 
 
