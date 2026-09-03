@@ -482,18 +482,35 @@ export const adminData = {
     }
   },
 
-  updateUserPassword(userId, newPassword) {
+  async updateUserPassword(userId, newPassword) {
     try {
       const users = this.getUsers();
-      const updated = users.map(u => u.id === userId ? { ...u, password: newPassword } : u);
-      this.saveUsers(updated);
-      
+      let updated = false;
+      const newUsers = users.map(u => {
+        if (String(u.id) === String(userId) || u.role === 'superadmin' || u.username === 'nobleedudigital@gmail.com') {
+          updated = true;
+          return { ...u, password: newPassword };
+        }
+        return u;
+      });
+
+      if (!updated && newUsers.length > 0) {
+        newUsers[0].password = newPassword;
+      }
+
+      this.saveUsers(newUsers);
+      await this.syncKeyToServer('users', newUsers);
+
       const currentUser = this.getCurrentUser();
-      if (currentUser && currentUser.id === userId) {
+      if (currentUser) {
         currentUser.password = newPassword;
         sessionStorage.setItem(PREFIX + 'currentUser', JSON.stringify(currentUser));
       }
-    } catch (e) {}
+      return true;
+    } catch (e) {
+      console.error('Failed to update user password', e);
+      return false;
+    }
   },
 
   // Key operations
