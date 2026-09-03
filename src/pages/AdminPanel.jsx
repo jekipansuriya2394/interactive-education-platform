@@ -4837,13 +4837,13 @@ function AdminLoginForm({ onLoginSuccess }) {
         {/* Form */}
         <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94A3B8', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.05em' }}>Username</label>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94A3B8', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.05em' }}>Email ID or Phone Number</label>
             <div style={{ position: 'relative' }}>
               <FiUsers style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#475569', fontSize: 16 }} />
               <input
                 type="text" value={username}
                 onChange={e => setUsername(e.target.value)}
-                placeholder="nobleedudigital@gmail.com"
+                placeholder="Enter your email ID or phone number"
                 className="ne-login-input"
                 autoFocus
                 required
