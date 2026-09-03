@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { FiImage, FiAlertTriangle, FiX, FiChevronLeft, FiChevronRight, FiLoader, FiPlay, FiVideo } from 'react-icons/fi';
 import { adminData } from '../utils/adminData';
-import { getEmbedImageUrl, getYouTubeEmbedUrl, isVideoMedia } from '../utils/imageUrl';
+import { getEmbedImageUrl, getYouTubeEmbedUrl, isVideoMedia, isActualImage } from '../utils/imageUrl';
 
 function GalleryImg({ src, alt, className, style }) {
   const embedSrc = getEmbedImageUrl(src);
@@ -40,7 +40,11 @@ function GalleryImg({ src, alt, className, style }) {
 }
 
 function GalleryMediaThumb({ item, isVid }) {
-  const videoSrc = item?.videoUrl || (isVid ? (item?.image || item?.url) : '');
+  let videoSrc = item?.videoUrl || (isVid ? (item?.image || item?.url) : '');
+  if (typeof videoSrc === 'string') {
+    videoSrc = videoSrc.trim();
+    if (videoSrc.startsWith('images/') || videoSrc.startsWith('videos/')) videoSrc = '/' + videoSrc;
+  }
   const ytMatch = (videoSrc || '').match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
   const isShorts = (videoSrc || '').includes('/shorts/') || item?.aspectRatio === '9/16' || item?.aspectRatio === 'vertical';
   const isSquare = item?.aspectRatio === '1/1' || item?.aspectRatio === 'square';
@@ -67,7 +71,7 @@ function GalleryMediaThumb({ item, isVid }) {
           className="w-full h-auto object-cover rounded-3xl group-hover:scale-[1.02] transition-transform duration-300"
           style={isShorts || isSquare || isLandscape ? { height: '100%', objectFit: 'cover' } : { display: 'block' }}
           onError={(e) => {
-            if (item.image && e.target.src !== item.image) e.target.src = item.image;
+            if (item.image && isActualImage(item.image) && e.target.src !== item.image) e.target.src = item.image;
           }}
         />
         <div className="absolute inset-0 bg-black/20 group-hover:bg-black/35 transition-colors flex items-center justify-center">
@@ -82,8 +86,25 @@ function GalleryMediaThumb({ item, isVid }) {
     );
   }
 
-  // 2. Direct video (MP4 / WebM / data URI) without separate image thumbnail: Auto-sizes to video natural proportions
-  if (isVid && videoSrc && (!item.image || item.image.startsWith('data:video/'))) {
+  // 2. Video with a legitimate image poster
+  if (isVid && item.image && isActualImage(item.image)) {
+    return (
+      <div className="relative overflow-hidden" style={frameStyle}>
+        <GalleryImg src={item.image} alt={item.title} />
+        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/35 transition-colors flex items-center justify-center">
+          <div className="w-14 h-14 rounded-full bg-red-600 text-white flex items-center justify-center shadow-xl shadow-red-600/60 group-hover:scale-110 transition-transform">
+            <FiPlay size={24} style={{ marginLeft: 2 }} />
+          </div>
+        </div>
+        <span className="absolute top-4 left-4 bg-red-600 text-white text-[11px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-md z-10">
+          <FiVideo size={12} /> Video
+        </span>
+      </div>
+    );
+  }
+
+  // 3. Direct local video (MP4 / WebM / data URI / server path) -> Render native hardware <video> preview
+  if (isVid && videoSrc) {
     return (
       <div className="relative overflow-hidden rounded-3xl bg-slate-900" style={frameStyle}>
         <video
@@ -106,23 +127,6 @@ function GalleryMediaThumb({ item, isVid }) {
     );
   }
 
-  // 3. Video with custom image thumbnail: Auto formatted
-  if (isVid && item.image) {
-    return (
-      <div className="relative overflow-hidden" style={frameStyle}>
-        <GalleryImg src={item.image} alt={item.title} />
-        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/35 transition-colors flex items-center justify-center">
-          <div className="w-14 h-14 rounded-full bg-red-600 text-white flex items-center justify-center shadow-xl shadow-red-600/60 group-hover:scale-110 transition-transform">
-            <FiPlay size={24} style={{ marginLeft: 2 }} />
-          </div>
-        </div>
-        <span className="absolute top-4 left-4 bg-red-600 text-white text-[11px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-md z-10">
-          <FiVideo size={12} /> Video
-        </span>
-      </div>
-    );
-  }
-
   // 4. Default standard photo (natural aspect ratio)
   return (
     <div className="relative overflow-hidden">
@@ -130,6 +134,7 @@ function GalleryMediaThumb({ item, isVid }) {
     </div>
   );
 }
+
 
 export default function Gallery() {
   const [activeFilter, setActiveFilter] = useState('All');
@@ -205,11 +210,20 @@ export default function Gallery() {
 
   const getRawSrc = (item) => {
     if (!item) return '';
-    return item.image || item.url || item.src || (typeof item === 'string' ? item : '');
+    let src = item.videoUrl || item.image || item.url || item.src || (typeof item === 'string' ? item : '');
+    if (typeof src === 'string') {
+      src = src.trim();
+      if (src.startsWith('images/') || src.startsWith('videos/')) src = '/' + src;
+    }
+    return src;
   };
 
   const isItemVideo = selectedItem ? (selectedItem.mediaType === 'video' || selectedItem.category === 'Videos' || !!selectedItem.videoUrl || isVideoMedia(selectedItem)) : false;
-  const rawVideoSrc = selectedItem ? (selectedItem.videoUrl || (isItemVideo ? getRawSrc(selectedItem) : '')) : '';
+  let rawVideoSrc = selectedItem ? (selectedItem.videoUrl || (isItemVideo ? getRawSrc(selectedItem) : '')) : '';
+  if (typeof rawVideoSrc === 'string') {
+    rawVideoSrc = rawVideoSrc.trim();
+    if (rawVideoSrc.startsWith('images/') || rawVideoSrc.startsWith('videos/')) rawVideoSrc = '/' + rawVideoSrc;
+  }
   const ytEmbedUrl = isItemVideo ? getYouTubeEmbedUrl(rawVideoSrc) : '';
   const currentEmbedSrc = selectedItem ? getEmbedImageUrl(getRawSrc(selectedItem)) : '';
   const isVertical = selectedItem ? (
@@ -355,16 +369,30 @@ export default function Gallery() {
 
         {/* Error Display */}
         {lightboxError && (
-          <div style={{ background: '#0f172a', border: '1px solid #334155', color: '#ffffff', padding: '32px', borderRadius: '24px', textAlign: 'center', maxWidth: '400px' }}>
+          <div style={{ background: '#0f172a', border: '1px solid #334155', color: '#ffffff', padding: '32px', borderRadius: '24px', textAlign: 'center', maxWidth: '420px' }}>
             <FiAlertTriangle size={44} style={{ margin: '0 auto 12px', color: '#f59e0b' }} />
-            <h3 style={{ fontWeight: 800, fontSize: '18px', margin: '0 0 4px', color: '#ffffff' }}>Image Preview Unavailable</h3>
-            <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '16px' }}>{selectedItem.title || 'Selected Photo'}</p>
-            <button
-              onClick={() => setSelectedIndex(null)}
-              style={{ padding: '8px 20px', background: '#1C2E60', color: '#ffffff', fontSize: '12px', fontWeight: 700, borderRadius: '30px', border: 'none', cursor: 'pointer' }}
-            >
-              Close Preview
-            </button>
+            <h3 style={{ fontWeight: 800, fontSize: '18px', margin: '0 0 4px', color: '#ffffff' }}>
+              {isItemVideo ? 'Video Playback Issue' : 'Image Preview Unavailable'}
+            </h3>
+            <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '16px' }}>{selectedItem.title || 'Selected Media'}</p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+              {isItemVideo && rawVideoSrc && (
+                <a
+                  href={rawVideoSrc}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ padding: '8px 20px', background: '#DC2626', color: '#ffffff', fontSize: '12px', fontWeight: 700, borderRadius: '30px', textDecoration: 'none' }}
+                >
+                  Play Video Directly
+                </a>
+              )}
+              <button
+                onClick={() => setSelectedIndex(null)}
+                style={{ padding: '8px 20px', background: '#1C2E60', color: '#ffffff', fontSize: '12px', fontWeight: 700, borderRadius: '30px', border: 'none', cursor: 'pointer' }}
+              >
+                Close Preview
+              </button>
+            </div>
           </div>
         )}
 
@@ -404,8 +432,12 @@ export default function Gallery() {
                 controls
                 autoPlay
                 playsInline
-                poster={currentEmbedSrc && !currentEmbedSrc.startsWith('data:video/') ? currentEmbedSrc : undefined}
+                preload="auto"
+                poster={currentEmbedSrc && isActualImage(currentEmbedSrc) ? currentEmbedSrc : undefined}
                 onLoadedData={() => setLightboxLoading(false)}
+                onCanPlay={() => setLightboxLoading(false)}
+                onLoadedMetadata={() => setLightboxLoading(false)}
+                onPlay={() => setLightboxLoading(false)}
                 onError={() => {
                   setLightboxLoading(false);
                   setLightboxError(true);
@@ -418,9 +450,14 @@ export default function Gallery() {
                   borderRadius: '16px',
                   boxShadow: '0 25px 60px rgba(0,0,0,0.8)',
                   border: '2px solid rgba(255, 255, 255, 0.2)',
-                  objectFit: 'contain'
+                  objectFit: 'contain',
+                  background: '#000'
                 }}
-              />
+              >
+                <source src={rawVideoSrc} type="video/mp4" />
+                <source src={rawVideoSrc} type="video/webm" />
+                Your browser does not support the video tag.
+              </video>
             )
           ) : (
             <img

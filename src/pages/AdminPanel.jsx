@@ -12,7 +12,7 @@ import { getFirebaseUrl, setFirebaseUrl, testFirebaseConnection } from '../utils
 import { inquiryService } from '../utils/inquiryService';
 import { commitContent, getDeploymentStatus, getCommitLog, uploadMedia, checkWorkerHealth } from '../services/gitSyncService';
 import { getWorkerUrl, setWorkerUrl } from '../services/apiClient';
-import { getEmbedImageUrl, detectImageUrlSource, handleImageError, FALLBACK_SLIDE_SVG, getYouTubeEmbedUrl, isVideoMedia } from '../utils/imageUrl';
+import { getEmbedImageUrl, detectImageUrlSource, handleImageError, FALLBACK_SLIDE_SVG, getYouTubeEmbedUrl, isVideoMedia, isActualImage } from '../utils/imageUrl';
 import { logoWhite, getLogoUrl } from '../utils/logo';
 import { jagannathPosterB64 } from '../data/jagannathB64';
 import { neetRepeaterB64 } from '../data/neetRepeaterB64';
@@ -1134,15 +1134,23 @@ function AdminPanel({ onLogout }) {
               return (
                 <div className="ap-gallery-card" key={i}>
                   <div className="ap-gallery-thumb" style={{ position: 'relative', overflow: 'hidden' }}>
-                    {item.image ? (
+                    {isVid && (!item.image || isVideoMedia(item.image) || !isActualImage(item.image)) ? (
+                      <video
+                        src={videoSrc}
+                        muted
+                        playsInline
+                        preload="metadata"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', pointerEvents: 'none' }}
+                      />
+                    ) : item.image ? (
                       <img
                         src={getEmbedImageUrl(item.image)}
                         alt={item.title || 'Gallery'}
                         style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                        onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }}
+                        onError={e => { e.target.style.display='none'; if (e.target.nextSibling) e.target.nextSibling.style.display='flex'; }}
                       />
                     ) : null}
-                    <div style={{ display: item.image ? 'none' : 'flex', position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center', background: '#21262D', color: '#374151', flexDirection: 'column', gap: 8 }}>
+                    <div style={{ display: (item.image || (isVid && videoSrc)) ? 'none' : 'flex', position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center', background: '#21262D', color: '#374151', flexDirection: 'column', gap: 8 }}>
                       {isVid ? <FiVideo size={32} style={{ color: '#EF4444' }} /> : <FiImage size={32} />}
                       <span style={{ fontSize: 11, color: '#6B7280' }}>{isVid ? 'Video' : 'No image'}</span>
                     </div>
@@ -3957,17 +3965,16 @@ function GalleryModal({ item, onSave, onClose }) {
         tempVideo.muted = true;
         tempVideo.playsInline = true;
 
-        tempVideo.onloadeddata = () => {
-          tempVideo.currentTime = Math.min(1, (tempVideo.duration || 1) / 2);
-        };
-
-        tempVideo.onseeked = () => {
+        let captured = false;
+        const captureThumbnail = () => {
+          if (captured) return;
+          captured = true;
           try {
             const vw = tempVideo.videoWidth || 640;
             const vh = tempVideo.videoHeight || 360;
             const isPortrait = vh > vw;
             const canvas = document.createElement('canvas');
-            const MAX = 720;
+            const MAX = 600;
             let w = vw, h = vh;
             if (w > h ? w > MAX : h > MAX) {
               if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
@@ -3977,7 +3984,7 @@ function GalleryModal({ item, onSave, onClose }) {
             canvas.height = h;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(tempVideo, 0, 0, w, h);
-            const thumbData = canvas.toDataURL('image/jpeg', 0.7);
+            const thumbData = canvas.toDataURL('image/jpeg', 0.65);
 
             setForm(prev => ({
               ...prev,
@@ -3987,10 +3994,23 @@ function GalleryModal({ item, onSave, onClose }) {
               aspectRatio: isPortrait ? '9/16' : (prev.aspectRatio || 'auto'),
               category: prev.category === 'Classrooms' ? 'Videos' : prev.category
             }));
-            setIsProcessing(false);
           } catch {
             setForm(prev => ({ ...prev, videoUrl: videoData, mediaType: 'video' }));
+          } finally {
             setIsProcessing(false);
+          }
+        };
+
+        tempVideo.onseeked = captureThumbnail;
+        tempVideo.onloadeddata = () => {
+          try {
+            if (tempVideo.duration && tempVideo.duration > 0.5) {
+              tempVideo.currentTime = Math.min(1, tempVideo.duration / 2);
+            } else {
+              captureThumbnail();
+            }
+          } catch {
+            captureThumbnail();
           }
         };
 
@@ -3998,6 +4018,10 @@ function GalleryModal({ item, onSave, onClose }) {
           setForm(prev => ({ ...prev, videoUrl: videoData, mediaType: 'video' }));
           setIsProcessing(false);
         };
+
+        setTimeout(() => {
+          if (!captured) captureThumbnail();
+        }, 1500);
       } catch {
         setForm(prev => ({ ...prev, videoUrl: videoData, mediaType: 'video' }));
         setIsProcessing(false);

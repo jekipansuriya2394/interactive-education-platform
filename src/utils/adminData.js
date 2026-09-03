@@ -35,6 +35,14 @@ const DEFAULTS = {
   ],
   gallery: [
     {
+      title: "Noble Education Campus Tour (Official Video)",
+      category: "Videos",
+      mediaType: "video",
+      videoUrl: "/images/campus-tour.mp4",
+      image: "/images/bg-gallery-hero.png",
+      aspectRatio: "16/9"
+    },
+    {
       title: "Campus Tour & Interactive Smart Classrooms",
       category: "Videos",
       mediaType: "video",

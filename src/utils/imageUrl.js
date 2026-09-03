@@ -153,8 +153,23 @@ export function isVideoMedia(item) {
   }
   if (typeof item !== 'string') return false;
   if (item.startsWith('data:video/')) return true;
-  if (/\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(item)) return true;
+  if (/\.(mp4|webm|ogg|mov|m4v|mkv)(\?|$)/i.test(item)) return true;
   if (/youtube\.com|youtu\.be|vimeo\.com/.test(item)) return true;
   return false;
 }
+
+/**
+ * Checks if a given URL or data URI is an actual image (not video)
+ */
+export function isActualImage(url) {
+  if (!url || typeof url !== 'string') return false;
+  if (url.startsWith('data:image/')) return true;
+  if (url.startsWith('data:video/')) return false;
+  if (/\.(mp4|webm|ogg|mov|m4v|mkv)(\?|$)/i.test(url)) return false;
+  if (/youtube\.com|youtu\.be|vimeo\.com/.test(url)) return false;
+  if (/\.(jpg|jpeg|png|webp|gif|svg|avif)(\?|$)/i.test(url)) return true;
+  if (url.startsWith('/images/') || url.startsWith('http://') || url.startsWith('https://')) return true;
+  return false;
+}
+
 
