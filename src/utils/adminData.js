@@ -540,9 +540,11 @@ export const adminData = {
     try {
       localStorage.setItem(PREFIX + key, JSON.stringify(value));
       this.notifySubscribers(key, value);
-      // 1. Sync to Cloud Realtime DB
-      this.syncToServer();
-      // 2. Commit & push changes to Git Repository via Worker API
+      // 1. Instantly push this specific section to Cloud Database
+      this.syncKeyToServer(key, value).catch(() => {});
+      // 2. Also keep full background sync up-to-date
+      this.syncToServer().catch(() => {});
+      // 3. Commit & push changes to Git Repository via Worker API
       try {
         commitContent(`content/${key}.json`, value, `chore(cms): update ${key} content`).catch(() => {});
       } catch (e) {}
@@ -562,7 +564,32 @@ export const adminData = {
   // ─── Real-Time Cloud Network Synchronisation Engine ──────────────────────────
   _lastSyncTime: 0,
   _lastFetchAttempt: 0,
-  minSyncInterval: 1500,
+  minSyncInterval: 2000,
+
+  async syncKeyToServer(key, value) {
+    if (!this.getSyncEnabled()) return false;
+    const firebaseUrl = getFirebaseUrl();
+    if (!firebaseUrl) return false;
+
+    try {
+      const url = `${firebaseUrl}/data/${key}.json`;
+      const res = await fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(value)
+      });
+      if (res.ok) {
+        this._lastSyncSuccess = Date.now();
+        console.log(`[CloudSync] Section "${key}" saved live to cloud database.`);
+        return true;
+      } else {
+        console.error(`[CloudSync] HTTP ${res.status} saving "${key}".`);
+      }
+    } catch (err) {
+      console.error(`[CloudSync] Network error saving "${key}":`, err);
+    }
+    return false;
+  },
 
   async syncToServer() {
     try {
@@ -619,7 +646,12 @@ export const adminData = {
       const urls = this.getSyncApiUrls();
       for (const url of urls) {
         try {
-          const res = await fetch(url);
+          const sep = url.includes('?') ? '&' : '?';
+          const freshUrl = `${url}${sep}_t=${now}`;
+          const res = await fetch(freshUrl, {
+            cache: 'no-store',
+            headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+          });
           if (res.ok) {
             this._lastFetchSuccess = Date.now();
             const json = await res.json();

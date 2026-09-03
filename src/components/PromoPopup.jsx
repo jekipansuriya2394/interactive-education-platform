@@ -16,11 +16,16 @@ export default function PromoPopup({ isLoading, currentPath }) {
   useEffect(() => { setShowPopup(true); }, [currentPath, isLoading]);
 
   useEffect(() => {
-    const syncConfig = () => { setPopupConfig(adminData.getData('popupConfig') || {}); };
+    const syncConfig = () => {
+      setPopupConfig(adminData.getData('popupConfig') || {});
+    };
     syncConfig();
-    const cleanup = adminData.initSync(syncConfig);
+    window.addEventListener('noble_admin_data_change', syncConfig);
     window.addEventListener('storage', syncConfig);
-    return () => { if (typeof cleanup === 'function') cleanup(); window.removeEventListener('storage', syncConfig); };
+    return () => {
+      window.removeEventListener('noble_admin_data_change', syncConfig);
+      window.removeEventListener('storage', syncConfig);
+    };
   }, []);
 
   const handleClosePopup = () => setShowPopup(false);

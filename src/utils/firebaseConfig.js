@@ -8,9 +8,17 @@ export const DEFAULT_FIREBASE_URL = ENV_FIREBASE_URL || 'https://noble-education
 export function getFirebaseUrl() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved && saved.trim()) return saved.trim().replace(/\/$/, '');
+    if (saved && saved.trim()) {
+      const clean = saved.trim().replace(/\/$/, '');
+      // Automatically purge old dead placeholder URL
+      if (clean.includes('noble-education-default-rtdb')) {
+        localStorage.removeItem(STORAGE_KEY);
+      } else {
+        return clean;
+      }
+    }
   } catch {}
-  if (ENV_FIREBASE_URL && ENV_FIREBASE_URL.trim()) {
+  if (ENV_FIREBASE_URL && ENV_FIREBASE_URL.trim() && !ENV_FIREBASE_URL.includes('noble-education-default-rtdb')) {
     return ENV_FIREBASE_URL.trim().replace(/\/$/, '');
   }
   return DEFAULT_FIREBASE_URL;

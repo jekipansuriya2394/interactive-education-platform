@@ -487,7 +487,7 @@ function AdminPanel({ onLogout }) {
     }));
   };
 
-  const savePopupConfig = () => {
+  const savePopupConfig = async () => {
     const toSave = { ...popupConfig };
     if (!toSave.images || !Array.isArray(toSave.images) || toSave.images.length === 0) {
       toSave.images = [
@@ -495,10 +495,15 @@ function AdminPanel({ onLogout }) {
       ];
     }
     adminData.setData('popupConfig', toSave);
-    showToast('Popup Slider settings saved!');
+    const ok = await adminData.syncKeyToServer('popupConfig', toSave);
+    if (ok) {
+      showToast('Popup settings saved & synced live on all devices!');
+    } else {
+      showToast('Popup settings saved locally.');
+    }
   };
 
-  const addPopupImage = (url, title = '', link = '') => {
+  const addPopupImage = async (url, title = '', link = '') => {
     if (!url || !url.trim()) return;
     const newSlide = {
       id: Date.now().toString(),
@@ -506,22 +511,36 @@ function AdminPanel({ onLogout }) {
       title: title.trim() || `Slide ${ (popupConfig.images?.length || 0) + 1 }`,
       link: link.trim() || popupConfig.link || '/contact'
     };
-    setPopupConfig(p => ({
-      ...p,
-      images: [...(p.images || []), newSlide]
-    }));
+    const updated = {
+      ...popupConfig,
+      images: [...(popupConfig.images || []), newSlide]
+    };
+    setPopupConfig(updated);
+    adminData.setData('popupConfig', updated);
     setNewPopupUrl('');
     setNewPopupTitle('');
     setNewPopupLink('');
-    showToast('New slide added to popup slider!');
+    const ok = await adminData.syncKeyToServer('popupConfig', updated);
+    if (ok) {
+      showToast('New slide added & live across all devices!');
+    } else {
+      showToast('New slide added to popup slider!');
+    }
   };
 
-  const removePopupImage = (id) => {
-    setPopupConfig(p => ({
-      ...p,
-      images: (p.images || []).filter(img => img.id !== id)
-    }));
-    showToast('Slide removed.', 'info');
+  const removePopupImage = async (id) => {
+    const updated = {
+      ...popupConfig,
+      images: (popupConfig.images || []).filter(img => img.id !== id)
+    };
+    setPopupConfig(updated);
+    adminData.setData('popupConfig', updated);
+    const ok = await adminData.syncKeyToServer('popupConfig', updated);
+    if (ok) {
+      showToast('Slide removed & synced to cloud.', 'info');
+    } else {
+      showToast('Slide removed.', 'info');
+    }
   };
 
   const handlePopupUpload = (e) => {
