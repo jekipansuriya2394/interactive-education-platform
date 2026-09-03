@@ -147,6 +147,12 @@ export default function Gallery() {
     const refreshGallery = () => setItems(adminData.getData('gallery') || []);
     refreshGallery();
     const cleanup = adminData.initSync(refreshGallery);
+    // Instantly pull freshest gallery items from Cloud Database
+    adminData.fetchKeyFromServer('gallery').then(fresh => {
+      if (fresh && Array.isArray(fresh) && fresh.length > 0) {
+        setItems(fresh);
+      }
+    });
     adminData.syncFromServer().then(changed => {
       if (changed) refreshGallery();
     });

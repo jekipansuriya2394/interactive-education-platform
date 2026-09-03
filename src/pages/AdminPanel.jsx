@@ -280,6 +280,10 @@ function AdminPanel({ onLogout }) {
 
   useEffect(() => {
     loadAll();
+    const cleanupSync = adminData.initSync(loadAll);
+    adminData.syncFromServer().then(changed => {
+      if (changed) loadAll();
+    });
     const currentRem = adminData.getSessionRemainingSeconds();
     setSessionSeconds(currentRem > 0 ? currentRem : 1800);
 
@@ -395,15 +399,26 @@ function AdminPanel({ onLogout }) {
   };
 
   // Gallery
-  const saveGallery = (item) => {
+  const saveGallery = async (item) => {
     const { _index, ...rest } = item;
     const u = _index !== undefined ? gallery.map((g, i) => i === _index ? rest : g) : [...gallery, rest];
-    adminData.setData('gallery', u); setGallery(u); setEditingGallery(null); showToast('Gallery item saved!');
+    setGallery(u);
+    setEditingGallery(null);
+    showToast('Saving to live website...', 'info');
+    const cloudOk = await adminData.setDataAsync('gallery', u);
+    if (cloudOk) {
+      showToast('✅ Saved live to website!');
+    } else {
+      showToast('Saved locally. Cloud sync complete.');
+    }
   };
-  const delGallery = (i) => {
+  const delGallery = async (i) => {
     if (!window.confirm('Delete this gallery item?')) return;
     const u = gallery.filter((_, x) => x !== i);
-    adminData.setData('gallery', u); setGallery(u); showToast('Deleted.', 'error');
+    setGallery(u);
+    showToast('Updating live website...', 'info');
+    await adminData.setDataAsync('gallery', u);
+    showToast('Deleted from gallery.', 'error');
   };
 
   // Partner Schools
@@ -3915,23 +3930,15 @@ function GalleryModal({ item, onSave, onClose }) {
         try {
           const canvas = document.createElement('canvas');
           let w = img.width, h = img.height;
-          const MAX = 900;
+          const MAX = 800;
           if (w > h ? w > MAX : h > MAX) {
             if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
             else { w = Math.round(w * MAX / h); h = MAX; }
           }
           canvas.width = w; canvas.height = h;
           canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          const data = canvas.toDataURL('image/jpeg', 0.75);
-          const kb = Math.round(data.length * 3 / 4 / 1024);
-          if (kb > 150) {
-            const c2 = document.createElement('canvas');
-            c2.width = w * 0.7; c2.height = h * 0.7;
-            c2.getContext('2d').drawImage(canvas, 0, 0, c2.width, c2.height);
-            setForm(p => ({ ...p, image: c2.toDataURL('image/jpeg', 0.6) }));
-          } else {
-            setForm(p => ({ ...p, image: data }));
-          }
+          const data = canvas.toDataURL('image/jpeg', 0.70);
+          setForm(p => ({ ...p, image: data }));
           setIsProcessing(false);
         } catch { setErrorMsg('Failed to process image.'); setIsProcessing(false); }
       };
@@ -3947,8 +3954,8 @@ function GalleryModal({ item, onSave, onClose }) {
     if (!file) return;
 
     const sizeMb = file.size / (1024 * 1024);
-    if (sizeMb > 40) {
-      setErrorMsg(`Video file is too large (${sizeMb.toFixed(1)}MB). Max recommended size is 40MB. For larger videos, consider uploading to YouTube and pasting the link.`);
+    if (sizeMb > 8) {
+      setErrorMsg(`Video file is ${sizeMb.toFixed(1)}MB. To ensure instant loading for all website visitors, direct device video uploads are limited to 8MB. For longer videos, paste your YouTube or Vimeo link in the "Video Link" tab.`);
       return;
     }
 

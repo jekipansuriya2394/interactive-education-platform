@@ -634,13 +634,37 @@ export const adminData = {
     this.syncKeyToServer(key, value).catch(err => {
       console.error(`[adminData] Error syncing ${key} to cloud:`, err);
     });
-    // 2. Also keep full background sync up-to-date
-    this.syncToServer().catch(() => {});
-    // 3. Commit & push changes to Git Repository via Worker API
+
+    // 2. Commit & push changes to Git Repository via Worker API (non-blocking)
     try {
       commitContent(`content/${key}.json`, value, `chore(cms): update ${key} content`).catch(() => {});
     } catch (e) {}
     return true;
+  },
+
+  async setDataAsync(key, value) {
+    if (!this._memoryCache) this._memoryCache = {};
+    this._memoryCache[key] = value;
+
+    try {
+      localStorage.setItem(PREFIX + key, JSON.stringify(value));
+    } catch (e) {
+      console.warn(`[adminData] localStorage write skipped for ${key} (quota limit):`, e);
+    }
+
+    try {
+      this.notifySubscribers(key, value);
+    } catch {}
+
+    // Instantly push this specific section to Cloud Database and return status
+    const cloudOk = await this.syncKeyToServer(key, value);
+
+    // Commit & push changes to Git Repository via Worker API (non-blocking)
+    try {
+      commitContent(`content/${key}.json`, value, `chore(cms): update ${key} content`).catch(() => {});
+    } catch (e) {}
+
+    return cloudOk;
   },
 
   resetData(key) {
@@ -679,6 +703,37 @@ export const adminData = {
     return false;
   },
 
+  async fetchKeyFromServer(key) {
+    if (!this.getSyncEnabled()) return null;
+    const firebaseUrl = getFirebaseUrl();
+    if (!firebaseUrl) return null;
+
+    try {
+      const url = `${firebaseUrl}/data/${key}.json?_t=${Date.now()}`;
+      const res = await fetch(url, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json !== null && json !== undefined) {
+          if (!this._memoryCache) this._memoryCache = {};
+          this._memoryCache[key] = json;
+          try {
+            localStorage.setItem(PREFIX + key, JSON.stringify(json));
+          } catch {}
+          try {
+            this.notifySubscribers(key, json);
+          } catch {}
+          return json;
+        }
+      }
+    } catch (e) {
+      console.warn(`[adminData] Error fetching ${key} from server:`, e);
+    }
+    return null;
+  },
+
   async syncToServer() {
     try {
       if (!this.getSyncEnabled()) return;
@@ -695,15 +750,19 @@ export const adminData = {
 
       const payload = {};
       allKeys.forEach(k => {
-        const val = localStorage.getItem(PREFIX + k);
-        if (val !== null) {
-          try {
-            payload[k] = JSON.parse(val);
-          } catch {
-            payload[k] = val;
+        if (this._memoryCache && this._memoryCache[k] !== undefined) {
+          payload[k] = this._memoryCache[k];
+        } else {
+          const val = localStorage.getItem(PREFIX + k);
+          if (val !== null) {
+            try {
+              payload[k] = JSON.parse(val);
+            } catch {
+              payload[k] = val;
+            }
+          } else if (DEFAULTS[k] !== undefined) {
+            payload[k] = DEFAULTS[k];
           }
-        } else if (DEFAULTS[k] !== undefined) {
-          payload[k] = DEFAULTS[k];
         }
       });
 
@@ -765,18 +824,30 @@ export const adminData = {
         'blogPosts', 'seoConfig'
       ]));
 
+      if (!this._memoryCache) this._memoryCache = {};
+
       allKeys.forEach(k => {
         const serverVal = data[k];
         if (serverVal !== undefined) {
           const serverValStr = typeof serverVal === 'string' ? serverVal : JSON.stringify(serverVal);
           const localValStr = localStorage.getItem(PREFIX + k);
+
+          // Always sync to memory cache
+          try {
+            this._memoryCache[k] = typeof serverVal === 'string' ? JSON.parse(serverVal) : serverVal;
+          } catch {
+            this._memoryCache[k] = serverVal;
+          }
+
           if (serverValStr !== localValStr) {
-            localStorage.setItem(PREFIX + k, serverValStr);
             try {
-              this.notifySubscribers(k, JSON.parse(serverValStr));
-            } catch {
-              this.notifySubscribers(k, serverValStr);
+              localStorage.setItem(PREFIX + k, serverValStr);
+            } catch (e) {
+              // Ignore quota limit, memory cache has the fresh data
             }
+            try {
+              this.notifySubscribers(k, this._memoryCache[k]);
+            } catch {}
             changed = true;
           }
         }
