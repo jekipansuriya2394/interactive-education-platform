@@ -3,7 +3,7 @@
 
 const STORAGE_KEY = 'noble_admin_firebase_url';
 export const ENV_FIREBASE_URL = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_FIREBASE_RTDB_URL ? import.meta.env.VITE_FIREBASE_RTDB_URL : '';
-export const DEFAULT_FIREBASE_URL = ENV_FIREBASE_URL || 'https://noble-education-default-rtdb.firebaseio.com';
+export const DEFAULT_FIREBASE_URL = ENV_FIREBASE_URL || 'https://noble-education-website-default-rtdb.firebaseio.com';
 
 export function getFirebaseUrl() {
   try {
