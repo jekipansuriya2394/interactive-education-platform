@@ -3963,11 +3963,20 @@ function GalleryModal({ item, onSave, onClose }) {
 
         tempVideo.onseeked = () => {
           try {
+            const vw = tempVideo.videoWidth || 640;
+            const vh = tempVideo.videoHeight || 360;
+            const isPortrait = vh > vw;
             const canvas = document.createElement('canvas');
-            canvas.width = tempVideo.videoWidth || 640;
-            canvas.height = tempVideo.videoHeight || 360;
+            const MAX = 720;
+            let w = vw, h = vh;
+            if (w > h ? w > MAX : h > MAX) {
+              if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+              else { w = Math.round(w * MAX / h); h = MAX; }
+            }
+            canvas.width = w;
+            canvas.height = h;
             const ctx = canvas.getContext('2d');
-            ctx.drawImage(tempVideo, 0, 0, canvas.width, canvas.height);
+            ctx.drawImage(tempVideo, 0, 0, w, h);
             const thumbData = canvas.toDataURL('image/jpeg', 0.7);
 
             setForm(prev => ({
@@ -3975,6 +3984,7 @@ function GalleryModal({ item, onSave, onClose }) {
               videoUrl: videoData,
               image: thumbData,
               mediaType: 'video',
+              aspectRatio: isPortrait ? '9/16' : (prev.aspectRatio || 'auto'),
               category: prev.category === 'Classrooms' ? 'Videos' : prev.category
             }));
             setIsProcessing(false);
@@ -4002,16 +4012,18 @@ function GalleryModal({ item, onSave, onClose }) {
 
   const handleVideoUrlChange = (url) => {
     const trimmed = (url || '').trim();
+    const isShorts = trimmed.includes('/shorts/');
     const ytMatch = trimmed.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
     let thumb = form.image;
     if (ytMatch && ytMatch[1]) {
-      thumb = `https://img.youtube.com/vi/${ytMatch[1]}/maxresdefault.jpg`;
+      thumb = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
     }
     setForm(prev => ({
       ...prev,
       videoUrl: trimmed,
       image: thumb || prev.image,
       mediaType: 'video',
+      aspectRatio: isShorts ? '9/16' : (prev.aspectRatio || 'auto'),
       category: prev.category === 'Classrooms' ? 'Videos' : prev.category
     }));
   };
@@ -4029,6 +4041,7 @@ function GalleryModal({ item, onSave, onClose }) {
       onSave({
         ...form,
         mediaType: 'video',
+        aspectRatio: form.aspectRatio || 'auto',
         image: form.image || form.videoUrl
       });
     } else {
@@ -4134,23 +4147,74 @@ function GalleryModal({ item, onSave, onClose }) {
             </div>
           )}
 
+          {/* Video Frame Format Selector */}
+          <div style={{ marginTop: 14 }}>
+            <label className="ap-label">Video Frame Format</label>
+            <div className="ap-toggle-row" style={{ marginTop: 4 }}>
+              <button
+                type="button"
+                className={`ap-toggle-btn ${(!form.aspectRatio || form.aspectRatio === 'auto') ? 'active' : ''}`}
+                onClick={() => setForm(p => ({ ...p, aspectRatio: 'auto' }))}
+              >
+                🔄 Auto Frame (Original)
+              </button>
+              <button
+                type="button"
+                className={`ap-toggle-btn ${form.aspectRatio === '16/9' ? 'active' : ''}`}
+                onClick={() => setForm(p => ({ ...p, aspectRatio: '16/9' }))}
+              >
+                🖥️ Landscape (16:9)
+              </button>
+              <button
+                type="button"
+                className={`ap-toggle-btn ${form.aspectRatio === '9/16' ? 'active' : ''}`}
+                onClick={() => setForm(p => ({ ...p, aspectRatio: '9/16' }))}
+              >
+                📱 Vertical (9:16 Shorts/Reel)
+              </button>
+              <button
+                type="button"
+                className={`ap-toggle-btn ${form.aspectRatio === '1/1' ? 'active' : ''}`}
+                onClick={() => setForm(p => ({ ...p, aspectRatio: '1/1' }))}
+              >
+                ⏹️ Square (1:1)
+              </button>
+            </div>
+            <p style={{ color: '#6B7280', fontSize: 11, marginTop: 4 }}>
+              ⚡ <b>Auto Frame</b> automatically adapts to whatever orientation the video was recorded in without cropping.
+            </p>
+          </div>
+
           {form.videoUrl && (
-            <div style={{ marginTop: 16, background: '#0F172A', borderRadius: 12, padding: 12, border: '1px solid #1E293B' }}>
+            <div style={{ marginTop: 16, background: '#0F172A', borderRadius: 12, padding: 12, border: '1px solid #1E293B', textAlign: 'center' }}>
               <p style={{ color: '#94A3B8', fontSize: 12, fontWeight: 700, margin: '0 0 8px', textTransform: 'uppercase' }}>Video Preview</p>
               {getYouTubeEmbedUrl(form.videoUrl) ? (
-                <iframe
-                  src={getYouTubeEmbedUrl(form.videoUrl)}
-                  title="YouTube Preview"
-                  style={{ width: '100%', height: 200, borderRadius: 8, border: 'none' }}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
+                <div style={{
+                  maxWidth: form.aspectRatio === '9/16' ? 220 : (form.aspectRatio === '1/1' ? 260 : '100%'),
+                  aspectRatio: form.aspectRatio === '9/16' ? '9/16' : (form.aspectRatio === '1/1' ? '1/1' : '16/9'),
+                  margin: '0 auto'
+                }}>
+                  <iframe
+                    src={getYouTubeEmbedUrl(form.videoUrl)}
+                    title="YouTube Preview"
+                    style={{ width: '100%', height: '100%', borderRadius: 8, border: 'none' }}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
               ) : (
                 <video
                   controls
                   src={form.videoUrl}
                   poster={form.image}
-                  style={{ width: '100%', maxHeight: 200, borderRadius: 8, background: '#000' }}
+                  style={{
+                    maxWidth: form.aspectRatio === '9/16' ? 220 : (form.aspectRatio === '1/1' ? 260 : '100%'),
+                    maxHeight: 240,
+                    borderRadius: 8,
+                    background: '#000',
+                    margin: '0 auto',
+                    display: 'block'
+                  }}
                 />
               )}
             </div>

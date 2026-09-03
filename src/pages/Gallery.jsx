@@ -42,16 +42,30 @@ function GalleryImg({ src, alt, className, style }) {
 function GalleryMediaThumb({ item, isVid }) {
   const videoSrc = item?.videoUrl || (isVid ? (item?.image || item?.url) : '');
   const ytMatch = (videoSrc || '').match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  const isShorts = (videoSrc || '').includes('/shorts/') || item?.aspectRatio === '9/16' || item?.aspectRatio === 'vertical';
+  const isSquare = item?.aspectRatio === '1/1' || item?.aspectRatio === 'square';
+  const isLandscape = item?.aspectRatio === '16/9';
 
-  // 1. YouTube link -> official high-res YouTube thumbnail
+  // Dynamic aspect ratio styling for grid card: Auto by default, or specific when tagged
+  let frameStyle = {};
+  if (isShorts) {
+    frameStyle = { aspectRatio: '9/16', maxHeight: '520px' };
+  } else if (isSquare) {
+    frameStyle = { aspectRatio: '1/1' };
+  } else if (isLandscape) {
+    frameStyle = { aspectRatio: '16/9' };
+  }
+
+  // 1. YouTube link -> official high-res YouTube thumbnail (auto formatted)
   if (ytMatch && ytMatch[1]) {
     const ytThumb = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
     return (
-      <div className="relative overflow-hidden bg-slate-900 aspect-video rounded-3xl">
+      <div className="relative overflow-hidden bg-slate-900 rounded-3xl" style={frameStyle}>
         <img
           src={ytThumb}
           alt={item.title || 'Video'}
-          className="w-full h-full object-cover rounded-3xl group-hover:scale-[1.02] transition-transform duration-300"
+          className="w-full h-auto object-cover rounded-3xl group-hover:scale-[1.02] transition-transform duration-300"
+          style={isShorts || isSquare || isLandscape ? { height: '100%', objectFit: 'cover' } : { display: 'block' }}
           onError={(e) => {
             if (item.image && e.target.src !== item.image) e.target.src = item.image;
           }}
@@ -68,17 +82,17 @@ function GalleryMediaThumb({ item, isVid }) {
     );
   }
 
-  // 2. Direct video (MP4 / WebM / data URI) without image thumbnail
+  // 2. Direct video (MP4 / WebM / data URI) without separate image thumbnail: Auto-sizes to video natural proportions
   if (isVid && videoSrc && (!item.image || item.image.startsWith('data:video/'))) {
     return (
-      <div className="relative overflow-hidden rounded-3xl bg-slate-900" style={{ minHeight: 200 }}>
+      <div className="relative overflow-hidden rounded-3xl bg-slate-900" style={frameStyle}>
         <video
           src={videoSrc}
           muted
           playsInline
           preload="metadata"
-          className="w-full h-auto object-cover rounded-3xl group-hover:scale-[1.02] transition-transform duration-300 pointer-events-none"
-          style={{ minHeight: 200, maxHeight: 380, display: 'block' }}
+          className="w-full h-auto rounded-3xl group-hover:scale-[1.02] transition-transform duration-300 pointer-events-none"
+          style={{ display: 'block', maxHeight: isShorts ? '520px' : 'none', ...(isShorts || isSquare || isLandscape ? { height: '100%', objectFit: 'cover' } : {}) }}
         />
         <div className="absolute inset-0 bg-black/20 group-hover:bg-black/35 transition-colors flex items-center justify-center">
           <div className="w-14 h-14 rounded-full bg-red-600 text-white flex items-center justify-center shadow-xl shadow-red-600/60 group-hover:scale-110 transition-transform">
@@ -92,10 +106,10 @@ function GalleryMediaThumb({ item, isVid }) {
     );
   }
 
-  // 3. Video with custom image thumbnail
+  // 3. Video with custom image thumbnail: Auto formatted
   if (isVid && item.image) {
     return (
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden" style={frameStyle}>
         <GalleryImg src={item.image} alt={item.title} />
         <div className="absolute inset-0 bg-black/20 group-hover:bg-black/35 transition-colors flex items-center justify-center">
           <div className="w-14 h-14 rounded-full bg-red-600 text-white flex items-center justify-center shadow-xl shadow-red-600/60 group-hover:scale-110 transition-transform">
@@ -109,7 +123,7 @@ function GalleryMediaThumb({ item, isVid }) {
     );
   }
 
-  // 4. Default standard photo
+  // 4. Default standard photo (natural aspect ratio)
   return (
     <div className="relative overflow-hidden">
       <GalleryImg src={item.image || item.url || item.src} alt={item.title} />
@@ -194,10 +208,16 @@ export default function Gallery() {
     return item.image || item.url || item.src || (typeof item === 'string' ? item : '');
   };
 
-  const isItemVideo = selectedItem ? (selectedItem.mediaType === 'video' || selectedItem.category === 'Videos' || isVideoMedia(selectedItem)) : false;
+  const isItemVideo = selectedItem ? (selectedItem.mediaType === 'video' || selectedItem.category === 'Videos' || !!selectedItem.videoUrl || isVideoMedia(selectedItem)) : false;
   const rawVideoSrc = selectedItem ? (selectedItem.videoUrl || (isItemVideo ? getRawSrc(selectedItem) : '')) : '';
   const ytEmbedUrl = isItemVideo ? getYouTubeEmbedUrl(rawVideoSrc) : '';
   const currentEmbedSrc = selectedItem ? getEmbedImageUrl(getRawSrc(selectedItem)) : '';
+  const isVertical = selectedItem ? (
+    selectedItem.aspectRatio === '9/16' ||
+    selectedItem.aspectRatio === 'vertical' ||
+    (rawVideoSrc && rawVideoSrc.includes('/shorts/'))
+  ) : false;
+  const isSquare = selectedItem ? (selectedItem.aspectRatio === '1/1' || selectedItem.aspectRatio === 'square') : false;
 
   // Lightbox Modal JSX (Rendered directly at document.body via Portal to cover Navbar & full page)
   const lightboxModal = selectedItem ? (
@@ -352,29 +372,39 @@ export default function Gallery() {
         {!lightboxError && (
           isItemVideo ? (
             ytEmbedUrl ? (
-              <iframe
-                key={ytEmbedUrl}
-                src={ytEmbedUrl}
-                title={selectedItem.title || 'Campus Video'}
+              <div
                 style={{
                   width: '90vw',
-                  maxWidth: '960px',
-                  aspectRatio: '16/9',
-                  borderRadius: '16px',
-                  boxShadow: '0 25px 60px rgba(0,0,0,0.8)',
-                  border: '2px solid rgba(255, 255, 255, 0.2)'
+                  maxWidth: isVertical ? '420px' : (isSquare ? '600px' : '960px'),
+                  aspectRatio: isVertical ? '9/16' : (isSquare ? '1/1' : '16/9'),
+                  maxHeight: '82vh',
+                  position: 'relative'
                 }}
-                onLoad={() => setLightboxLoading(false)}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
+              >
+                <iframe
+                  key={ytEmbedUrl}
+                  src={ytEmbedUrl}
+                  title={selectedItem.title || 'Campus Video'}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: '16px',
+                    boxShadow: '0 25px 60px rgba(0,0,0,0.8)',
+                    border: '2px solid rgba(255, 255, 255, 0.2)'
+                  }}
+                  onLoad={() => setLightboxLoading(false)}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
             ) : (
               <video
                 key={rawVideoSrc}
                 src={rawVideoSrc}
                 controls
                 autoPlay
-                poster={currentEmbedSrc}
+                playsInline
+                poster={currentEmbedSrc && !currentEmbedSrc.startsWith('data:video/') ? currentEmbedSrc : undefined}
                 onLoadedData={() => setLightboxLoading(false)}
                 onError={() => {
                   setLightboxLoading(false);
@@ -382,10 +412,13 @@ export default function Gallery() {
                 }}
                 style={{
                   maxWidth: '90vw',
-                  maxHeight: '78vh',
+                  maxHeight: '82vh',
+                  width: 'auto',
+                  height: 'auto',
                   borderRadius: '16px',
                   boxShadow: '0 25px 60px rgba(0,0,0,0.8)',
-                  border: '2px solid rgba(255, 255, 255, 0.2)'
+                  border: '2px solid rgba(255, 255, 255, 0.2)',
+                  objectFit: 'contain'
                 }}
               />
             )
