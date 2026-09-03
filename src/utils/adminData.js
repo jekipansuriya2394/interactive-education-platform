@@ -486,9 +486,14 @@ export const adminData = {
 
   getSyncApiUrls() {
     const firebaseUrl = getFirebaseUrl();
-    const urls = [
-      `${firebaseUrl}/data.json`
-    ];
+    const urls = [];
+    if (firebaseUrl && firebaseUrl.trim()) {
+      urls.push(`${firebaseUrl}/data.json`);
+    }
+    if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+      const base = window.location.pathname.startsWith('/interactive-education-platform') ? '/interactive-education-platform' : '';
+      urls.push(`${base}/api/sync-data`);
+    }
     return urls;
   },
 
@@ -565,9 +570,16 @@ export const adminData = {
       const now = Date.now();
       this._lastSyncTime = now;
 
-      const keysToSync = ['siteLogo', 'announcements', 'results', 'gallery', 'testimonials', 'stats', 'features', 'contactInfo', 'courses', 'users', 'popupConfig', 'videoLectures', 'pageImages', 'heroBanners', 'partnerSchools', 'schoolPhotos'];
+      const allKeys = Array.from(new Set([
+        ...Object.keys(DEFAULTS),
+        'siteLogo', 'announcements', 'results', 'gallery', 'testimonials',
+        'stats', 'features', 'contactInfo', 'courses', 'users', 'popupConfig',
+        'videoLectures', 'pageImages', 'heroBanners', 'partnerSchools', 'schoolPhotos',
+        'blogPosts', 'seoConfig'
+      ]));
+
       const payload = {};
-      keysToSync.forEach(k => {
+      allKeys.forEach(k => {
         const val = localStorage.getItem(PREFIX + k);
         if (val !== null) {
           try {
@@ -625,8 +637,15 @@ export const adminData = {
     const data = await this.fetchFromServer();
     if (data && typeof data === 'object' && Object.keys(data).length > 0) {
       let changed = false;
-      const keysToSync = ['siteLogo', 'announcements', 'results', 'gallery', 'testimonials', 'stats', 'features', 'contactInfo', 'courses', 'users', 'popupConfig', 'videoLectures', 'pageImages', 'heroBanners', 'partnerSchools', 'schoolPhotos'];
-      keysToSync.forEach(k => {
+      const allKeys = Array.from(new Set([
+        ...Object.keys(DEFAULTS),
+        'siteLogo', 'announcements', 'results', 'gallery', 'testimonials',
+        'stats', 'features', 'contactInfo', 'courses', 'users', 'popupConfig',
+        'videoLectures', 'pageImages', 'heroBanners', 'partnerSchools', 'schoolPhotos',
+        'blogPosts', 'seoConfig'
+      ]));
+
+      allKeys.forEach(k => {
         const serverVal = data[k];
         if (serverVal !== undefined) {
           const serverValStr = typeof serverVal === 'string' ? serverVal : JSON.stringify(serverVal);

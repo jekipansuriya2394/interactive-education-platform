@@ -22,6 +22,7 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
+          VITE_FIREBASE_RTDB_URL: ${{ secrets.VITE_FIREBASE_RTDB_URL || vars.VITE_FIREBASE_RTDB_URL }}
           VITE_WORKER_URL: ${{ secrets.VITE_WORKER_URL }}
           VITE_GH_OWNER: jekipansuriya2394
           VITE_GH_REPO: interactive-education-platform

@@ -8,6 +8,7 @@ import {
   FiExternalLink, FiCamera, FiLink, FiArrowLeft, FiVideo, FiLayers
 } from 'react-icons/fi';
 import { adminData } from '../utils/adminData';
+import { getFirebaseUrl, setFirebaseUrl, testFirebaseConnection } from '../utils/firebaseConfig';
 import { inquiryService } from '../utils/inquiryService';
 import { commitContent, getDeploymentStatus, getCommitLog, uploadMedia, checkWorkerHealth } from '../services/gitSyncService';
 import { getWorkerUrl, setWorkerUrl } from '../services/apiClient';
@@ -601,6 +602,37 @@ function AdminPanel({ onLogout }) {
   const [syncEnabled, setSyncEnabled] = useState(() => {
     try { return adminData.getSyncEnabled(); } catch { return true; }
   });
+
+  const [firebaseUrlInput, setFirebaseUrlInput] = useState(() => getFirebaseUrl() || '');
+  const [firebaseStatus, setFirebaseStatus] = useState({ state: 'idle', message: '' });
+
+  const handleTestFirebase = async (urlToTest) => {
+    setFirebaseStatus({ state: 'testing', message: 'Testing connection to cloud database...' });
+    const result = await testFirebaseConnection(urlToTest || firebaseUrlInput);
+    if (result.ok) {
+      setFirebaseStatus({ state: 'connected', message: result.message });
+      showToast('Cloud Database connected successfully!');
+    } else {
+      setFirebaseStatus({ state: 'error', message: result.message });
+      showToast(result.message, 'error');
+    }
+  };
+
+  const handleSaveFirebaseUrl = async () => {
+    const trimmed = firebaseUrlInput.trim();
+    setFirebaseUrl(trimmed);
+    showToast('Saved Database URL. Testing connection and syncing current data...');
+    setFirebaseStatus({ state: 'testing', message: 'Saving and testing...' });
+    const testRes = await testFirebaseConnection(trimmed);
+    if (testRes.ok) {
+      setFirebaseStatus({ state: 'connected', message: 'Connected & Synced! Live across all devices.' });
+      await adminData.forceSync();
+      showToast('All local website data synced to cloud database!');
+    } else {
+      setFirebaseStatus({ state: 'error', message: testRes.message });
+      showToast(testRes.message, 'error');
+    }
+  };
 
   useEffect(() => {
     try { adminData.setSyncEnabled(syncEnabled); } catch {}
@@ -1431,7 +1463,7 @@ function AdminPanel({ onLogout }) {
   const slugify = (text) => text.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').substring(0, 60);
 
   const saveBlogPost = (post) => {
-    const isEdit = !!post._index !== undefined && post._index >= 0;
+    const isEdit = post._index !== undefined && post._index >= 0;
     const slug = post.slug || slugify(post.title);
     const now  = new Date().toISOString();
     const clean = { slug, title: post.title, excerpt: post.excerpt, content: post.content,
@@ -1911,18 +1943,122 @@ function AdminPanel({ onLogout }) {
             </div>
           )}
 
-          <div className="ap-card">
-            <h4 className="ap-card-title"><FiRefreshCw style={{ marginRight: 8 }} />Data Synchronisation</h4>
-            <p style={{ color: '#9CA3AF', fontSize: 14, marginBottom: 12 }}>Control automatic sync to remote server. Disable when running the site on static hosting without server-side API.</p>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <input type="checkbox" checked={syncEnabled} onChange={e => setSyncEnabled(e.target.checked)} />
-              <span style={{ color: '#C9D1D9', fontWeight: 700 }}>Enable remote sync</span>
-            </label>
-            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-              <button className="ap-btn ap-btn-secondary" onClick={handleForceFetch}><FiDownload /> Fetch Now</button>
-              <button className="ap-btn ap-btn-primary" onClick={handleForceSync}><FiUpload /> Push Now</button>
+          <div className="ap-card" style={{ border: '1px solid #3B82F6', background: 'linear-gradient(180deg, rgba(59,130,246,0.06) 0%, rgba(17,24,39,0.8) 100%)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+              <h4 className="ap-card-title" style={{ margin: 0, color: '#60A5FA', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <FiRefreshCw className="animate-spin-slow" /> Real-Time Cloud Database & Live Multi-Device Sync
+              </h4>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {firebaseStatus.state === 'connected' ? (
+                  <span style={{ background: '#065F46', color: '#34D399', fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 999, border: '1px solid #059669', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#34D399', display: 'inline-block' }}></span> LIVE & CONNECTED
+                  </span>
+                ) : firebaseStatus.state === 'testing' ? (
+                  <span style={{ background: '#78350F', color: '#FCD34D', fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 999, border: '1px solid #D97706' }}>
+                    🟡 TESTING...
+                  </span>
+                ) : firebaseStatus.state === 'error' ? (
+                  <span style={{ background: '#7F1D1D', color: '#F87171', fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 999, border: '1px solid #DC2626' }}>
+                    🔴 DISCONNECTED
+                  </span>
+                ) : (
+                  <span style={{ background: '#374151', color: '#D1D5DB', fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 999 }}>
+                    READY
+                  </span>
+                )}
+              </div>
             </div>
-            <p style={{ color: '#6B7280', fontSize: 12, marginTop: 10 }}>Last sync: {adminData.getLastSyncTime() ? new Date(adminData.getLastSyncTime()).toLocaleString() : 'Never'}. Last fetch: {adminData.getLastFetchTime() ? new Date(adminData.getLastFetchTime()).toLocaleString() : 'Never'}.</p>
+
+            <p style={{ color: '#9CA3AF', fontSize: 13, marginBottom: 14, lineHeight: 1.6 }}>
+              Any changes made in this admin panel will automatically update <strong>live in real time across any phone, tablet, or desktop worldwide</strong>.
+            </p>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', color: '#E5E7EB', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
+                Firebase Realtime Database URL:
+              </label>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <input
+                  type="text"
+                  className="ap-input"
+                  style={{ flex: 1, minWidth: 260, fontFamily: 'monospace', fontSize: 13 }}
+                  placeholder="https://your-project-id-default-rtdb.firebaseio.com"
+                  value={firebaseUrlInput}
+                  onChange={e => setFirebaseUrlInput(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="ap-btn ap-btn-primary"
+                  onClick={handleSaveFirebaseUrl}
+                  disabled={firebaseStatus.state === 'testing'}
+                >
+                  <FiSave /> Save & Sync to Cloud
+                </button>
+                <button
+                  type="button"
+                  className="ap-btn ap-btn-secondary"
+                  onClick={() => handleTestFirebase()}
+                  disabled={firebaseStatus.state === 'testing'}
+                >
+                  <FiCheckCircle /> Test Connection
+                </button>
+              </div>
+              {firebaseStatus.message && (
+                <div style={{
+                  marginTop: 8,
+                  padding: '8px 12px',
+                  borderRadius: 6,
+                  fontSize: 12,
+                  background: firebaseStatus.state === 'connected' ? 'rgba(5, 150, 105, 0.15)' : firebaseStatus.state === 'error' ? 'rgba(220, 38, 38, 0.15)' : 'rgba(75, 85, 99, 0.2)',
+                  color: firebaseStatus.state === 'connected' ? '#34D399' : firebaseStatus.state === 'error' ? '#FCA5A5' : '#E5E7EB',
+                  border: `1px solid ${firebaseStatus.state === 'connected' ? '#059669' : firebaseStatus.state === 'error' ? '#DC2626' : '#4B5563'}`
+                }}>
+                  {firebaseStatus.message}
+                </div>
+              )}
+            </div>
+
+            <div style={{ background: 'rgba(0,0,0,0.3)', padding: 12, borderRadius: 8, marginBottom: 14, border: '1px solid #1F2937' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', margin: 0 }}>
+                  <input type="checkbox" checked={syncEnabled} onChange={e => setSyncEnabled(e.target.checked)} />
+                  <span style={{ color: '#C9D1D9', fontWeight: 600, fontSize: 13 }}>Enable automatic remote sync</span>
+                </label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button type="button" className="ap-btn ap-btn-secondary ap-btn-sm" onClick={handleForceFetch}><FiDownload /> Fetch Cloud Data</button>
+                  <button type="button" className="ap-btn ap-btn-primary ap-btn-sm" onClick={handleForceSync}><FiUpload /> Push Local to Cloud</button>
+                </div>
+              </div>
+              <p style={{ color: '#6B7280', fontSize: 11, marginTop: 8, marginBottom: 0 }}>
+                Last sync: {adminData.getLastSyncTime() ? new Date(adminData.getLastSyncTime()).toLocaleTimeString() : 'Never'} | Last fetch: {adminData.getLastFetchTime() ? new Date(adminData.getLastFetchTime()).toLocaleTimeString() : 'Never'}
+              </p>
+            </div>
+
+            {/* Quick 2-step setup guide */}
+            <details style={{ background: 'rgba(30, 41, 59, 0.5)', borderRadius: 8, padding: '10px 14px', border: '1px solid #334155' }}>
+              <summary style={{ cursor: 'pointer', color: '#93C5FD', fontWeight: 600, fontSize: 13 }}>
+                📘 How to set up your free Firebase Realtime Database in 2 minutes
+              </summary>
+              <div style={{ marginTop: 10, fontSize: 12, color: '#CBD5E1', lineHeight: 1.6 }}>
+                <ol style={{ paddingLeft: 20, margin: 0 }}>
+                  <li style={{ marginBottom: 6 }}>Open <a href="https://console.firebase.google.com" target="_blank" rel="noreferrer" style={{ color: '#60A5FA', textDecoration: 'underline' }}>Firebase Console</a> and click <strong>Create a project</strong> (100% Free).</li>
+                  <li style={{ marginBottom: 6 }}>In the left sidebar, click <strong>Build</strong> → <strong>Realtime Database</strong> → <strong>Create Database</strong>.</li>
+                  <li style={{ marginBottom: 6 }}>
+                    In the <strong>Rules</strong> tab, set:
+                    <pre style={{ background: '#0F172A', padding: '6px 10px', borderRadius: 4, margin: '4px 0', color: '#38BDF8', fontFamily: 'monospace' }}>
+{`{
+  "rules": {
+    ".read": true,
+    ".write": true
+  }
+}`}
+                    </pre>
+                  </li>
+                  <li style={{ marginBottom: 6 }}>Copy your database URL (e.g. <code>https://your-app-default-rtdb.firebaseio.com</code>), paste it into the box above, and click <strong>Save & Sync to Cloud</strong>.</li>
+                  <li>That is it! Any edits in this admin panel will instantly sync live across all mobile phones, computers, and tablets worldwide.</li>
+                </ol>
+              </div>
+            </details>
           </div>
         </div>
 
