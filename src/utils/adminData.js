@@ -427,16 +427,13 @@ export const adminData = {
   login(username, password) {
     try {
       const users = this.getUsers();
-      const rawInput = (username || '').trim().toLowerCase();
-      const cleanPhone = rawInput.replace(/[\s-+()]/g, '');
-      const adminPhones = ['9104206999', '9638256246', '919104206999', '919638256246'];
-      const isPhoneMatch = adminPhones.includes(cleanPhone);
-
+      const input = (username || '').trim().toLowerCase();
+      const cleanDigits = input.replace(/[\s\-\+\(\)]/g, '');
       const user = users.find(
         u => u && u.username && (
-          u.username.toLowerCase() === rawInput ||
-          (rawInput === 'admin' && (u.username === 'nobleedudigital@gmail.com' || u.role === 'superadmin')) ||
-          (isPhoneMatch && (u.username === 'nobleedudigital@gmail.com' || u.role === 'superadmin'))
+          u.username.toLowerCase() === input ||
+          (input === 'admin' && (u.username === 'nobleedudigital@gmail.com' || u.role === 'superadmin')) ||
+          ((cleanDigits === '9638256246' || cleanDigits === '919638256246' || cleanDigits === '9104206999' || cleanDigits === '919104206999') && (u.username === 'nobleedudigital@gmail.com' || u.role === 'superadmin'))
         ) && u.password === password
       );
       if (user) {
@@ -447,7 +444,7 @@ export const adminData = {
         return { success: true, user };
       }
     } catch (e) {}
-    return { success: false, error: 'Invalid email/phone or password' };
+    return { success: false, error: 'Invalid username or password' };
   },
 
   logout() {
