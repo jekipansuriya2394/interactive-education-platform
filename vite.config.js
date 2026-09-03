@@ -75,5 +75,5 @@ function localSyncPlugin() {
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), localSyncPlugin()],
-  base: '/interactive-education-platform'
+  base: '/'
 })
