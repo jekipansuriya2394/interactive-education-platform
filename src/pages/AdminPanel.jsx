@@ -5,14 +5,14 @@ import {
   FiMenu, FiX, FiPlus, FiEdit2, FiTrash2, FiDownload, FiUpload,
   FiStar, FiUsers, FiCompass, FiCpu, FiFileText, FiSave, FiEye, FiEyeOff,
   FiLock, FiRefreshCw, FiAlertTriangle, FiChevronRight, FiSearch,
-  FiExternalLink, FiCamera, FiLink, FiArrowLeft, FiVideo, FiLayers
+  FiExternalLink, FiCamera, FiLink, FiArrowLeft, FiVideo, FiPlay, FiLayers
 } from 'react-icons/fi';
 import { adminData } from '../utils/adminData';
 import { getFirebaseUrl, setFirebaseUrl, testFirebaseConnection } from '../utils/firebaseConfig';
 import { inquiryService } from '../utils/inquiryService';
 import { commitContent, getDeploymentStatus, getCommitLog, uploadMedia, checkWorkerHealth } from '../services/gitSyncService';
 import { getWorkerUrl, setWorkerUrl } from '../services/apiClient';
-import { getEmbedImageUrl, detectImageUrlSource, handleImageError, FALLBACK_SLIDE_SVG } from '../utils/imageUrl';
+import { getEmbedImageUrl, detectImageUrlSource, handleImageError, FALLBACK_SLIDE_SVG, getYouTubeEmbedUrl, isVideoMedia } from '../utils/imageUrl';
 import { logoWhite, getLogoUrl } from '../utils/logo';
 import { jagannathPosterB64 } from '../data/jagannathB64';
 import { neetRepeaterB64 } from '../data/neetRepeaterB64';
@@ -24,7 +24,7 @@ const ICON_MAP = {
   FiStar, FiTrendingUp, FiBookOpen, FiGrid, FiPhone, FiImage,
 };
 const ICON_OPTIONS = Object.keys(ICON_MAP);
-const GALLERY_CATEGORIES = ['Classrooms', 'Seminars', 'Activities', 'Events'];
+const GALLERY_CATEGORIES = ['Classrooms', 'Seminars', 'Activities', 'Events', 'Videos'];
 
 // ─── Toast ───────────────────────────────────────────────────────────────────
 function Toast({ message, type, onClose }) {
@@ -1091,21 +1091,32 @@ function AdminPanel({ onLogout }) {
   // ─── GALLERY ────────────────────────────────────────────────────────────
   const renderGallery = () => {
     const cats = ['All', ...GALLERY_CATEGORIES];
-    const filtered = gallery.filter(g =>
-      (galleryFilter === 'All' || g.category === galleryFilter) &&
-      (g.title || '').toLowerCase().includes(search.toLowerCase())
-    );
+    const filtered = gallery.filter(g => {
+      const matchCat = galleryFilter === 'All' ||
+        (galleryFilter === 'Videos' ? (g.category === 'Videos' || g.mediaType === 'video' || isVideoMedia(g)) : g.category === galleryFilter);
+      const matchSearch = (g.title || '').toLowerCase().includes(search.toLowerCase());
+      return matchCat && matchSearch;
+    });
     return (
       <div>
         <SectionHeader
           title="Gallery"
-          subtitle="Upload & manage campus photos shown on the Gallery page"
-          action={adminData.hasPermission('gallery', 'edit') && <button className="ap-btn ap-btn-primary" onClick={() => setEditingGallery({ title:'', category:'Classrooms', image:'' })}><FiPlus /> Add Photo</button>}
+          subtitle="Upload & manage campus photos and videos shown on the Gallery page"
+          action={adminData.hasPermission('gallery', 'edit') && (
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button className="ap-btn ap-btn-primary" onClick={() => setEditingGallery({ title:'', category:'Classrooms', image:'', mediaType:'image' })}>
+                <FiPlus /> Add Photo
+              </button>
+              <button className="ap-btn" style={{ background: '#DC2626', color: '#fff', border: 'none' }} onClick={() => setEditingGallery({ title:'', category:'Videos', image:'', mediaType:'video', videoUrl:'' })}>
+                <FiVideo /> Upload Video
+              </button>
+            </div>
+          )}
         />
         <div className="ap-gallery-controls">
           <div className="ap-search-bar" style={{ flex: 1, marginBottom: 0 }}>
             <FiSearch />
-            <input placeholder="Search photos..." value={search} onChange={e => setSearch(e.target.value)} />
+            <input placeholder="Search photos and videos..." value={search} onChange={e => setSearch(e.target.value)} />
           </div>
           <div className="ap-cat-tabs">
             {cats.map(c => (
@@ -1114,10 +1125,12 @@ function AdminPanel({ onLogout }) {
           </div>
         </div>
 
-        {filtered.length === 0 ? <EmptyState icon={FiImage} message="No photos found. Click 'Add Photo' to upload one." /> : (
+        {filtered.length === 0 ? <EmptyState icon={FiImage} message="No items found. Click 'Add Photo' or 'Upload Video' to add one." /> : (
           <div className="ap-gallery-grid">
             {filtered.map((item, i) => {
               const realIdx = gallery.indexOf(item);
+              const isVid = item.mediaType === 'video' || item.category === 'Videos' || isVideoMedia(item);
+              const videoSrc = item.videoUrl || (isVid ? item.image : '');
               return (
                 <div className="ap-gallery-card" key={i}>
                   <div className="ap-gallery-thumb" style={{ position: 'relative', overflow: 'hidden' }}>
@@ -1130,17 +1143,45 @@ function AdminPanel({ onLogout }) {
                       />
                     ) : null}
                     <div style={{ display: item.image ? 'none' : 'flex', position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center', background: '#21262D', color: '#374151', flexDirection: 'column', gap: 8 }}>
-                      <FiImage size={32} />
-                      <span style={{ fontSize: 11, color: '#6B7280' }}>No image</span>
+                      {isVid ? <FiVideo size={32} style={{ color: '#EF4444' }} /> : <FiImage size={32} />}
+                      <span style={{ fontSize: 11, color: '#6B7280' }}>{isVid ? 'Video' : 'No image'}</span>
                     </div>
+                    {isVid && (
+                      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+                        <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#DC2626', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 15px rgba(220,38,38,0.6)' }}>
+                          <FiPlay size={20} style={{ marginLeft: 2 }} />
+                        </div>
+                      </div>
+                    )}
                     <div className="ap-gallery-thumb-overlay">
-                      {item.image && <button className="ap-gallery-thumb-btn" onClick={() => window.open(getEmbedImageUrl(item.image), '_blank')} title="View full"><FiEye /></button>}
+                      {item.image && (
+                        <button
+                          className="ap-gallery-thumb-btn"
+                          onClick={() => {
+                            if (isVid && videoSrc) {
+                              window.open(videoSrc, '_blank');
+                            } else {
+                              window.open(getEmbedImageUrl(item.image), '_blank');
+                            }
+                          }}
+                          title={isVid ? 'Play video' : 'View full'}
+                        >
+                          {isVid ? <FiPlay /> : <FiEye />}
+                        </button>
+                      )}
                     </div>
                   </div>
                   <div className="ap-gallery-info">
                     <div>
                       <p className="ap-gallery-title">{item.title || 'Untitled'}</p>
-                      <span className="ap-badge ap-badge-purple">{item.category}</span>
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
+                        <span className="ap-badge ap-badge-purple">{item.category || 'Classrooms'}</span>
+                        {isVid && (
+                          <span className="ap-badge" style={{ background: 'rgba(239,68,68,0.2)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.3)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            <FiVideo size={10} /> VIDEO
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="ap-list-actions" style={{ marginTop: 8 }}>
                       {adminData.hasPermission('gallery', 'edit') && (
@@ -3840,11 +3881,21 @@ function UrlImageInput({ value, onChange }) {
 }
 
 function GalleryModal({ item, onSave, onClose }) {
-  const [form, setForm] = useState({ title: item.title || '', category: item.category || 'Classrooms', image: item.image || '', _index: item._index });
+  const isInitialVideo = item.mediaType === 'video' || item.category === 'Videos' || isVideoMedia(item) || !!item.videoUrl;
+  const [mediaType, setMediaType] = useState(isInitialVideo ? 'video' : 'image');
+  const [form, setForm] = useState({
+    title: item.title || '',
+    category: item.category || (isInitialVideo ? 'Videos' : 'Classrooms'),
+    image: item.image || '',
+    videoUrl: item.videoUrl || (isInitialVideo ? item.image : ''),
+    mediaType: isInitialVideo ? 'video' : 'image',
+    _index: item._index
+  });
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadMode, setUploadMode] = useState('file'); // 'file' | 'url'
   const [errorMsg, setErrorMsg] = useState('');
   const fileRef = useRef(null);
+  const videoFileRef = useRef(null);
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0]; if (!file) return;
@@ -3883,77 +3934,294 @@ function GalleryModal({ item, onSave, onClose }) {
     reader.readAsDataURL(file);
   };
 
+  const handleVideoUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const sizeMb = file.size / (1024 * 1024);
+    if (sizeMb > 40) {
+      setErrorMsg(`Video file is too large (${sizeMb.toFixed(1)}MB). Max recommended size is 40MB. For larger videos, consider uploading to YouTube and pasting the link.`);
+      return;
+    }
+
+    setIsProcessing(true);
+    setErrorMsg('');
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const videoData = ev.target.result;
+      try {
+        const tempVideo = document.createElement('video');
+        tempVideo.preload = 'metadata';
+        tempVideo.src = videoData;
+        tempVideo.muted = true;
+        tempVideo.playsInline = true;
+
+        tempVideo.onloadeddata = () => {
+          tempVideo.currentTime = Math.min(1, (tempVideo.duration || 1) / 2);
+        };
+
+        tempVideo.onseeked = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = tempVideo.videoWidth || 640;
+            canvas.height = tempVideo.videoHeight || 360;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(tempVideo, 0, 0, canvas.width, canvas.height);
+            const thumbData = canvas.toDataURL('image/jpeg', 0.7);
+
+            setForm(prev => ({
+              ...prev,
+              videoUrl: videoData,
+              image: thumbData,
+              mediaType: 'video',
+              category: prev.category === 'Classrooms' ? 'Videos' : prev.category
+            }));
+            setIsProcessing(false);
+          } catch {
+            setForm(prev => ({ ...prev, videoUrl: videoData, mediaType: 'video' }));
+            setIsProcessing(false);
+          }
+        };
+
+        tempVideo.onerror = () => {
+          setForm(prev => ({ ...prev, videoUrl: videoData, mediaType: 'video' }));
+          setIsProcessing(false);
+        };
+      } catch {
+        setForm(prev => ({ ...prev, videoUrl: videoData, mediaType: 'video' }));
+        setIsProcessing(false);
+      }
+    };
+    reader.onerror = () => {
+      setErrorMsg('Could not read video file.');
+      setIsProcessing(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleVideoUrlChange = (url) => {
+    const trimmed = (url || '').trim();
+    const ytMatch = trimmed.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    let thumb = form.image;
+    if (ytMatch && ytMatch[1]) {
+      thumb = `https://img.youtube.com/vi/${ytMatch[1]}/maxresdefault.jpg`;
+    }
+    setForm(prev => ({
+      ...prev,
+      videoUrl: trimmed,
+      image: thumb || prev.image,
+      mediaType: 'video',
+      category: prev.category === 'Classrooms' ? 'Videos' : prev.category
+    }));
+  };
+
+  const handleSave = () => {
+    if (!form.title.trim()) {
+      setErrorMsg('Please enter a title.');
+      return;
+    }
+    if (mediaType === 'video') {
+      if (!form.videoUrl && !form.image) {
+        setErrorMsg('Please upload a video file or enter a video URL.');
+        return;
+      }
+      onSave({
+        ...form,
+        mediaType: 'video',
+        image: form.image || form.videoUrl
+      });
+    } else {
+      if (!form.image) {
+        setErrorMsg('Please upload a photo or enter an image URL.');
+        return;
+      }
+      onSave({
+        ...form,
+        mediaType: 'image'
+      });
+    }
+  };
+
   return (
-    <Modal title={item._index !== undefined ? 'Edit Gallery Photo' : 'Add Gallery Photo'} onClose={onClose}>
-      <label className="ap-label">Photo Title</label>
-      <input className="ap-input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="e.g. Smart Classroom Session" autoFocus />
+    <Modal title={item._index !== undefined ? (mediaType === 'video' ? 'Edit Gallery Video' : 'Edit Gallery Photo') : (mediaType === 'video' ? 'Upload Gallery Video' : 'Add Gallery Photo')} onClose={onClose}>
+      {/* Media Type Selector */}
+      <label className="ap-label">Media Type</label>
+      <div className="ap-toggle-row" style={{ marginBottom: 14 }}>
+        <button
+          type="button"
+          className={`ap-toggle-btn ${mediaType === 'image' ? 'active' : ''}`}
+          onClick={() => {
+            setMediaType('image');
+            setForm(p => ({ ...p, mediaType: 'image' }));
+          }}
+        >
+          <FiImage /> Photo / Image
+        </button>
+        <button
+          type="button"
+          className={`ap-toggle-btn ${mediaType === 'video' ? 'active' : ''}`}
+          style={mediaType === 'video' ? { background: '#DC2626', borderColor: '#DC2626', color: '#fff' } : {}}
+          onClick={() => {
+            setMediaType('video');
+            setForm(p => ({ ...p, mediaType: 'video', category: p.category === 'Classrooms' ? 'Videos' : p.category }));
+          }}
+        >
+          <FiVideo /> Video
+        </button>
+      </div>
+
+      <label className="ap-label">{mediaType === 'video' ? 'Video Title' : 'Photo Title'}</label>
+      <input
+        className="ap-input"
+        value={form.title}
+        onChange={e => setForm({ ...form, title: e.target.value })}
+        placeholder={mediaType === 'video' ? "e.g. Annual Day Highlights / Smart Class Session" : "e.g. Smart Classroom Session"}
+        autoFocus
+      />
+
       <label className="ap-label">Category</label>
       <select className="ap-input ap-select" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
         {GALLERY_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
       </select>
 
-      <label className="ap-label">Image Source</label>
-      <div className="ap-toggle-row">
-        <button type="button" className={`ap-toggle-btn ${uploadMode === 'file' ? 'active' : ''}`} onClick={() => setUploadMode('file')}>
-          <FiCamera /> Upload File
-        </button>
-        <button type="button" className={`ap-toggle-btn ${uploadMode === 'url' ? 'active' : ''}`} onClick={() => setUploadMode('url')}>
-          <FiLink /> External URL
-        </button>
-      </div>
-
-      {uploadMode === 'file' ? (
+      {mediaType === 'video' ? (
         <div>
-          <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
-            <button type="button" className="ap-btn ap-btn-secondary" style={{ flex: 1 }} onClick={() => fileRef.current?.click()} disabled={isProcessing}>
-              <FiUpload /> {isProcessing ? 'Compressing...' : 'Choose Photo from Device'}
+          <label className="ap-label">Video Source</label>
+          <div className="ap-toggle-row">
+            <button type="button" className={`ap-toggle-btn ${uploadMode === 'file' ? 'active' : ''}`} onClick={() => setUploadMode('file')}>
+              <FiUpload /> Upload Video File
             </button>
-            {form.image && (
-              <button type="button" className="ap-btn ap-btn-danger" onClick={() => setForm({ ...form, image: '' })}>Clear</button>
-            )}
+            <button type="button" className={`ap-toggle-btn ${uploadMode === 'url' ? 'active' : ''}`} onClick={() => setUploadMode('url')}>
+              <FiLink /> YouTube / Video Link
+            </button>
           </div>
-          <input ref={fileRef} type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
-          <p style={{ color: '#6B7280', fontSize: 11, marginTop: 8 }}>
-            📦 Photo is auto-resized to 900px & compressed to JPEG for storage efficiency.
-          </p>
+
+          {uploadMode === 'file' ? (
+            <div style={{ marginTop: 12 }}>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button
+                  type="button"
+                  className="ap-btn ap-btn-secondary"
+                  style={{ flex: 1, background: '#1E293B', border: '1px solid #334155' }}
+                  onClick={() => videoFileRef.current?.click()}
+                  disabled={isProcessing}
+                >
+                  <FiVideo /> {isProcessing ? 'Processing Video...' : 'Choose Video from Device (.mp4, .mov, .webm)'}
+                </button>
+                {form.videoUrl && (
+                  <button type="button" className="ap-btn ap-btn-danger" onClick={() => setForm({ ...form, videoUrl: '', image: '' })}>Clear</button>
+                )}
+              </div>
+              <input ref={videoFileRef} type="file" accept="video/mp4,video/webm,video/ogg,video/quicktime" onChange={handleVideoUpload} style={{ display: 'none' }} />
+              <p style={{ color: '#6B7280', fontSize: 11, marginTop: 8 }}>
+                🎥 Video is loaded from your device and an automatic thumbnail poster frame is captured.
+              </p>
+            </div>
+          ) : (
+            <div style={{ marginTop: 12 }}>
+              <label className="ap-label">Video URL (YouTube / Google Drive / MP4)</label>
+              <input
+                type="text"
+                className="ap-input"
+                value={form.videoUrl}
+                onChange={e => handleVideoUrlChange(e.target.value)}
+                placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/... or .mp4 link"
+              />
+              <p style={{ color: '#6B7280', fontSize: 11, marginTop: 6 }}>
+                💡 Paste a YouTube link or direct video link. The thumbnail will be auto-fetched!
+              </p>
+            </div>
+          )}
+
+          {form.videoUrl && (
+            <div style={{ marginTop: 16, background: '#0F172A', borderRadius: 12, padding: 12, border: '1px solid #1E293B' }}>
+              <p style={{ color: '#94A3B8', fontSize: 12, fontWeight: 700, margin: '0 0 8px', textTransform: 'uppercase' }}>Video Preview</p>
+              {getYouTubeEmbedUrl(form.videoUrl) ? (
+                <iframe
+                  src={getYouTubeEmbedUrl(form.videoUrl)}
+                  title="YouTube Preview"
+                  style={{ width: '100%', height: 200, borderRadius: 8, border: 'none' }}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <video
+                  controls
+                  src={form.videoUrl}
+                  poster={form.image}
+                  style={{ width: '100%', maxHeight: 200, borderRadius: 8, background: '#000' }}
+                />
+              )}
+            </div>
+          )}
         </div>
       ) : (
-        <UrlImageInput
-          value={form.image}
-          onChange={url => setForm({ ...form, image: url })}
-        />
+        <div>
+          <label className="ap-label">Image Source</label>
+          <div className="ap-toggle-row">
+            <button type="button" className={`ap-toggle-btn ${uploadMode === 'file' ? 'active' : ''}`} onClick={() => setUploadMode('file')}>
+              <FiCamera /> Upload File
+            </button>
+            <button type="button" className={`ap-toggle-btn ${uploadMode === 'url' ? 'active' : ''}`} onClick={() => setUploadMode('url')}>
+              <FiLink /> External URL
+            </button>
+          </div>
+
+          {uploadMode === 'file' ? (
+            <div>
+              <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+                <button type="button" className="ap-btn ap-btn-secondary" style={{ flex: 1 }} onClick={() => fileRef.current?.click()} disabled={isProcessing}>
+                  <FiUpload /> {isProcessing ? 'Compressing...' : 'Choose Photo from Device'}
+                </button>
+                {form.image && (
+                  <button type="button" className="ap-btn ap-btn-danger" onClick={() => setForm({ ...form, image: '' })}>Clear</button>
+                )}
+              </div>
+              <input ref={fileRef} type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
+              <p style={{ color: '#6B7280', fontSize: 11, marginTop: 8 }}>
+                📦 Photo is auto-resized to 900px & compressed to JPEG for storage efficiency.
+              </p>
+            </div>
+          ) : (
+            <UrlImageInput
+              value={form.image}
+              onChange={url => setForm({ ...form, image: url })}
+            />
+          )}
+
+          {form.image && (
+            <div className="ap-img-preview">
+              <img
+                src={form.image}
+                alt="Preview"
+                style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'contain', borderRadius: 10, display: 'block' }}
+                onError={e => {
+                  e.target.style.display = 'none';
+                  const msg = e.target.parentNode.querySelector('.img-err-msg');
+                  if (msg) msg.style.display = 'flex';
+                }}
+                onLoad={e => {
+                  e.target.style.display = 'block';
+                  const msg = e.target.parentNode.querySelector('.img-err-msg');
+                  if (msg) msg.style.display = 'none';
+                }}
+              />
+              <div className="img-err-msg" style={{ display: 'none', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, padding: 24, color: '#EF4444', fontSize: 12, textAlign: 'center' }}>
+                <FiAlertTriangle size={24} />
+                <strong>Image could not be loaded.</strong>
+                <span style={{ color: '#9CA3AF' }}>Check the URL is a direct image link (not a webpage).<br />Try right-clicking an image on the web → "Copy image address".</span>
+              </div>
+              <p className="ap-img-preview-label">Preview</p>
+            </div>
+          )}
+        </div>
       )}
 
       {errorMsg && <p style={{ color: '#EF4444', fontSize: 12, marginTop: 8 }}>{errorMsg}</p>}
 
-      {form.image && (
-        <div className="ap-img-preview">
-          <img
-            src={form.image}
-            alt="Preview"
-            style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'contain', borderRadius: 10, display: 'block' }}
-            onError={e => {
-              e.target.style.display = 'none';
-              const msg = e.target.parentNode.querySelector('.img-err-msg');
-              if (msg) msg.style.display = 'flex';
-            }}
-            onLoad={e => {
-              e.target.style.display = 'block';
-              const msg = e.target.parentNode.querySelector('.img-err-msg');
-              if (msg) msg.style.display = 'none';
-            }}
-          />
-          <div className="img-err-msg" style={{ display: 'none', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, padding: 24, color: '#EF4444', fontSize: 12, textAlign: 'center' }}>
-            <FiAlertTriangle size={24} />
-            <strong>Image could not be loaded.</strong>
-            <span style={{ color: '#9CA3AF' }}>Check the URL is a direct image link (not a webpage).<br />Try right-clicking an image on the web → "Copy image address".</span>
-          </div>
-          <p className="ap-img-preview-label">Preview</p>
-        </div>
-      )}
-
-      <button className="ap-btn ap-btn-primary ap-btn-block" onClick={() => onSave(form)} disabled={isProcessing} style={{ marginTop: 20 }}>
-        <FiSave /> {isProcessing ? 'Processing...' : 'Save Photo'}
+      <button className="ap-btn ap-btn-primary ap-btn-block" onClick={handleSave} disabled={isProcessing} style={{ marginTop: 20 }}>
+        <FiSave /> {isProcessing ? 'Processing...' : (mediaType === 'video' ? 'Save Video to Gallery' : 'Save Photo to Gallery')}
       </button>
     </Modal>
   );

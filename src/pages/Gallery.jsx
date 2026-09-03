@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
-import { FiImage, FiAlertTriangle, FiX, FiChevronLeft, FiChevronRight, FiLoader } from 'react-icons/fi';
+import { FiImage, FiAlertTriangle, FiX, FiChevronLeft, FiChevronRight, FiLoader, FiPlay, FiVideo } from 'react-icons/fi';
 import { adminData } from '../utils/adminData';
-import { getEmbedImageUrl } from '../utils/imageUrl';
+import { getEmbedImageUrl, getYouTubeEmbedUrl, isVideoMedia } from '../utils/imageUrl';
 
 function GalleryImg({ src, alt, className, style }) {
   const embedSrc = getEmbedImageUrl(src);
@@ -61,10 +61,12 @@ export default function Gallery() {
     setLightboxError(false);
   }, [selectedIndex]);
 
-  const categories = ['All', 'Classrooms', 'Seminars', 'Activities', 'Events'];
+  const categories = ['All', 'Videos', 'Classrooms', 'Seminars', 'Activities', 'Events'];
 
   const filteredItems = activeFilter === 'All'
     ? items
+    : activeFilter === 'Videos'
+    ? items.filter(i => i.category === 'Videos' || i.mediaType === 'video' || isVideoMedia(i))
     : items.filter(i => i.category === activeFilter);
 
   const selectedItem = selectedIndex !== null && filteredItems[selectedIndex] ? filteredItems[selectedIndex] : null;
@@ -111,6 +113,9 @@ export default function Gallery() {
     return item.image || item.url || item.src || (typeof item === 'string' ? item : '');
   };
 
+  const isItemVideo = selectedItem ? (selectedItem.mediaType === 'video' || selectedItem.category === 'Videos' || isVideoMedia(selectedItem)) : false;
+  const rawVideoSrc = selectedItem ? (selectedItem.videoUrl || (isItemVideo ? getRawSrc(selectedItem) : '')) : '';
+  const ytEmbedUrl = isItemVideo ? getYouTubeEmbedUrl(rawVideoSrc) : '';
   const currentEmbedSrc = selectedItem ? getEmbedImageUrl(getRawSrc(selectedItem)) : '';
 
   // Lightbox Modal JSX (Rendered directly at document.body via Portal to cover Navbar & full page)
@@ -262,32 +267,73 @@ export default function Gallery() {
           </div>
         )}
 
-        {/* Main Lightbox Photo */}
+        {/* Main Lightbox Photo or Video */}
         {!lightboxError && (
-          <img
-            key={currentEmbedSrc}
-            src={currentEmbedSrc}
-            alt={selectedItem.title || 'Campus Photo'}
-            onLoad={() => setLightboxLoading(false)}
-            onError={() => {
-              setLightboxLoading(false);
-              setLightboxError(true);
-            }}
-            style={{
-              maxWidth: '90vw',
-              maxHeight: '78vh',
-              width: 'auto',
-              height: 'auto',
-              objectFit: 'contain',
-              borderRadius: '16px',
-              boxShadow: '0 25px 60px rgba(0,0,0,0.8)',
-              border: '2px solid rgba(255, 255, 255, 0.2)',
-              transition: 'opacity 0.3s ease, transform 0.3s ease',
-              opacity: lightboxLoading ? 0 : 1,
-              transform: lightboxLoading ? 'scale(0.95)' : 'scale(1)',
-              margin: '0 auto'
-            }}
-          />
+          isItemVideo ? (
+            ytEmbedUrl ? (
+              <iframe
+                key={ytEmbedUrl}
+                src={ytEmbedUrl}
+                title={selectedItem.title || 'Campus Video'}
+                style={{
+                  width: '90vw',
+                  maxWidth: '960px',
+                  aspectRatio: '16/9',
+                  borderRadius: '16px',
+                  boxShadow: '0 25px 60px rgba(0,0,0,0.8)',
+                  border: '2px solid rgba(255, 255, 255, 0.2)'
+                }}
+                onLoad={() => setLightboxLoading(false)}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            ) : (
+              <video
+                key={rawVideoSrc}
+                src={rawVideoSrc}
+                controls
+                autoPlay
+                poster={currentEmbedSrc}
+                onLoadedData={() => setLightboxLoading(false)}
+                onError={() => {
+                  setLightboxLoading(false);
+                  setLightboxError(true);
+                }}
+                style={{
+                  maxWidth: '90vw',
+                  maxHeight: '78vh',
+                  borderRadius: '16px',
+                  boxShadow: '0 25px 60px rgba(0,0,0,0.8)',
+                  border: '2px solid rgba(255, 255, 255, 0.2)'
+                }}
+              />
+            )
+          ) : (
+            <img
+              key={currentEmbedSrc}
+              src={currentEmbedSrc}
+              alt={selectedItem.title || 'Campus Photo'}
+              onLoad={() => setLightboxLoading(false)}
+              onError={() => {
+                setLightboxLoading(false);
+                setLightboxError(true);
+              }}
+              style={{
+                maxWidth: '90vw',
+                maxHeight: '78vh',
+                width: 'auto',
+                height: 'auto',
+                objectFit: 'contain',
+                borderRadius: '16px',
+                boxShadow: '0 25px 60px rgba(0,0,0,0.8)',
+                border: '2px solid rgba(255, 255, 255, 0.2)',
+                transition: 'opacity 0.3s ease, transform 0.3s ease',
+                opacity: lightboxLoading ? 0 : 1,
+                transform: lightboxLoading ? 'scale(0.95)' : 'scale(1)',
+                margin: '0 auto'
+              }}
+            />
+          )
         )}
 
         {/* Photo Title Caption */}
@@ -354,26 +400,50 @@ export default function Gallery() {
           </div>
         ) : (
           <div className="columns-1 sm:columns-2 md:columns-3 gap-6 space-y-6">
-            {filteredItems.map((item, idx) => (
-              <div
-                key={idx}
-                onClick={() => setSelectedIndex(idx)}
-                className="break-inside-avoid bg-white border border-slate-200/60 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group cursor-pointer"
-                title="Click to view full screen photo"
-              >
-                <GalleryImg src={item.image || item.url || item.src} alt={item.title} />
-                {item.title && (
-                  <div className="px-5 py-4">
-                    <p className="font-bold text-[#0f172a] text-sm">{item.title}</p>
-                    {item.category && (
-                      <span className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full mt-1 inline-block uppercase tracking-wider">
-                        {item.category}
-                      </span>
+            {filteredItems.map((item, idx) => {
+              const isVid = item.mediaType === 'video' || item.category === 'Videos' || isVideoMedia(item);
+              return (
+                <div
+                  key={idx}
+                  onClick={() => setSelectedIndex(idx)}
+                  className="break-inside-avoid bg-white border border-slate-200/60 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group cursor-pointer relative"
+                  title={isVid ? "Click to play video" : "Click to view full screen photo"}
+                >
+                  <div className="relative overflow-hidden">
+                    <GalleryImg src={item.image || item.url || item.src} alt={item.title} />
+                    {isVid && (
+                      <>
+                        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+                          <div className="w-14 h-14 rounded-full bg-red-600 text-white flex items-center justify-center shadow-xl shadow-red-600/60 group-hover:scale-110 transition-transform">
+                            <FiPlay size={24} style={{ marginLeft: 2 }} />
+                          </div>
+                        </div>
+                        <span className="absolute top-4 left-4 bg-red-600 text-white text-[11px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-md">
+                          <FiVideo size={12} /> Video
+                        </span>
+                      </>
                     )}
                   </div>
-                )}
-              </div>
-            ))}
+                  {item.title && (
+                    <div className="px-5 py-4">
+                      <p className="font-bold text-[#0f172a] text-sm">{item.title}</p>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        {item.category && (
+                          <span className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full inline-block uppercase tracking-wider">
+                            {item.category}
+                          </span>
+                        )}
+                        {isVid && (
+                          <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-100 px-2 py-0.5 rounded-full inline-block uppercase tracking-wider">
+                            Video
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </section>

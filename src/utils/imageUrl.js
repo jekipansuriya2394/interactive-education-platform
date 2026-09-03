@@ -119,6 +119,7 @@ export function handleImageError(e) {
  */
 export function detectImageUrlSource(url) {
   if (!url) return null;
+  if (url.startsWith('data:video/')) return 'video';
   if (url.startsWith('data:')) return 'upload';
   if (/drive\.google\.com|googleusercontent\.com|wsrv\.nl/.test(url)) return 'googledrive';
   if (/youtube\.com|youtu\.be/.test(url)) return 'youtube';
@@ -128,3 +129,32 @@ export function detectImageUrlSource(url) {
   if (/\.(jpg|jpeg|png|webp|gif|bmp|svg)(\?|$)/i.test(url)) return 'direct';
   return 'unknown';
 }
+
+/**
+ * Converts a YouTube URL (watch, shorts, youtu.be) into an embeddable iframe URL
+ */
+export function getYouTubeEmbedUrl(url) {
+  if (!url) return '';
+  const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  if (ytMatch && ytMatch[1]) {
+    return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&rel=0`;
+  }
+  return '';
+}
+
+/**
+ * Checks if a given item, URL, or data URI is video content
+ */
+export function isVideoMedia(item) {
+  if (!item) return false;
+  if (typeof item === 'object') {
+    if (item.mediaType === 'video' || (item.videoUrl && item.videoUrl.trim())) return true;
+    item = item.image || item.url || '';
+  }
+  if (typeof item !== 'string') return false;
+  if (item.startsWith('data:video/')) return true;
+  if (/\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(item)) return true;
+  if (/youtube\.com|youtu\.be|vimeo\.com/.test(item)) return true;
+  return false;
+}
+
