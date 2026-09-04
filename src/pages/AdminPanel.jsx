@@ -5,7 +5,8 @@ import {
   FiMenu, FiX, FiPlus, FiEdit2, FiTrash2, FiDownload, FiUpload,
   FiStar, FiUsers, FiCompass, FiCpu, FiFileText, FiSave, FiEye, FiEyeOff,
   FiLock, FiRefreshCw, FiAlertTriangle, FiChevronRight, FiSearch,
-  FiExternalLink, FiCamera, FiLink, FiArrowLeft, FiVideo, FiPlay, FiLayers
+  FiExternalLink, FiCamera, FiLink, FiArrowLeft, FiVideo, FiPlay, FiLayers,
+  FiArrowUp, FiArrowDown
 } from 'react-icons/fi';
 import { adminData } from '../utils/adminData';
 import { getFirebaseUrl, setFirebaseUrl, testFirebaseConnection } from '../utils/firebaseConfig';
@@ -154,6 +155,9 @@ function AdminPanel({ onLogout }) {
   const [editingTestimonial, setEditingTestimonial] = useState(null);
   const [editingFeature, setEditingFeature] = useState(null);
   const [editingVideoLecture, setEditingVideoLecture] = useState(null);
+  const [editingCourse, setEditingCourse] = useState(null);
+  const [courseCategoryFilter, setCourseCategoryFilter] = useState('All');
+  const [courseSearch, setCourseSearch] = useState('');
 
   // Popup Config (Multi-Image Slider Manager)
   const [newPopupUrl, setNewPopupUrl] = useState('');
@@ -495,6 +499,43 @@ function AdminPanel({ onLogout }) {
     showToast('Deleted.', 'error');
   };
 
+  // Courses Handlers
+  const saveCourse = (item) => {
+    const { _index, ...rest } = item;
+    if (!rest.id) {
+      rest.id = (rest.name || 'course').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `course-${Date.now()}`;
+    }
+    if (typeof rest.features === 'string') {
+      rest.features = rest.features.split('\n').map(s => s.trim()).filter(Boolean);
+    } else if (!Array.isArray(rest.features)) {
+      rest.features = [];
+    }
+    const u = _index !== undefined ? courses.map((c, i) => i === _index ? rest : c) : [...courses, rest];
+    adminData.setData('courses', u);
+    setCourses(u);
+    setEditingCourse(null);
+    showToast('Course program saved!');
+  };
+
+  const delCourse = (i) => {
+    if (!window.confirm('Are you sure you want to delete this course program?')) return;
+    const u = courses.filter((_, x) => x !== i);
+    adminData.setData('courses', u);
+    setCourses(u);
+    showToast('Course program deleted.', 'error');
+  };
+
+  const moveCourse = (index, dir) => {
+    const target = index + dir;
+    if (target < 0 || target >= courses.length) return;
+    const updated = [...courses];
+    const [moved] = updated.splice(index, 1);
+    updated.splice(target, 0, moved);
+    adminData.setData('courses', updated);
+    setCourses(updated);
+    showToast('Reordered.');
+  };
+
   // Popup Config (Multi-Image Slider Manager)
   const handlePopupChange = (field, val) => setPopupConfig(p => ({ ...p, [field]: val }));
 
@@ -808,6 +849,7 @@ function AdminPanel({ onLogout }) {
       { label: 'Features Listed', value: Array.isArray(features) ? features.length : 0, icon: FiCheckCircle, color: '#22D3EE', bg: '#083344', section: 'features' },
       { label: 'Promo Popup', value: (popupConfig?.enabled !== false) ? `${popupConfig?.images?.length || 1} Slides` : 'Disabled', icon: FiStar, color: '#FBBF24', bg: '#453203', section: 'popup' },
       { label: 'Video Lectures', value: Array.isArray(videoLectures) ? videoLectures.length : 0, icon: FiVideo, color: '#EF4444', bg: '#450A0A', section: 'videos' },
+      { label: 'Active Courses', value: Array.isArray(courses) ? courses.length : 0, icon: FiBookOpen, color: '#06B6D4', bg: '#083344', section: 'courses' },
     ];
     
     const filteredCards = cards.filter(c => adminData.hasPermission(c.section, 'view'));
@@ -815,6 +857,7 @@ function AdminPanel({ onLogout }) {
     const currentUser = adminData.getCurrentUser();
 
     const quickActions = [
+      { label: 'Add Course', icon: FiBookOpen, action: () => { navigate('courses'); setTimeout(() => setEditingCourse({ name:'', category:'school', tagline:'', description:'', subjects:'', mode:'Offline + Online', features:[] }), 100); }, section: 'courses', actionType: 'edit' },
       { label: 'Add Hero Banner', icon: FiLayers, action: () => { navigate('heroBanners'); setTimeout(() => setEditingHeroBanner({ title:'', highlightWord:'', subtitle:'', desc:'', image:'', cardImage:'', buttonText:'Book Free Counselling', buttonLink:'#inquiry-form' }), 100); }, section: 'heroBanners', actionType: 'edit' },
       { label: 'Add Page Photo', icon: FiCamera, action: () => { navigate('pagePhotos'); setTimeout(() => setEditingPagePhoto({ title:'', category:'', image:'', desc:'' }), 100); }, section: 'pagePhotos', actionType: 'edit' },
       { label: 'Add Gallery Photo', icon: FiCamera, action: () => { navigate('gallery'); setTimeout(() => setEditingGallery({ title:'', category:'Classrooms', image:'' }), 100); }, section: 'gallery', actionType: 'edit' },
@@ -1277,24 +1320,245 @@ function AdminPanel({ onLogout }) {
   };
 
   // ─── COURSES ────────────────────────────────────────────────────────────
-  const renderCourses = () => (
-    <div>
-      <SectionHeader title="Courses" subtitle="Course structure overview (managed in codebase)" />
-      <div className="ap-card" style={{ textAlign: 'center', padding: '56px 32px' }}>
-        <FiBookOpen size={56} style={{ color: '#3B82F6', marginBottom: 20, display: 'block', margin: '0 auto 20px' }} />
-        <h3 style={{ color: '#fff', fontSize: 20, marginBottom: 12 }}>Course Management</h3>
-        <p style={{ color: '#9CA3AF', maxWidth: 440, margin: '0 auto 28px', lineHeight: 1.7, fontSize: 14 }}>
-          The course catalogue is defined statically in the source code for performance and SEO. To modify courses, update the <code style={{ background: '#0F172A', padding: '2px 6px', borderRadius: 4, fontSize: 12 }}>src/data/coursesData.js</code> file.
-        </p>
-        <div style={{ display: 'inline-flex', gap: 12 }}>
-          <div className="ap-card" style={{ display: 'inline-block', padding: '16px 32px', borderColor: '#3B82F6' }}>
-            <div style={{ fontSize: 32, fontWeight: 800, color: '#3B82F6' }}>12</div>
-            <div style={{ color: '#9CA3AF', fontSize: 12, marginTop: 4 }}>Active Courses</div>
+  const renderCourses = () => {
+    const courseCategories = [
+      { key: 'All', label: 'All Categories' },
+      { key: 'school', label: 'School (8th-10th)' },
+      { key: 'science', label: '11th & 12th Science' },
+      { key: 'competitive', label: 'Competitive (NEET/JEE)' },
+      { key: 'engineering', label: 'Engineering / Diploma' },
+      { key: 'guidance', label: 'Career Guidance' }
+    ];
+
+    const filtered = (Array.isArray(courses) ? courses : []).filter(c => {
+      const matchesCat = courseCategoryFilter === 'All' || (c.category || '').toLowerCase() === courseCategoryFilter.toLowerCase();
+      const q = courseSearch.toLowerCase().trim();
+      const matchesSearch = !q ||
+        (c.name || '').toLowerCase().includes(q) ||
+        (c.title || '').toLowerCase().includes(q) ||
+        (c.tagline || '').toLowerCase().includes(q) ||
+        (c.subjects || '').toLowerCase().includes(q) ||
+        (c.description || '').toLowerCase().includes(q);
+      return matchesCat && matchesSearch;
+    });
+
+    return (
+      <div>
+        <SectionHeader
+          title="Courses & Programs"
+          subtitle="Add, edit, reorder and publish academic courses and coaching batches"
+          action={
+            adminData.hasPermission('courses', 'edit') && (
+              <button
+                className="ap-btn ap-btn-primary"
+                onClick={() => setEditingCourse({
+                  name: '',
+                  category: courseCategoryFilter !== 'All' ? courseCategoryFilter : 'school',
+                  tagline: '',
+                  description: '',
+                  subjects: '',
+                  mode: 'Offline + Online',
+                  features: []
+                })}
+              >
+                <FiPlus /> Add Course Program
+              </button>
+            )
+          }
+        />
+
+        {/* Search & Category Tabs */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
+          <div className="ap-search-bar" style={{ margin: 0 }}>
+            <FiSearch />
+            <input
+              placeholder="Search courses by name, subject, or description..."
+              value={courseSearch}
+              onChange={e => setCourseSearch(e.target.value)}
+            />
+            {courseSearch && (
+              <button
+                onClick={() => setCourseSearch('')}
+                style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer' }}
+              >
+                <FiX />
+              </button>
+            )}
+          </div>
+
+          <div className="ap-cat-tabs">
+            {courseCategories.map(cat => (
+              <button
+                key={cat.key}
+                className={`ap-cat-tab ${courseCategoryFilter === cat.key ? 'active' : ''}`}
+                onClick={() => setCourseCategoryFilter(cat.key)}
+              >
+                {cat.label}
+              </button>
+            ))}
           </div>
         </div>
+
+        {/* Course Cards Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+          {filtered.map((c, i) => {
+            const realIdx = courses.indexOf(c);
+            const feats = Array.isArray(c.features)
+              ? c.features
+              : (typeof c.features === 'string' ? c.features.split('\n').filter(Boolean) : []);
+
+            return (
+              <div
+                key={c.id || realIdx}
+                className="ap-card"
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  borderLeft: '4px solid #3B82F6',
+                  position: 'relative'
+                }}
+              >
+                <div>
+                  {/* Top Bar: Badge & Mode & Reorder */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                      <span style={{
+                        background: '#1F6FEB22',
+                        color: '#58A6FF',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        padding: '2px 8px',
+                        borderRadius: 6,
+                        border: '1px solid #1F6FEB44',
+                        textTransform: 'uppercase'
+                      }}>
+                        {c.category}
+                      </span>
+                      {c.tagline && (
+                        <span style={{
+                          background: '#F59E0B1A',
+                          color: '#FBBF24',
+                          fontSize: 11,
+                          fontWeight: 600,
+                          padding: '2px 8px',
+                          borderRadius: 6
+                        }}>
+                          {c.tagline}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      {adminData.hasPermission('courses', 'edit') && (
+                        <>
+                          <button
+                            className="ap-icon-btn"
+                            title="Move Up"
+                            disabled={realIdx === 0}
+                            onClick={() => moveCourse(realIdx, -1)}
+                            style={{ opacity: realIdx === 0 ? 0.3 : 1, width: 28, height: 28 }}
+                          >
+                            <FiArrowUp size={14} />
+                          </button>
+                          <button
+                            className="ap-icon-btn"
+                            title="Move Down"
+                            disabled={realIdx === courses.length - 1}
+                            onClick={() => moveCourse(realIdx, 1)}
+                            style={{ opacity: realIdx === courses.length - 1 ? 0.3 : 1, width: 28, height: 28 }}
+                          >
+                            <FiArrowDown size={14} />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <h3 style={{ color: '#fff', fontSize: 16, fontWeight: 800, margin: '0 0 8px' }}>
+                    {c.name || c.title}
+                  </h3>
+
+                  {(c.description || c.details) && (
+                    <p style={{ color: '#9CA3AF', fontSize: 13, lineHeight: 1.5, margin: '0 0 12px' }}>
+                      {c.description || c.details}
+                    </p>
+                  )}
+
+                  {(c.subjects || c.subtitle) && (
+                    <div style={{ background: '#0D1117', padding: '8px 12px', borderRadius: 8, border: '1px solid #21262D', marginBottom: 12 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', marginBottom: 2 }}>
+                        Subjects
+                      </div>
+                      <div style={{ fontSize: 12, color: '#C9D1D9', lineHeight: 1.4 }}>
+                        {c.subjects || c.subtitle}
+                      </div>
+                    </div>
+                  )}
+
+                  {feats.length > 0 && (
+                    <div style={{ marginBottom: 14 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', marginBottom: 6 }}>
+                        Highlights ({feats.length})
+                      </div>
+                      <ul style={{ margin: 0, paddingLeft: 16, color: '#9CA3AF', fontSize: 12, lineHeight: 1.6 }}>
+                        {feats.slice(0, 3).map((f, idx) => (
+                          <li key={idx}>{f}</li>
+                        ))}
+                        {feats.length > 3 && (
+                          <li style={{ color: '#58A6FF', listStyleType: 'none', marginLeft: -16 }}>
+                            +{feats.length - 3} more highlights
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+
+                {/* Bottom Bar: Mode & Actions */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, borderTop: '1px solid #21262D', marginTop: 8 }}>
+                  <span style={{ fontSize: 11, color: '#6B7280', fontWeight: 600 }}>
+                    {c.mode || 'Offline + Online'}
+                  </span>
+                  <div className="ap-list-actions">
+                    {adminData.hasPermission('courses', 'edit') && (
+                      <button
+                        className="ap-icon-btn"
+                        title="Edit Course"
+                        onClick={() => setEditingCourse({ ...c, _index: realIdx })}
+                      >
+                        <FiEdit2 />
+                      </button>
+                    )}
+                    {adminData.hasPermission('courses', 'delete') && (
+                      <button
+                        className="ap-icon-btn ap-icon-btn-danger"
+                        title="Delete Course"
+                        onClick={() => delCourse(realIdx)}
+                      >
+                        <FiTrash2 />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {filtered.length === 0 && (
+          <EmptyState icon={FiBookOpen} message="No courses found matching your criteria." />
+        )}
+
+        {editingCourse && (
+          <CourseModal
+            item={editingCourse}
+            onSave={saveCourse}
+            onClose={() => setEditingCourse(null)}
+          />
+        )}
       </div>
-    </div>
-  );
+    );
+  };
 
   // ─── STATS ──────────────────────────────────────────────────────────────
   const renderStats = () => (
@@ -4555,6 +4819,152 @@ function FeatureModal({ item, onSave, onClose }) {
       <label className="ap-label">Description</label>
       <textarea className="ap-textarea" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={3} placeholder="Short description of this feature..." />
       <button className="ap-btn ap-btn-primary ap-btn-block" onClick={() => onSave(form)} style={{ marginTop: 20 }}><FiSave /> Save Feature</button>
+    </Modal>
+  );
+}
+
+function CourseModal({ item, onSave, onClose }) {
+  const [form, setForm] = useState({
+    id: item.id || '',
+    name: item.name || item.title || '',
+    category: item.category || 'school',
+    tagline: item.tagline || item.badge || '',
+    description: item.description || item.details || '',
+    subjects: item.subjects || item.subtitle || '',
+    mode: item.mode || 'Offline + Online',
+    features: Array.isArray(item.features)
+      ? item.features.join('\n')
+      : (Array.isArray(item.highlights)
+        ? item.highlights.join('\n')
+        : (typeof item.features === 'string' ? item.features : '')),
+    _index: item._index
+  });
+
+  const CATEGORY_OPTIONS = [
+    { value: 'school', label: 'School Foundation (8th - 10th)' },
+    { value: 'science', label: '11th & 12th Science' },
+    { value: 'competitive', label: 'Competitive (NEET / JEE / GUJCET)' },
+    { value: 'engineering', label: 'Engineering & Diploma / DDCET' },
+    { value: 'guidance', label: 'Career Guidance & Counseling' }
+  ];
+
+  const handleSubmit = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!form.name.trim()) {
+      alert('Course name is required.');
+      return;
+    }
+    const featuresList = (form.features || '')
+      .split('\n')
+      .map(f => f.trim())
+      .filter(Boolean);
+
+    onSave({
+      ...form,
+      name: form.name.trim(),
+      features: featuresList
+    });
+  };
+
+  return (
+    <Modal title={item._index !== undefined ? 'Edit Course Program' : 'Add New Course Program'} onClose={onClose} wide>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }}>
+        <div>
+          <label className="ap-label">Course / Program Name *</label>
+          <input
+            className="ap-input"
+            value={form.name}
+            onChange={e => setForm({ ...form, name: e.target.value })}
+            placeholder="e.g. 11th & 12th Science"
+            autoFocus
+          />
+        </div>
+        <div>
+          <label className="ap-label">Category</label>
+          <select
+            className="ap-input ap-select"
+            value={form.category}
+            onChange={e => setForm({ ...form, category: e.target.value })}
+          >
+            {CATEGORY_OPTIONS.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px', marginTop: 12 }}>
+        <div>
+          <label className="ap-label">Badge / Tagline</label>
+          <input
+            className="ap-input"
+            value={form.tagline}
+            onChange={e => setForm({ ...form, tagline: e.target.value })}
+            placeholder="e.g. Board & Competitive Prep"
+          />
+        </div>
+        <div>
+          <label className="ap-label">Delivery Mode</label>
+          <input
+            className="ap-input"
+            value={form.mode}
+            onChange={e => setForm({ ...form, mode: e.target.value })}
+            placeholder="e.g. Offline + Online"
+            list="course-mode-options"
+          />
+          <datalist id="course-mode-options">
+            <option value="Offline + Online" />
+            <option value="Offline" />
+            <option value="Online" />
+            <option value="Offline Classroom + Online Mocks" />
+            <option value="Offline / Subject-wise Batches" />
+            <option value="2-Year Integrated Medical Batch" />
+            <option value="2-Year Integrated Engineering Batch" />
+          </datalist>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 12 }}>
+        <label className="ap-label">Subjects Covered</label>
+        <input
+          className="ap-input"
+          value={form.subjects}
+          onChange={e => setForm({ ...form, subjects: e.target.value })}
+          placeholder="e.g. Physics, Chemistry, Mathematics, Biology"
+        />
+      </div>
+
+      <div style={{ marginTop: 12 }}>
+        <label className="ap-label">Description / Summary</label>
+        <textarea
+          className="ap-textarea"
+          value={form.description}
+          onChange={e => setForm({ ...form, description: e.target.value })}
+          rows={3}
+          placeholder="In-depth teaching for students to build strong concepts, clear board exams, and develop analytic skills."
+        />
+      </div>
+
+      <div style={{ marginTop: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+          <label className="ap-label" style={{ margin: 0 }}>Feature Highlights / Bullet Points</label>
+          <span style={{ fontSize: 11, color: '#9CA3AF' }}>One highlight per line</span>
+        </div>
+        <textarea
+          className="ap-textarea"
+          value={form.features}
+          onChange={e => setForm({ ...form, features: e.target.value })}
+          rows={4}
+          placeholder={`Expert CBSE/GSEB educators\nRegular tests & chapter mocks\nConcept clarity notes\nDedicated doubt solving desk`}
+        />
+      </div>
+
+      <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 24 }}>
+        <button type="button" className="ap-btn ap-btn-ghost" onClick={onClose}>Cancel</button>
+        <button type="button" className="ap-btn ap-btn-primary" onClick={handleSubmit}>
+          <FiSave /> Save Course Program
+        </button>
+      </div>
     </Modal>
   );
 }

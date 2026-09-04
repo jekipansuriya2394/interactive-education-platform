@@ -37,6 +37,7 @@ export default function Home() {
   });
   const [results, setResults] = useState(() => adminData.getData('results') || []);
   const [banners, setBanners] = useState(() => adminData.getData('heroBanners') || []);
+  const [courses, setCourses] = useState(() => adminData.getData('courses') || coursesData);
 
   useEffect(() => {
     const refreshData = () => {
@@ -46,6 +47,7 @@ export default function Home() {
       setTestimonials(adminData.getData('testimonials') || []);
       setVideoLectures(adminData.getData('videoLectures') || []);
       setResults(adminData.getData('results') || []);
+      setCourses(adminData.getData('courses') || coursesData);
       const pageImgs = adminData.getData('pageImages') || {};
       setPageImages(pageImgs);
       if (pageImgs.home && pageImgs.home.length > 0) {
@@ -137,9 +139,10 @@ export default function Home() {
 
   const courseCategories = ["All", "school", "science", "competitive", "engineering"];
 
+  const courseList = Array.isArray(courses) && courses.length > 0 ? courses : coursesData;
   const filteredCourses = activeCourseCategory === "All"
-    ? coursesData.slice(0, 8)
-    : coursesData.filter(c => c.category === activeCourseCategory);
+    ? courseList.slice(0, 8)
+    : courseList.filter(c => (c.category || '').toLowerCase() === activeCourseCategory.toLowerCase());
 
   // Helper to split title and highlight the requested word
   const renderHighlightedTitle = (banner) => {
@@ -744,18 +747,18 @@ export default function Home() {
 
           {/* Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            {filteredCourses.map((course) => (
+            {filteredCourses.map((course, cIdx) => (
               <div 
-                key={course.id}
-                onClick={() => navigate(`/courses#${course.id}`)}
+                key={course.id || cIdx}
+                onClick={() => navigate(`/courses#${course.id || ''}`)}
                 className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-[#DC2626]/30 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
               >
                 <div>
                   <span className="text-[9px] font-bold text-[#1C2E60] bg-blue-50 px-2.5 py-1 rounded-full uppercase tracking-widest block mb-4 w-fit">
                     {course.category}
                   </span>
-                  <h3 className="text-base font-extrabold text-[#1C2E60] mb-2">{course.name}</h3>
-                  <p className="text-zinc-400 text-xs font-light leading-relaxed line-clamp-3 mb-4">{course.description}</p>
+                  <h3 className="text-base font-extrabold text-[#1C2E60] mb-2">{course.name || course.title}</h3>
+                  <p className="text-zinc-400 text-xs font-light leading-relaxed line-clamp-3 mb-4">{course.description || course.details}</p>
                 </div>
                 <div className="flex justify-between items-center pt-3 border-t border-slate-100">
                   <span className="text-[10px] text-[#1C2E60] font-bold uppercase tracking-wider">Explore Details</span>
