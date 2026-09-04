@@ -2861,7 +2861,7 @@ function AdminPanel({ onLogout }) {
                 ))}
               </div>
               <p style={{ color: '#6B7280', fontSize: 11, marginTop: 6 }}>
-                Base popup modal width is 500px. Increase to 120%-140% if photos or text appear too small.
+                Base popup modal width is 680px. Increase to 120%-150% to view full uncropped photos in extra big size.
               </p>
             </div>
           </div>

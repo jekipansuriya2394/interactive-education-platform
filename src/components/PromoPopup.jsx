@@ -81,10 +81,10 @@ export default function PromoPopup({ isLoading, currentPath }) {
   const globalPopupScale = Number(popupConfig.popupScalePercent || popupConfig.popupSize) || 100;
   const effectiveScale = (globalPopupScale * slideSizePercent) / 10000; // 1.0 = 100%
 
-  // Compute responsive maximums based on scale percentage
-  const modalMaxWidth = Math.min(Math.max(Math.round(500 * effectiveScale), 260), 960);
-  const mobileWidthVw = Math.min(Math.max(Math.round(92 * effectiveScale), 60), 95);
-  const modalMaxHeight = Math.min(Math.max(Math.round(78 * Math.sqrt(effectiveScale)), 50), 92);
+  // Generous base width (680px on desktop) so full uncropped image is displayed big and readable
+  const modalMaxWidth = Math.min(Math.max(Math.round(680 * effectiveScale), 320), 1120);
+  const mobileWidthVw = Math.min(Math.max(Math.round(94 * effectiveScale), 70), 96);
+  const modalMaxHeight = Math.min(Math.max(Math.round(84 * Math.sqrt(effectiveScale)), 55), 88);
 
   const slideVariants = {
     enter: (dir) => ({ x: dir > 0 ? 300 : -300, opacity: 0 }),
@@ -102,12 +102,12 @@ export default function PromoPopup({ isLoading, currentPath }) {
           backdrop-filter: blur(10px);
           -webkit-backdrop-filter: blur(10px);
           display: flex; align-items: center; justify-content: center;
-          padding: 20px; box-sizing: border-box;
+          padding: 16px; box-sizing: border-box;
           touch-action: none;
         }
         .pp-wrap {
           position: relative;
-          width: 100%; max-width: 500px;
+          width: 100%; max-width: 680px;
           z-index: 2147483647;
           display: flex;
           flex-direction: column;
@@ -117,18 +117,18 @@ export default function PromoPopup({ isLoading, currentPath }) {
           transition: max-width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .pp-close {
-          position: absolute; top: -12px; right: -12px;
+          position: absolute; top: -14px; right: -14px;
           z-index: 2147483648;
-          width: 32px; height: 32px;
-          min-width: 32px !important; min-height: 32px !important;
-          max-width: 32px !important; max-height: 32px !important;
+          width: 34px; height: 34px;
+          min-width: 34px !important; min-height: 34px !important;
+          max-width: 34px !important; max-height: 34px !important;
           border-radius: 50%;
           background: #1C2E60;
-          border: 2px solid rgba(255,255,255,0.8);
-          color: #fff; font-size: 13px; font-weight: 800;
+          border: 2px solid rgba(255,255,255,0.9);
+          color: #fff; font-size: 14px; font-weight: 800;
           cursor: pointer;
           display: flex; align-items: center; justify-content: center;
-          box-shadow: 0 3px 12px rgba(0,0,0,0.4);
+          box-shadow: 0 4px 14px rgba(0,0,0,0.5);
           transition: all 0.25s ease;
           line-height: 1; padding: 0;
         }
@@ -139,7 +139,7 @@ export default function PromoPopup({ isLoading, currentPath }) {
         .pp-card {
           position: relative; width: 100%;
           background: transparent;
-          border-radius: 16px; overflow: hidden;
+          border-radius: 16px; overflow: visible;
           display: flex; flex-direction: column;
           border: none !important;
           box-shadow: none !important;
@@ -148,35 +148,37 @@ export default function PromoPopup({ isLoading, currentPath }) {
           position: relative; width: 100%;
           background: transparent; overflow: hidden;
           border-radius: 16px;
+          display: flex; align-items: center; justify-content: center;
         }
         .pp-img {
-          width: 100%; height: auto; max-height: 78vh;
+          width: 100%; height: auto; max-height: 84vh;
           display: block; object-fit: contain;
           background: transparent;
           border-radius: 16px;
+          margin: 0 auto;
         }
         .pp-arrow {
           position: absolute; top: 50%;
           transform: translateY(-50%);
           z-index: 2147483648;
-          width: 38px; height: 38px;
+          width: 40px; height: 40px;
           border-radius: 50%;
-          background: rgba(28,46,96,0.8);
-          backdrop-filter: blur(6px);
-          border: 1.5px solid rgba(255,255,255,0.3);
-          color: #fff; font-size: 18px; font-weight: 700;
+          background: rgba(28,46,96,0.88);
+          backdrop-filter: blur(8px);
+          border: 1.5px solid rgba(255,255,255,0.35);
+          color: #fff; font-size: 20px; font-weight: 700;
           cursor: pointer;
           display: flex; align-items: center; justify-content: center;
           transition: all 0.2s ease;
-          box-shadow: 0 3px 14px rgba(0,0,0,0.35);
+          box-shadow: 0 4px 16px rgba(0,0,0,0.4);
         }
         .pp-arrow:hover {
           background: #C9A84C;
-          border-color: rgba(255,255,255,0.6);
+          border-color: rgba(255,255,255,0.7);
           transform: translateY(-50%) scale(1.08);
         }
-        .pp-arrow-prev { left: -52px; }
-        .pp-arrow-next { right: -52px; }
+        .pp-arrow-prev { left: -20px; }
+        .pp-arrow-next { right: -20px; }
         
         .pp-dots {
           position: relative;
@@ -203,18 +205,18 @@ export default function PromoPopup({ isLoading, currentPath }) {
           box-shadow: 0 0 8px rgba(201,168,76,0.4);
         }
 
-        @media (max-width: 600px) {
-          .pp-wrap { max-width: 92vw; }
+        @media (max-width: 640px) {
+          .pp-wrap { max-width: 94vw; }
           .pp-close {
-            top: -9px; right: -9px;
-            width: 28px; height: 28px;
-            min-width: 28px !important; min-height: 28px !important;
-            max-width: 28px !important; max-height: 28px !important;
-            font-size: 11px;
+            top: -10px; right: -10px;
+            width: 30px; height: 30px;
+            min-width: 30px !important; min-height: 30px !important;
+            max-width: 30px !important; max-height: 30px !important;
+            font-size: 12px;
           }
-          .pp-arrow { width: 32px; height: 32px; font-size: 15px; }
-          .pp-arrow-prev { left: -12px; }
-          .pp-arrow-next { right: -12px; }
+          .pp-arrow { width: 34px; height: 34px; font-size: 16px; background: rgba(10,20,40,0.85); }
+          .pp-arrow-prev { left: 4px; }
+          .pp-arrow-next { right: 4px; }
           .pp-dots { margin-top: 10px; padding: 5px 12px; gap: 6px; }
         }
       `}</style>
