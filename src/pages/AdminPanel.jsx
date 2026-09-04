@@ -3672,6 +3672,29 @@ function AdminPanel({ onLogout }) {
                 +30m
               </button>
             </div>
+            <button
+              type="button"
+              onClick={() => {
+                showToast('Reloading latest update...');
+                setTimeout(() => { window.location.reload(true); }, 300);
+              }}
+              title="Force reload newest version from server"
+              style={{
+                background: 'rgba(59, 130, 246, 0.15)',
+                color: '#60A5FA',
+                border: '1px solid rgba(59, 130, 246, 0.3)',
+                padding: '4px 10px',
+                fontSize: 12,
+                borderRadius: 20,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                cursor: 'pointer',
+                fontWeight: 600
+              }}
+            >
+              <FiRefreshCw size={12} /> Reload App
+            </button>
             <a href="/" target="_blank" rel="noopener noreferrer" className="ap-topbar-link"><FiExternalLink size={16} /> Website</a>
           </div>
         </header>
