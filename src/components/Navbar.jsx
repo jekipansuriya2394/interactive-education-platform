@@ -18,14 +18,15 @@ export default function Navbar() {
   const [announcements, setAnnouncements] = useState(() => adminData.getData('announcements') || []);
 
   useEffect(() => {
-    const refresh = () => {
-      setAnnouncements(adminData.getData('announcements') || []);
+    const unsubAnnounce = adminData.subscribe('announcements', (val) => {
+      if (Array.isArray(val)) setAnnouncements(val);
+    });
+    const unsubLogo = adminData.subscribe('siteLogo', () => {
       setSiteLogo(getLogoUrl(true));
-    };
-    refresh();
-    const cleanup = adminData.initSync(refresh);
+    });
     return () => {
-      if (typeof cleanup === 'function') cleanup();
+      unsubAnnounce();
+      unsubLogo();
     };
   }, []);
 

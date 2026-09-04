@@ -48,7 +48,6 @@ export default function App() {
   const initialPath = normalizePathFromLocation(window.location.pathname);
   const [currentPath, setCurrentPath] = useState(initialPath);
   const [isLoading, setIsLoading] = useState(() => !initialPath.startsWith('/admin'));
-  const [dataVersion, setDataVersion] = useState(0);
 
   const contact = adminData.getData('contactInfo') || contactData;
 
@@ -57,15 +56,14 @@ export default function App() {
     document.documentElement.classList.remove('dark');
     document.documentElement.removeAttribute('data-theme');
 
-    // Setup real-time database synchronisation listener (across tabs/devices)
+    // Subscribe to site logo updates cleanly without remounting the app
     let cleanupSync = () => {};
     try {
-      cleanupSync = adminData.initSync(() => {
-        setDataVersion(prev => prev + 1);
+      cleanupSync = adminData.subscribe('siteLogo', () => {
         setSiteLogo(getLogoUrl(true));
       });
     } catch (e) {
-      console.error('adminData.initSync failed', e);
+      console.error('adminData.subscribe failed', e);
     }
 
 
@@ -148,7 +146,7 @@ export default function App() {
   const isAdminPath = currentPath === '/admin' || currentPath.startsWith('/admin');
 
   return (
-    <div key={dataVersion} className={`${isAdminPath ? 'bg-[#0B132B] text-white' : 'bg-[#EEF1F5] text-[#1E293B]'} min-h-screen relative selection:bg-blue-600 selection:text-white flex flex-col justify-between`}>
+    <div className={`${isAdminPath ? 'bg-[#0B132B] text-white' : 'bg-[#EEF1F5] text-[#1E293B]'} min-h-screen relative selection:bg-blue-600 selection:text-white flex flex-col justify-between`}>
 
       {/* Sticky Navbar */}
       {!isAdminPath && <Navbar />}

@@ -614,8 +614,32 @@ export const adminData = {
   _globalPollTimer: null,
   _storageListenerBound: false,
 
+  _initHashes() {
+    if (!this._lastKnownHashes || Object.keys(this._lastKnownHashes).length === 0) {
+      this._lastKnownHashes = {};
+      try {
+        const allKeys = [
+          ...Object.keys(DEFAULTS),
+          'siteLogo', 'announcements', 'results', 'gallery', 'testimonials',
+          'stats', 'features', 'contactInfo', 'courses', 'users', 'popupConfig',
+          'videoLectures', 'pageImages', 'heroBanners', 'partnerSchools', 'schoolPhotos',
+          'blogPosts', 'seoConfig'
+        ];
+        allKeys.forEach(k => {
+          const localVal = typeof localStorage !== 'undefined' ? localStorage.getItem(PREFIX + k) : null;
+          if (localVal) {
+            this._lastKnownHashes[k] = localVal;
+          } else if (DEFAULTS[k] !== undefined) {
+            this._lastKnownHashes[k] = JSON.stringify(DEFAULTS[k]);
+          }
+        });
+      } catch {}
+    }
+  },
+
   subscribe(key, callback) {
     if (typeof callback !== 'function') return () => {};
+    this._initHashes();
     const listener = { key: key || null, callback };
     this._syncListeners.add(listener);
 
