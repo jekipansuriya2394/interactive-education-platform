@@ -1474,6 +1474,17 @@ function AdminPanel({ onLogout }) {
                     </div>
                   </div>
 
+                  {c.image && (
+                    <div style={{ height: 120, marginBottom: 12, borderRadius: 10, overflow: 'hidden', background: '#0D1117', border: '1px solid #21262D' }}>
+                      <img
+                        src={getEmbedImageUrl(c.image)}
+                        alt={c.name || c.title}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        onError={handleImageError}
+                      />
+                    </div>
+                  )}
+
                   <h3 style={{ color: '#fff', fontSize: 16, fontWeight: 800, margin: '0 0 8px' }}>
                     {c.name || c.title}
                   </h3>
@@ -4855,6 +4866,7 @@ function CourseModal({ item, onSave, onClose }) {
     description: item.description || item.details || '',
     subjects: item.subjects || item.subtitle || '',
     mode: item.mode || 'Offline + Online',
+    image: item.image || '',
     features: Array.isArray(item.features)
       ? item.features.join('\n')
       : (Array.isArray(item.highlights)
@@ -4862,6 +4874,38 @@ function CourseModal({ item, onSave, onClose }) {
         : (typeof item.features === 'string' ? item.features : '')),
     _index: item._index
   });
+
+  const [uploadMode, setUploadMode] = useState(item.image?.startsWith('data:') ? 'file' : 'url');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const fileRef = useRef(null);
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    setIsProcessing(true);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          let w = img.width, h = img.height;
+          const MAX = 900;
+          if (w > h ? w > MAX : h > MAX) {
+            if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+            else { w = Math.round(w * MAX / h); h = MAX; }
+          }
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          const data = canvas.toDataURL('image/jpeg', 0.75);
+          setForm(p => ({ ...p, image: data }));
+          setIsProcessing(false);
+        } catch { setIsProcessing(false); }
+      };
+      img.onerror = () => setIsProcessing(false);
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
 
   const CATEGORY_OPTIONS = [
     { value: 'school', label: 'School Foundation (8th - 10th)' },
@@ -4968,7 +5012,50 @@ function CourseModal({ item, onSave, onClose }) {
         />
       </div>
 
-      <div style={{ marginTop: 12 }}>
+      {/* Image Attachment Section */}
+      <div style={{ marginTop: 14, background: '#0D1117', padding: '14px 16px', borderRadius: 12, border: '1px solid #21262D' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <label className="ap-label" style={{ margin: 0 }}>Attach Course Banner / Thumbnail Image (Optional)</label>
+          <span style={{ fontSize: 11, color: '#9CA3AF' }}>PNG, JPG or WebP</span>
+        </div>
+
+        <div className="ap-toggle-row" style={{ marginBottom: 12 }}>
+          <button type="button" className={`ap-toggle-btn ${uploadMode === 'url' ? 'active' : ''}`} onClick={() => setUploadMode('url')}>
+            <FiLink /> Image Link / URL
+          </button>
+          <button type="button" className={`ap-toggle-btn ${uploadMode === 'file' ? 'active' : ''}`} onClick={() => setUploadMode('file')}>
+            <FiCamera /> Upload Device Photo
+          </button>
+        </div>
+
+        {uploadMode === 'url' ? (
+          <UrlImageInput value={form.image} onChange={url => setForm({ ...form, image: url })} />
+        ) : (
+          <div>
+            <input ref={fileRef} type="file" accept="image/*" onChange={handleFileUpload} style={{ display: 'none' }} />
+            <button type="button" className="ap-btn ap-btn-secondary" style={{ width: '100%' }} onClick={() => fileRef.current?.click()} disabled={isProcessing}>
+              <FiUpload /> {isProcessing ? 'Compressing Image...' : 'Choose Course Photo from Device'}
+            </button>
+          </div>
+        )}
+
+        {form.image && (
+          <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 12, background: '#161B22', padding: 8, borderRadius: 10, border: '1px solid #30363D' }}>
+            <img src={getEmbedImageUrl(form.image)} alt="Course preview" style={{ height: 64, width: 90, borderRadius: 8, objectFit: 'cover' }} onError={handleImageError} />
+            <div style={{ flex: 1, overflow: 'hidden' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#F0F6FC' }}>Attached Image Preview</div>
+              <div style={{ fontSize: 11, color: '#9CA3AF', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', marginTop: 2 }}>
+                {form.image.startsWith('data:') ? 'Custom uploaded device photo' : form.image}
+              </div>
+            </div>
+            <button type="button" className="ap-icon-btn ap-icon-btn-danger" onClick={() => setForm({ ...form, image: '' })} title="Remove Image">
+              <FiTrash2 size={14} />
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div style={{ marginTop: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
           <label className="ap-label" style={{ margin: 0 }}>Feature Highlights / Bullet Points</label>
           <span style={{ fontSize: 11, color: '#9CA3AF' }}>One highlight per line</span>

@@ -52,6 +52,7 @@ export default function Courses() {
     description: c.description || c.details || 'Comprehensive coaching for board exams, competitive entrances, and engineering semesters.',
     subjects: c.subjects || c.subtitle || 'Core Subjects, Test Series & Doubt Solving',
     mode: c.mode || 'Offline + Online',
+    image: c.image || '',
     features: Array.isArray(c.features) ? c.features : (Array.isArray(c.highlights) ? c.highlights : ['Expert Faculty Mentor', 'Chapter Mocks & Revision', 'Doubt Solving Sessions'])
   }));
 
@@ -107,9 +108,19 @@ export default function Courses() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.2 }}
-                className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+                className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden group"
               >
                 <div>
+                  {course.image && (
+                    <div className="h-44 -mx-6 -mt-6 mb-5 overflow-hidden relative bg-slate-100">
+                      <img
+                        src={getEmbedImageUrl(course.image)}
+                        alt={course.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      />
+                    </div>
+                  )}
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-[10px] font-extrabold text-blue-600 bg-blue-50 border border-blue-100 px-3 py-1 rounded-full uppercase tracking-wider">
                       {course.tagline}

@@ -751,9 +751,19 @@ export default function Home() {
               <div 
                 key={course.id || cIdx}
                 onClick={() => navigate(`/courses#${course.id || ''}`)}
-                className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-[#DC2626]/30 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
+                className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-[#DC2626]/30 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between overflow-hidden group"
               >
                 <div>
+                  {course.image && (
+                    <div className="h-32 -mx-6 -mt-6 mb-4 overflow-hidden bg-slate-100">
+                      <img
+                        src={getEmbedImageUrl(course.image)}
+                        alt={course.name || course.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      />
+                    </div>
+                  )}
                   <span className="text-[9px] font-bold text-[#1C2E60] bg-blue-50 px-2.5 py-1 rounded-full uppercase tracking-widest block mb-4 w-fit">
                     {course.category}
                   </span>
