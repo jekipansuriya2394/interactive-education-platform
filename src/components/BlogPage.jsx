@@ -37,38 +37,40 @@ const ArrowLeftIcon = () => (
 const categories = ['All', 'Education Tips', 'Exam Guides', 'Results', 'Events', 'Announcements'];
 
 const BlogPage = () => {
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [posts, setPosts] = useState(() => adminData.getData('blogPosts') || []);
+  const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [selectedPost, setSelectedPost] = useState(null);
 
-  // Fetch posts
+  // Fetch posts and sync with live database
   useEffect(() => {
-    const fetchPosts = async () => {
-      setLoading(true);
-      // Simulate network request
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      
-      // Get from adminData if it exists, otherwise empty array
-      const rawPosts = adminData?.blogPosts || [];
-      
-      // If we wanted to filter out non-published, we could do it here
-      // const publishedPosts = rawPosts.filter(p => p.status === 'published');
-      
-      setPosts(rawPosts);
-      setLoading(false);
-    };
+    const initial = adminData.getData('blogPosts') || [];
+    setPosts(initial);
 
-    fetchPosts();
+    const unsub = adminData.subscribe('blogPosts', (fresh) => {
+      if (Array.isArray(fresh)) {
+        setPosts(fresh);
+      }
+    });
+
+    adminData.fetchKeyFromServer('blogPosts').then(fresh => {
+      if (Array.isArray(fresh) && fresh.length > 0) {
+        setPosts(fresh);
+      }
+    });
+
+    return unsub;
   }, []);
 
-  // Filter posts based on search and category
+  // Filter posts based on search, category and published status
   const filteredPosts = useMemo(() => {
     return posts.filter((post) => {
+      if (post.status && post.status === 'draft') return false;
+
       const matchesSearch = 
-        post.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        post.excerpt.toLowerCase().includes(searchQuery.toLowerCase());
+        (post.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+        (post.excerpt || '').toLowerCase().includes(searchQuery.toLowerCase());
       
       const matchesCategory = activeCategory === 'All' || post.category === activeCategory;
       

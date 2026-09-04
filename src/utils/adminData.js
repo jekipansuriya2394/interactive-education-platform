@@ -10,7 +10,23 @@ import { commitContent } from '../services/gitSyncService';
 const PREFIX = 'noble_admin_';
 
 const DEFAULTS = {
-  blogPosts: [],
+  blogPosts: [
+    {
+      author: "Noble Education",
+      authorAvatar: "",
+      category: "Education Tips",
+      content: "Welcome to the official Noble Education blog. Stay tuned for expert academic coaching tips, board examination guides, DDCET and NEET/JEE preparation strategies, and career counseling updates for Vadodara students.",
+      excerpt: "Expert academic guidance, exam tips, and career counseling updates from Noble Education Vadodara.",
+      featuredImage: "/images/bg-gallery-hero.png",
+      publishedAt: "2026-09-04T09:03:32.542Z",
+      readTimeMinutes: 3,
+      seo: { metaDescription: "Noble Education Blog - Guidance, Tips and Updates", metaTitle: "Noble Education Blog" },
+      slug: "welcome-to-noble-education-blog",
+      status: "published",
+      title: "Welcome to Noble Education Blog",
+      updatedAt: "2026-09-04T09:03:32.542Z"
+    }
+  ],
   siteLogo: null,
   announcements: [
 

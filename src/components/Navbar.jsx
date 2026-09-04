@@ -174,6 +174,7 @@ export default function Navbar() {
     },
     { name: 'Results', href: '/results' },
     { name: 'Gallery', href: '/gallery' },
+    { name: 'Blog', href: '/blog' },
     {
       name: 'Student Corner',
       href: '/student-corner',

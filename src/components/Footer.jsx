@@ -26,6 +26,8 @@ export default function Footer() {
     { name: 'Courses', href: '/courses' },
     { name: 'Admission Guidance', href: '/admission-guidance' },
     { name: 'Results', href: '/results' },
+    { name: 'Gallery', href: '/gallery' },
+    { name: 'Blog', href: '/blog' },
     { name: 'Contact Us', href: '/contact' }
   ];
 
