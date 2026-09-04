@@ -137,10 +137,27 @@ export default function Home() {
     return () => clearInterval(timer);
   }, [banners?.length]);
 
-  const courseCategories = ["All", "school", "science", "competitive", "engineering"];
+  const STANDARD_COURSE_LABELS = {
+    all: 'All',
+    school: 'School',
+    science: 'Science',
+    competitive: 'Competitive',
+    engineering: 'Engineering',
+    guidance: 'Guidance'
+  };
+
+  const formatHomeCatLabel = (cat) => {
+    if (!cat || cat.toLowerCase() === 'all') return 'All';
+    return STANDARD_COURSE_LABELS[cat.toLowerCase()] || (cat.charAt(0).toUpperCase() + cat.slice(1));
+  };
 
   const courseList = Array.isArray(courses) && courses.length > 0 ? courses : coursesData;
-  const filteredCourses = activeCourseCategory === "All"
+  const uniqueHomeCategories = Array.from(new Set(
+    courseList.map(c => (c.category || '').trim()).filter(Boolean)
+  ));
+  const courseCategories = ['All', ...(uniqueHomeCategories.length > 0 ? uniqueHomeCategories : ['school', 'science', 'competitive', 'engineering', 'guidance'])];
+
+  const filteredCourses = activeCourseCategory.toLowerCase() === "all"
     ? courseList.slice(0, 8)
     : courseList.filter(c => (c.category || '').toLowerCase() === activeCourseCategory.toLowerCase());
 
@@ -730,19 +747,22 @@ export default function Home() {
 
           {/* Filters */}
           <div className="flex flex-wrap justify-center gap-2.5 mb-12">
-            {courseCategories.map((cat, idx) => (
-              <button
-                key={idx}
-                onClick={() => setActiveCourseCategory(cat)}
-                className={`px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all border ${
-                  activeCourseCategory === cat
-                    ? 'bg-[#1C2E60] text-white border-[#1C2E60] shadow-md scale-105'
-                    : 'bg-[#F4F6F9] text-zinc-500 border-slate-200 hover:text-[#1C2E60] hover:border-slate-300'
-                }`}
-              >
-                {cat === "school" ? "School" : cat === "science" ? "Science" : cat === "competitive" ? "Competitive" : cat === "engineering" ? "Engineering" : "All"}
-              </button>
-            ))}
+            {courseCategories.map((cat, idx) => {
+              const isActive = activeCourseCategory.toLowerCase() === cat.toLowerCase();
+              return (
+                <button
+                  key={idx}
+                  onClick={() => setActiveCourseCategory(cat)}
+                  className={`px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all border ${
+                    isActive
+                      ? 'bg-[#1C2E60] text-white border-[#1C2E60] shadow-md scale-105'
+                      : 'bg-[#F4F6F9] text-zinc-500 border-slate-200 hover:text-[#1C2E60] hover:border-slate-300'
+                  }`}
+                >
+                  {formatHomeCatLabel(cat)}
+                </button>
+              );
+            })}
           </div>
 
           {/* Cards */}
@@ -765,7 +785,7 @@ export default function Home() {
                     </div>
                   )}
                   <span className="text-[9px] font-bold text-[#1C2E60] bg-blue-50 px-2.5 py-1 rounded-full uppercase tracking-widest block mb-4 w-fit">
-                    {course.category}
+                    {formatHomeCatLabel(course.category)}
                   </span>
                   <h3 className="text-base font-extrabold text-[#1C2E60] mb-2">{course.name || course.title}</h3>
                   <p className="text-zinc-400 text-xs font-light leading-relaxed line-clamp-3 mb-4">{course.description || course.details}</p>

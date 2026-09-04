@@ -42,7 +42,19 @@ export default function Courses() {
     };
   }, []);
 
-  const categories = ["All", "school", "science", "competitive", "engineering", "guidance"];
+  const STANDARD_CAT_LABELS = {
+    all: 'All Programs',
+    school: 'School (8th-10th)',
+    science: '11th & 12th Science',
+    competitive: 'Competitive (NEET/JEE)',
+    engineering: 'Engineering / Diploma',
+    guidance: 'Career Guidance'
+  };
+
+  const formatCatLabel = (cat) => {
+    if (!cat || cat.toLowerCase() === 'all') return 'All Programs';
+    return STANDARD_CAT_LABELS[cat.toLowerCase()] || (cat.charAt(0).toUpperCase() + cat.slice(1));
+  };
 
   const normalizedCourses = (Array.isArray(allCourses) ? allCourses : coursesData).map(c => ({
     id: c.id || 'course-item',
@@ -56,9 +68,16 @@ export default function Courses() {
     features: Array.isArray(c.features) ? c.features : (Array.isArray(c.highlights) ? c.highlights : ['Expert Faculty Mentor', 'Chapter Mocks & Revision', 'Doubt Solving Sessions'])
   }));
 
-  const filteredCourses = activeCategory === "All"
+  const uniqueCategories = Array.from(new Set(
+    normalizedCourses
+      .map(c => (c.category || '').trim())
+      .filter(Boolean)
+  ));
+  const categories = ['All', ...(uniqueCategories.length > 0 ? uniqueCategories : ['school', 'science', 'competitive', 'engineering', 'guidance'])];
+
+  const filteredCourses = activeCategory.toLowerCase() === "all"
     ? normalizedCourses
-    : normalizedCourses.filter(c => c.category.toLowerCase() === activeCategory.toLowerCase());
+    : normalizedCourses.filter(c => (c.category || '').toLowerCase() === activeCategory.toLowerCase());
 
   return (
     <div className="pt-24 pb-20 bg-[#F4F6F9] bg-dots-pattern text-[#5A6472]">
@@ -81,19 +100,22 @@ export default function Courses() {
 
       {/* Filter Tabs */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex justify-center gap-3 flex-wrap">
-        {categories.map((cat, idx) => (
-          <button
-            key={idx}
-            onClick={() => setActiveCategory(cat)}
-            className={`px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all border ${
-              activeCategory === cat
-                ? 'bg-[#1C2E60] text-white border-[#1C2E60] shadow-md'
-                : 'bg-white text-zinc-500 border-slate-200 hover:text-[#0F172A] hover:border-slate-300'
-            }`}
-          >
-            {cat}
-          </button>
-        ))}
+        {categories.map((cat, idx) => {
+          const isActive = activeCategory.toLowerCase() === cat.toLowerCase();
+          return (
+            <button
+              key={idx}
+              onClick={() => setActiveCategory(cat)}
+              className={`px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all border ${
+                isActive
+                  ? 'bg-[#1C2E60] text-white border-[#1C2E60] shadow-md'
+                  : 'bg-white text-zinc-500 border-slate-200 hover:text-[#0F172A] hover:border-slate-300'
+              }`}
+            >
+              {formatCatLabel(cat)}
+            </button>
+          );
+        })}
       </div>
 
       {/* Grid */}
@@ -121,10 +143,17 @@ export default function Courses() {
                       />
                     </div>
                   )}
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-[10px] font-extrabold text-blue-600 bg-blue-50 border border-blue-100 px-3 py-1 rounded-full uppercase tracking-wider">
-                      {course.tagline}
-                    </span>
+                  <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[10px] font-extrabold text-blue-600 bg-blue-50 border border-blue-100 px-3 py-1 rounded-full uppercase tracking-wider">
+                        {course.tagline}
+                      </span>
+                      {course.category && (
+                        <span className="text-[10px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full uppercase">
+                          {formatCatLabel(course.category)}
+                        </span>
+                      )}
+                    </div>
                     <span className="text-[10px] font-bold text-zinc-400 border border-slate-200 px-2 py-0.5 rounded-full">
                       {course.mode}
                     </span>

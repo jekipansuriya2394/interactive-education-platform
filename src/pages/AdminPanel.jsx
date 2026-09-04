@@ -6,7 +6,7 @@ import {
   FiStar, FiUsers, FiCompass, FiCpu, FiFileText, FiSave, FiEye, FiEyeOff,
   FiLock, FiRefreshCw, FiAlertTriangle, FiChevronRight, FiSearch,
   FiExternalLink, FiCamera, FiLink, FiArrowLeft, FiVideo, FiPlay, FiLayers,
-  FiArrowUp, FiArrowDown
+  FiArrowUp, FiArrowDown, FiTag
 } from 'react-icons/fi';
 import { adminData } from '../utils/adminData';
 import { getFirebaseUrl, setFirebaseUrl, testFirebaseConnection } from '../utils/firebaseConfig';
@@ -158,6 +158,7 @@ function AdminPanel({ onLogout }) {
   const [editingCourse, setEditingCourse] = useState(null);
   const [courseCategoryFilter, setCourseCategoryFilter] = useState('All');
   const [courseSearch, setCourseSearch] = useState('');
+  const [showCourseCatModal, setShowCourseCatModal] = useState(false);
 
   // Popup Config (Multi-Image Slider Manager)
   const [newPopupUrl, setNewPopupUrl] = useState('');
@@ -534,6 +535,63 @@ function AdminPanel({ onLogout }) {
     adminData.setData('courses', updated);
     setCourses(updated);
     showToast('Reordered.');
+  };
+
+  const renameCourseCategory = (oldCat, newCat) => {
+    if (!oldCat || !newCat || !newCat.trim()) return;
+    const trimmedNew = newCat.trim();
+    if (oldCat.toLowerCase() === trimmedNew.toLowerCase()) return;
+    const updatedCourses = courses.map(c => {
+      if ((c.category || '').toLowerCase() === oldCat.toLowerCase()) {
+        return { ...c, category: trimmedNew };
+      }
+      return c;
+    });
+    adminData.setData('courses', updatedCourses);
+    setCourses(updatedCourses);
+
+    const customCats = adminData.getData('courseCategories') || [];
+    const updatedCustom = customCats.map(c => c.toLowerCase() === oldCat.toLowerCase() ? trimmedNew : c);
+    adminData.setData('courseCategories', updatedCustom);
+
+    if (courseCategoryFilter.toLowerCase() === oldCat.toLowerCase()) {
+      setCourseCategoryFilter(trimmedNew);
+    }
+    showToast(`Category "${oldCat}" renamed to "${trimmedNew}"!`);
+  };
+
+  const deleteCourseCategory = (catToDelete, fallbackCat = 'school') => {
+    if (!catToDelete) return;
+    const updatedCourses = courses.map(c => {
+      if ((c.category || '').toLowerCase() === catToDelete.toLowerCase()) {
+        return { ...c, category: fallbackCat };
+      }
+      return c;
+    });
+    adminData.setData('courses', updatedCourses);
+    setCourses(updatedCourses);
+
+    const customCats = adminData.getData('courseCategories') || [];
+    const updatedCustom = customCats.filter(c => c.toLowerCase() !== catToDelete.toLowerCase());
+    adminData.setData('courseCategories', updatedCustom);
+
+    if (courseCategoryFilter.toLowerCase() === catToDelete.toLowerCase()) {
+      setCourseCategoryFilter('All');
+    }
+    showToast(`Category "${catToDelete}" deleted. Courses assigned to "${fallbackCat}".`);
+  };
+
+  const addCourseCategory = (newCat) => {
+    if (!newCat || !newCat.trim()) return;
+    const trimmed = newCat.trim();
+    const existing = (courses || []).some(c => (c.category || '').toLowerCase() === trimmed.toLowerCase());
+    const customCats = adminData.getData('courseCategories') || [];
+    if (existing || customCats.some(c => c.toLowerCase() === trimmed.toLowerCase())) {
+      showToast(`Category "${trimmed}" already exists.`, 'error');
+      return;
+    }
+    adminData.setData('courseCategories', [...customCats, trimmed]);
+    showToast(`Category "${trimmed}" added successfully!`);
   };
 
   // Popup Config (Multi-Image Slider Manager)
@@ -1321,13 +1379,27 @@ function AdminPanel({ onLogout }) {
 
   // ─── COURSES ────────────────────────────────────────────────────────────
   const renderCourses = () => {
+    const defaultLabels = {
+      all: 'All Categories',
+      school: 'School (8th-10th)',
+      science: '11th & 12th Science',
+      competitive: 'Competitive (NEET/JEE)',
+      engineering: 'Engineering / Diploma',
+      guidance: 'Career Guidance'
+    };
+
+    const courseCategoryKeys = Array.from(new Set([
+      'school', 'science', 'competitive', 'engineering', 'guidance',
+      ...(adminData.getData('courseCategories') || []),
+      ...(Array.isArray(courses) ? courses.map(c => (c.category || '').trim()).filter(Boolean) : [])
+    ]));
+
     const courseCategories = [
       { key: 'All', label: 'All Categories' },
-      { key: 'school', label: 'School (8th-10th)' },
-      { key: 'science', label: '11th & 12th Science' },
-      { key: 'competitive', label: 'Competitive (NEET/JEE)' },
-      { key: 'engineering', label: 'Engineering / Diploma' },
-      { key: 'guidance', label: 'Career Guidance' }
+      ...courseCategoryKeys.map(k => ({
+        key: k,
+        label: defaultLabels[k.toLowerCase()] || (k.charAt(0).toUpperCase() + k.slice(1))
+      }))
     ];
 
     const filtered = (Array.isArray(courses) ? courses : []).filter(c => {
@@ -1337,6 +1409,7 @@ function AdminPanel({ onLogout }) {
         (c.name || '').toLowerCase().includes(q) ||
         (c.title || '').toLowerCase().includes(q) ||
         (c.tagline || '').toLowerCase().includes(q) ||
+        (c.category || '').toLowerCase().includes(q) ||
         (c.subjects || '').toLowerCase().includes(q) ||
         (c.description || '').toLowerCase().includes(q);
       return matchesCat && matchesSearch;
@@ -1346,23 +1419,33 @@ function AdminPanel({ onLogout }) {
       <div>
         <SectionHeader
           title="Courses & Programs"
-          subtitle="Add, edit, reorder and publish academic courses and coaching batches"
+          subtitle="Add, edit, reorder, manage categories and publish academic courses"
           action={
             adminData.hasPermission('courses', 'edit') && (
-              <button
-                className="ap-btn ap-btn-primary"
-                onClick={() => setEditingCourse({
-                  name: '',
-                  category: courseCategoryFilter !== 'All' ? courseCategoryFilter : 'school',
-                  tagline: '',
-                  description: '',
-                  subjects: '',
-                  mode: 'Offline + Online',
-                  features: []
-                })}
-              >
-                <FiPlus /> Add Course Program
-              </button>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button
+                  className="ap-btn ap-btn-secondary"
+                  onClick={() => setShowCourseCatModal(true)}
+                  title="Rename, add, or manage categories"
+                >
+                  <FiTag /> Manage Categories
+                </button>
+                <button
+                  className="ap-btn ap-btn-primary"
+                  onClick={() => setEditingCourse({
+                    name: '',
+                    category: courseCategoryFilter !== 'All' ? courseCategoryFilter : 'school',
+                    tagline: '',
+                    description: '',
+                    subjects: '',
+                    mode: 'Offline + Online',
+                    image: '',
+                    features: []
+                  })}
+                >
+                  <FiPlus /> Add Course Program
+                </button>
+              </div>
             )
           }
         />
@@ -1563,8 +1646,19 @@ function AdminPanel({ onLogout }) {
         {editingCourse && (
           <CourseModal
             item={editingCourse}
+            existingCategories={courseCategoryKeys}
             onSave={saveCourse}
             onClose={() => setEditingCourse(null)}
+          />
+        )}
+
+        {showCourseCatModal && (
+          <CourseCategoryModal
+            courses={courses}
+            onRenameCategory={renameCourseCategory}
+            onDeleteCategory={deleteCourseCategory}
+            onAddCategory={addCourseCategory}
+            onClose={() => setShowCourseCatModal(false)}
           />
         )}
       </div>
@@ -4857,7 +4951,7 @@ function FeatureModal({ item, onSave, onClose }) {
   );
 }
 
-function CourseModal({ item, onSave, onClose }) {
+function CourseModal({ item, existingCategories = [], onSave, onClose }) {
   const [form, setForm] = useState({
     id: item.id || '',
     name: item.name || item.title || '',
@@ -4907,7 +5001,7 @@ function CourseModal({ item, onSave, onClose }) {
     reader.readAsDataURL(file);
   };
 
-  const CATEGORY_OPTIONS = [
+  const DEFAULT_CAT_OPTIONS = [
     { value: 'school', label: 'School Foundation (8th - 10th)' },
     { value: 'science', label: '11th & 12th Science' },
     { value: 'competitive', label: 'Competitive (NEET / JEE / GUJCET)' },
@@ -4915,10 +5009,28 @@ function CourseModal({ item, onSave, onClose }) {
     { value: 'guidance', label: 'Career Guidance & Counseling' }
   ];
 
+  // Merge default options with any custom categories
+  const allCategoryOptions = [...DEFAULT_CAT_OPTIONS];
+  (existingCategories || []).forEach(cat => {
+    if (!cat) return;
+    const val = typeof cat === 'string' ? cat : (cat.value || cat.id || cat.name);
+    const lbl = typeof cat === 'string' ? cat : (cat.label || cat.name || cat.id);
+    if (!allCategoryOptions.some(opt => opt.value.toLowerCase() === val.toLowerCase())) {
+      allCategoryOptions.push({ value: val, label: lbl });
+    }
+  });
+
+  const isPredefined = allCategoryOptions.some(opt => opt.value.toLowerCase() === (form.category || '').toLowerCase());
+  const [isCustomCat, setIsCustomCat] = useState(!isPredefined && !!form.category);
+
   const handleSubmit = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     if (!form.name.trim()) {
       alert('Course name is required.');
+      return;
+    }
+    if (!form.category || !form.category.trim()) {
+      alert('Course category is required.');
       return;
     }
     const featuresList = (form.features || '')
@@ -4929,6 +5041,7 @@ function CourseModal({ item, onSave, onClose }) {
     onSave({
       ...form,
       name: form.name.trim(),
+      category: form.category.trim(),
       features: featuresList
     });
   };
@@ -4947,16 +5060,89 @@ function CourseModal({ item, onSave, onClose }) {
           />
         </div>
         <div>
-          <label className="ap-label">Category</label>
-          <select
-            className="ap-input ap-select"
-            value={form.category}
-            onChange={e => setForm({ ...form, category: e.target.value })}
-          >
-            {CATEGORY_OPTIONS.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+            <label className="ap-label" style={{ margin: 0 }}>Category *</label>
+            <button
+              type="button"
+              onClick={() => setIsCustomCat(!isCustomCat)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#58A6FF',
+                fontSize: 11,
+                cursor: 'pointer',
+                fontWeight: 600,
+                textDecoration: 'underline'
+              }}
+            >
+              {isCustomCat ? '← Select from list' : '✍️ Type custom category'}
+            </button>
+          </div>
+
+          {isCustomCat ? (
+            <div>
+              <input
+                className="ap-input"
+                value={form.category}
+                onChange={e => setForm({ ...form, category: e.target.value })}
+                placeholder="Type any category name (e.g. Diploma, DDCET, English...)"
+                list="course-category-suggestions"
+                autoFocus
+              />
+              <datalist id="course-category-suggestions">
+                {allCategoryOptions.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </datalist>
+            </div>
+          ) : (
+            <select
+              className="ap-input ap-select"
+              value={form.category}
+              onChange={e => {
+                if (e.target.value === '__custom__') {
+                  setIsCustomCat(true);
+                  setForm({ ...form, category: '' });
+                } else {
+                  setForm({ ...form, category: e.target.value });
+                }
+              }}
+            >
+              {allCategoryOptions.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+              <option value="__custom__">✍️ + Type New / Custom Category...</option>
+            </select>
+          )}
+
+          {/* Quick Category Chips */}
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+            {allCategoryOptions.map(opt => {
+              const isSelected = (form.category || '').toLowerCase() === opt.value.toLowerCase();
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => {
+                    setForm(p => ({ ...p, category: opt.value }));
+                    setIsCustomCat(false);
+                  }}
+                  style={{
+                    background: isSelected ? '#1F6FEB' : '#161B22',
+                    color: isSelected ? '#fff' : '#8B949E',
+                    border: '1px solid ' + (isSelected ? '#58A6FF' : '#30363D'),
+                    fontSize: 10,
+                    fontWeight: 600,
+                    padding: '3px 8px',
+                    borderRadius: 12,
+                    cursor: 'pointer'
+                  }}
+                >
+                  {opt.label.split('(')[0].trim()}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -5073,6 +5259,179 @@ function CourseModal({ item, onSave, onClose }) {
         <button type="button" className="ap-btn ap-btn-ghost" onClick={onClose}>Cancel</button>
         <button type="button" className="ap-btn ap-btn-primary" onClick={handleSubmit}>
           <FiSave /> Save Course Program
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+function CourseCategoryModal({ courses, onRenameCategory, onDeleteCategory, onAddCategory, onClose }) {
+  const [newCatName, setNewCatName] = useState('');
+  const [editingCat, setEditingCat] = useState(null);
+  const [renameValue, setRenameValue] = useState('');
+
+  const defaultCategoryLabels = {
+    school: 'School Foundation (8th - 10th)',
+    science: '11th & 12th Science',
+    competitive: 'Competitive (NEET / JEE / GUJCET)',
+    engineering: 'Engineering & Diploma / DDCET',
+    guidance: 'Career Guidance & Counseling'
+  };
+
+  // Group counts by category
+  const counts = {};
+  (courses || []).forEach(c => {
+    const raw = (c.category || 'school').trim();
+    counts[raw] = (counts[raw] || 0) + 1;
+  });
+
+  const customCats = adminData.getData('courseCategories') || [];
+  customCats.forEach(cat => {
+    const raw = (typeof cat === 'string' ? cat : cat.name || cat.id || '').trim();
+    if (raw && !counts[raw]) counts[raw] = 0;
+  });
+
+  const categoryList = Object.keys(counts).map(key => ({
+    key,
+    label: defaultCategoryLabels[key.toLowerCase()] || (key.charAt(0).toUpperCase() + key.slice(1)),
+    count: counts[key]
+  }));
+
+  const handleAdd = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!newCatName.trim()) return;
+    onAddCategory(newCatName.trim());
+    setNewCatName('');
+  };
+
+  const startRename = (catKey) => {
+    setEditingCat(catKey);
+    setRenameValue(catKey);
+  };
+
+  const handleSaveRename = (oldCat) => {
+    if (!renameValue.trim()) return;
+    onRenameCategory(oldCat, renameValue.trim());
+    setEditingCat(null);
+  };
+
+  return (
+    <Modal title="🏷️ Manage Course Categories" onClose={onClose}>
+      <p style={{ color: '#8B949E', fontSize: 13, marginBottom: 16 }}>
+        Add, rename, or manage course categories. Renaming a category updates all matching courses instantly across the website.
+      </p>
+
+      {/* Add New Category */}
+      <form onSubmit={handleAdd} style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+        <input
+          className="ap-input"
+          value={newCatName}
+          onChange={e => setNewCatName(e.target.value)}
+          placeholder="New category name (e.g. Diploma, DDCET, Spoken English)..."
+          style={{ flex: 1 }}
+        />
+        <button type="submit" className="ap-btn ap-btn-primary" disabled={!newCatName.trim()}>
+          <FiPlus /> Add Category
+        </button>
+      </form>
+
+      {/* Category List */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 380, overflowY: 'auto' }}>
+        {categoryList.map(cat => (
+          <div
+            key={cat.key}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 14px',
+              background: '#0D1117',
+              border: '1px solid #21262D',
+              borderRadius: 10,
+              gap: 12
+            }}
+          >
+            {editingCat === cat.key ? (
+              <div style={{ display: 'flex', gap: 8, flex: 1, alignItems: 'center' }}>
+                <input
+                  className="ap-input"
+                  value={renameValue}
+                  onChange={e => setRenameValue(e.target.value)}
+                  style={{ flex: 1, height: 34, fontSize: 13 }}
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  className="ap-btn ap-btn-primary"
+                  style={{ height: 34, padding: '0 12px', fontSize: 12 }}
+                  onClick={() => handleSaveRename(cat.key)}
+                >
+                  <FiSave size={13} /> Save
+                </button>
+                <button
+                  type="button"
+                  className="ap-btn ap-btn-secondary"
+                  style={{ height: 34, padding: '0 10px', fontSize: 12 }}
+                  onClick={() => setEditingCat(null)}
+                >
+                  <FiX size={13} />
+                </button>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <span style={{
+                    background: '#1F6FEB22',
+                    color: '#58A6FF',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    padding: '4px 10px',
+                    borderRadius: 6,
+                    border: '1px solid #1F6FEB44'
+                  }}>
+                    {cat.key}
+                  </span>
+                  {cat.label.toLowerCase() !== cat.key.toLowerCase() && (
+                    <span style={{ fontSize: 12, color: '#C9D1D9' }}>{cat.label}</span>
+                  )}
+                  <span style={{ fontSize: 12, color: '#8B949E' }}>
+                    ({cat.count} course{cat.count !== 1 ? 's' : ''})
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    type="button"
+                    className="ap-btn ap-btn-secondary"
+                    style={{ height: 32, padding: '0 10px', fontSize: 12 }}
+                    onClick={() => startRename(cat.key)}
+                    title="Rename this category across all courses"
+                  >
+                    <FiEdit2 size={12} /> Rename
+                  </button>
+                  <button
+                    type="button"
+                    className="ap-icon-btn ap-icon-btn-danger"
+                    style={{ width: 32, height: 32 }}
+                    onClick={() => {
+                      if (window.confirm(`Are you sure you want to delete category "${cat.key}"? Any associated courses will be moved to "school".`)) {
+                        onDeleteCategory(cat.key, 'school');
+                      }
+                    }}
+                    title="Delete category"
+                  >
+                    <FiTrash2 size={13} />
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div style={{ marginTop: 20, textAlign: 'right' }}>
+        <button type="button" className="ap-btn ap-btn-secondary" onClick={onClose}>
+          Close
         </button>
       </div>
     </Modal>
