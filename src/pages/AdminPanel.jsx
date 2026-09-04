@@ -164,7 +164,7 @@ function AdminPanel({ onLogout }) {
   const [newPopupUrl, setNewPopupUrl] = useState('');
   const [newPopupTitle, setNewPopupTitle] = useState('');
   const [newPopupLink, setNewPopupLink] = useState('');
-  const [newPopupZoom, setNewPopupZoom] = useState(100);
+  const [newPopupSize, setNewPopupSize] = useState(100);
   const popupFileRef = useRef(null);
 
   const navigate = (section) => {
@@ -605,19 +605,11 @@ function AdminPanel({ onLogout }) {
     }));
   };
 
-  const handleSlideZoomChange = (id, val) => {
-    const num = Math.max(20, Math.min(300, Number(val) || 100));
-    setPopupConfig(p => ({
-      ...p,
-      images: (p.images || []).map(img => img.id === id ? { ...img, zoom: num, imageScale: num } : img)
-    }));
-  };
-
   const savePopupConfig = async () => {
     const toSave = { ...popupConfig };
     if (!toSave.images || !Array.isArray(toSave.images) || toSave.images.length === 0) {
       toSave.images = [
-        { id: '1', url: '/images/jagannath_rath_yatra.jpg', title: 'Jagannath Rath Yatra 2026', link: '/contact', zoom: 100, imageScale: 100 }
+        { id: '1', url: '/images/jagannath_rath_yatra.jpg', title: 'Jagannath Rath Yatra 2026', link: '/contact' }
       ];
     }
     adminData.setData('popupConfig', toSave);
@@ -629,16 +621,14 @@ function AdminPanel({ onLogout }) {
     }
   };
 
-  const addPopupImage = async (url, title = '', link = '', zoom = 100) => {
+  const addPopupImage = async (url, title = '', link = '', sizePercent = 100) => {
     if (!url || !url.trim()) return;
-    const numZoom = Math.max(20, Math.min(300, Number(zoom) || 100));
     const newSlide = {
       id: Date.now().toString(),
       url: url.trim(),
       title: title.trim() || `Slide ${ (popupConfig.images?.length || 0) + 1 }`,
       link: link.trim() || popupConfig.link || '/contact',
-      zoom: numZoom,
-      imageScale: numZoom
+      sizePercent: Number(sizePercent) || 100
     };
     const updated = {
       ...popupConfig,
@@ -649,7 +639,7 @@ function AdminPanel({ onLogout }) {
     setNewPopupUrl('');
     setNewPopupTitle('');
     setNewPopupLink('');
-    setNewPopupZoom(100);
+    setNewPopupSize(100);
     const ok = await adminData.syncKeyToServer('popupConfig', updated);
     if (ok) {
       showToast('New slide added & live across all devices!');
@@ -692,7 +682,7 @@ function AdminPanel({ onLogout }) {
         canvas.width = w; canvas.height = h;
         canvas.getContext('2d').drawImage(img, 0, 0, w, h);
         const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-        addPopupImage(dataUrl, file.name.split('.')[0] || 'Uploaded Slide', '', newPopupZoom);
+        addPopupImage(dataUrl, file.name.split('.')[0] || 'Uploaded Slide', '', newPopupSize || 100);
       };
       img.src = ev.target.result;
     };
@@ -2817,22 +2807,62 @@ function AdminPanel({ onLogout }) {
             <input className="ap-input" value={popupConfig.link || ''} onChange={e => handlePopupChange('link', e.target.value)} placeholder="e.g. /contact or WhatsApp link" disabled={!adminData.hasPermission('popup', 'edit')} />
             <p style={{ color: '#6B7280', fontSize: 11, marginTop: 4 }}>Redirect destination when a slide image is clicked.</p>
 
-            <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid #21262D' }}>
+            <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid #21262D' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                <label className="ap-label" style={{ margin: 0, color: '#C9A84C', fontWeight: 700 }}>🔍 Global Default Photo Zoom (%)</label>
-                <span style={{ fontSize: 12, fontWeight: 800, color: '#C9A84C', background: 'rgba(201,168,76,0.15)', padding: '1px 6px', borderRadius: 4 }}>{popupConfig.imageScale || 100}%</span>
+                <label className="ap-label" style={{ margin: 0, color: '#38BDF8', fontWeight: 700 }}>
+                  📏 Global Popup Window Size (%)
+                </label>
+                <span style={{ fontSize: 12, fontWeight: 800, color: '#38BDF8', background: 'rgba(56, 189, 248, 0.15)', padding: '2px 8px', borderRadius: 6, border: '1px solid rgba(56, 189, 248, 0.3)' }}>
+                  {popupConfig.popupScalePercent || 100}%
+                </span>
               </div>
-              <input
-                type="range"
-                min="40"
-                max="200"
-                step="5"
-                value={popupConfig.imageScale || 100}
-                onChange={e => handlePopupChange('imageScale', Number(e.target.value))}
-                disabled={!adminData.hasPermission('popup', 'edit')}
-                style={{ width: '100%', accentColor: '#C9A84C', cursor: 'pointer', height: 6 }}
-              />
-              <p style={{ color: '#8B949E', fontSize: 11, marginTop: 4 }}>Fallback zoom level if a slide does not set its own percentage.</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="range"
+                  min="70"
+                  max="160"
+                  step="5"
+                  value={popupConfig.popupScalePercent || 100}
+                  onChange={e => handlePopupChange('popupScalePercent', Number(e.target.value))}
+                  disabled={!adminData.hasPermission('popup', 'edit')}
+                  style={{ flex: 1, accentColor: '#38BDF8', cursor: 'pointer' }}
+                />
+                <input
+                  type="number"
+                  min="60"
+                  max="180"
+                  value={popupConfig.popupScalePercent || 100}
+                  onChange={e => handlePopupChange('popupScalePercent', Math.max(60, Math.min(200, Number(e.target.value) || 100)))}
+                  disabled={!adminData.hasPermission('popup', 'edit')}
+                  style={{ width: 54, padding: '4px 6px', fontSize: 11, background: '#161B22', color: '#fff', border: '1px solid #30363D', borderRadius: 6, textAlign: 'center' }}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                {[80, 100, 120, 140].map(pct => (
+                  <button
+                    key={pct}
+                    type="button"
+                    onClick={() => handlePopupChange('popupScalePercent', pct)}
+                    disabled={!adminData.hasPermission('popup', 'edit')}
+                    style={{
+                      flex: 1,
+                      padding: '4px 0',
+                      fontSize: 11,
+                      fontWeight: (popupConfig.popupScalePercent || 100) === pct ? 800 : 500,
+                      background: (popupConfig.popupScalePercent || 100) === pct ? '#0284C7' : '#21262D',
+                      color: (popupConfig.popupScalePercent || 100) === pct ? '#fff' : '#8B949E',
+                      border: '1px solid ' + ((popupConfig.popupScalePercent || 100) === pct ? '#38BDF8' : '#30363D'),
+                      borderRadius: 6,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {pct}%
+                  </button>
+                ))}
+              </div>
+              <p style={{ color: '#6B7280', fontSize: 11, marginTop: 6 }}>
+                Base popup modal width is 500px. Increase to 120%-140% if photos or text appear too small.
+              </p>
             </div>
           </div>
 
@@ -2859,36 +2889,63 @@ function AdminPanel({ onLogout }) {
             <label className="ap-label" style={{ marginTop: 8 }}>Click Redirect Link for this Slide</label>
             <input className="ap-input" value={newPopupLink} onChange={e => setNewPopupLink(e.target.value)} placeholder="e.g. /courses, /about, or https://wa.me/..." disabled={!adminData.hasPermission('popup', 'edit')} />
 
-            <div style={{ marginTop: 10 }}>
+            <div style={{ marginTop: 10, padding: '10px 12px', background: '#0D1117', border: '1px solid #30363D', borderRadius: 8 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                <label className="ap-label" style={{ margin: 0, color: '#C9A84C' }}>🔍 Initial Photo Zoom / Size (%)</label>
-                <span style={{ fontSize: 12, fontWeight: 800, color: '#C9A84C', background: 'rgba(201,168,76,0.15)', padding: '1px 6px', borderRadius: 4 }}>{newPopupZoom}%</span>
+                <label style={{ fontSize: 11, color: '#F59E0B', fontWeight: 700, margin: 0 }}>
+                  📏 Photo Display Size (%):
+                </label>
+                <span style={{ fontSize: 11, fontWeight: 800, color: '#FBBF24', background: 'rgba(245,158,11,0.15)', padding: '1px 6px', borderRadius: 4 }}>
+                  {newPopupSize}%
+                </span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <input
                   type="range"
-                  min="40"
-                  max="200"
+                  min="50"
+                  max="180"
                   step="5"
-                  value={newPopupZoom}
-                  onChange={e => setNewPopupZoom(Number(e.target.value))}
+                  value={newPopupSize}
+                  onChange={e => setNewPopupSize(Number(e.target.value))}
                   disabled={!adminData.hasPermission('popup', 'edit')}
-                  style={{ flex: 1, accentColor: '#C9A84C', cursor: 'pointer', height: 6 }}
+                  style={{ flex: 1, accentColor: '#F59E0B', cursor: 'pointer' }}
                 />
                 <input
                   type="number"
-                  min="40"
+                  min="50"
                   max="200"
-                  value={newPopupZoom}
-                  onChange={e => setNewPopupZoom(Math.max(20, Math.min(300, Number(e.target.value) || 100)))}
+                  value={newPopupSize}
+                  onChange={e => setNewPopupSize(Math.max(40, Math.min(250, Number(e.target.value) || 100)))}
                   disabled={!adminData.hasPermission('popup', 'edit')}
-                  style={{ width: 56, fontSize: 11, padding: '3px 4px', textAlign: 'center', background: '#161B22', border: '1px solid #30363D', borderRadius: 6, color: '#F0F6FC' }}
+                  style={{ width: 50, padding: '3px 4px', fontSize: 11, background: '#161B22', color: '#fff', border: '1px solid #30363D', borderRadius: 4, textAlign: 'center' }}
                 />
+              </div>
+              <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
+                {[80, 100, 120, 140, 160].map(pct => (
+                  <button
+                    key={pct}
+                    type="button"
+                    onClick={() => setNewPopupSize(pct)}
+                    disabled={!adminData.hasPermission('popup', 'edit')}
+                    style={{
+                      flex: 1,
+                      padding: '3px 0',
+                      fontSize: 10,
+                      fontWeight: newPopupSize === pct ? 800 : 500,
+                      background: newPopupSize === pct ? '#F59E0B' : '#21262D',
+                      color: newPopupSize === pct ? '#000' : '#8B949E',
+                      border: '1px solid ' + (newPopupSize === pct ? '#F59E0B' : '#30363D'),
+                      borderRadius: 4,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {pct}%
+                  </button>
+                ))}
               </div>
             </div>
 
             {adminData.hasPermission('popup', 'edit') && (
-              <button type="button" className="ap-btn ap-btn-primary" onClick={(e) => { e.preventDefault(); addPopupImage(newPopupUrl, newPopupTitle, newPopupLink, newPopupZoom); }} style={{ marginTop: 12, width: '100%', justifyContent: 'center' }}>
+              <button type="button" className="ap-btn ap-btn-primary" onClick={(e) => { e.preventDefault(); addPopupImage(newPopupUrl, newPopupTitle, newPopupLink, newPopupSize); }} style={{ marginTop: 12, width: '100%', justifyContent: 'center' }}>
                 <FiPlus /> Add Slide Image
               </button>
             )}
@@ -2898,7 +2955,7 @@ function AdminPanel({ onLogout }) {
         {/* Active Slides Grid */}
         <div className="ap-card" style={{ marginTop: 20 }}>
           <h4 className="ap-card-title">🖼️ Active Popup Slides ({slides.length})</h4>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 16, marginTop: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16, marginTop: 14 }}>
             {slides.map((slide, idx) => {
               let thumbSrc = slide.url || '';
               if (thumbSrc === '/images/jagannath_rath_yatra.jpg' || thumbSrc === '/images/popup_banner.jpg') thumbSrc = jagannathPosterB64;
@@ -2906,94 +2963,21 @@ function AdminPanel({ onLogout }) {
               else if (thumbSrc === '/images/jee_mains_pyq_banner.jpg') thumbSrc = jeePyqB64;
               else if (!thumbSrc.startsWith('data:')) thumbSrc = getEmbedImageUrl(thumbSrc);
 
-              const slideZoom = slide.zoom || slide.imageScale || popupConfig.imageScale || 100;
-
               return (
-                <div key={slide.id || idx} style={{ background: '#0D1117', border: '1px solid #30363D', borderRadius: 12, overflow: 'hidden', padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <div style={{ height: 140, borderRadius: 8, overflow: 'hidden', background: '#161B22', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div key={slide.id || idx} style={{ background: '#0D1117', border: '1px solid #30363D', borderRadius: 12, overflow: 'hidden', padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div style={{ height: 135, borderRadius: 8, overflow: 'hidden', background: '#161B22', position: 'relative' }}>
                     <img
                       src={thumbSrc}
                       alt={slide.title || 'Slide'}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'contain',
-                        transform: `scale(${slideZoom / 100})`,
-                        transformOrigin: 'center center',
-                        transition: 'transform 0.2s ease'
-                      }}
+                      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                       onError={handleImageError}
                     />
-                    <span style={{ position: 'absolute', top: 6, left: 6, background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 6 }}>
+                    <span style={{ position: 'absolute', top: 6, left: 6, background: 'rgba(0,0,0,0.8)', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 6 }}>
                       Slide #{idx + 1}
                     </span>
-                    <span style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(201,168,76,0.92)', color: '#0F172A', fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 6, boxShadow: '0 2px 5px rgba(0,0,0,0.4)' }}>
-                      🔍 {slideZoom}%
+                    <span style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(245,158,11,0.92)', color: '#000', fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 6, boxShadow: '0 2px 4px rgba(0,0,0,0.35)' }}>
+                      {slide.sizePercent || 100}% Size
                     </span>
-                  </div>
-
-                  {/* Photo Zoom / Size Percentage Slider */}
-                  <div style={{ background: '#161B22', padding: '8px 10px', borderRadius: 8, border: '1px solid #21262D' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                      <label style={{ fontSize: 10, color: '#C9A84C', textTransform: 'uppercase', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        🔍 Photo Zoom / Size (%)
-                      </label>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: '#C9A84C' }}>
-                        {slideZoom}%
-                      </span>
-                    </div>
-                    
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <input
-                        type="range"
-                        min="40"
-                        max="200"
-                        step="5"
-                        value={slideZoom}
-                        onChange={e => handleSlideZoomChange(slide.id, e.target.value)}
-                        disabled={!adminData.hasPermission('popup', 'edit')}
-                        style={{ flex: 1, accentColor: '#C9A84C', cursor: 'pointer', height: 6 }}
-                      />
-                      <input
-                        type="number"
-                        min="40"
-                        max="200"
-                        value={slideZoom}
-                        onChange={e => handleSlideZoomChange(slide.id, e.target.value)}
-                        disabled={!adminData.hasPermission('popup', 'edit')}
-                        style={{ width: 52, fontSize: 11, padding: '2px 4px', textAlign: 'center', background: '#0D1117', border: '1px solid #30363D', borderRadius: 6, color: '#F0F6FC' }}
-                      />
-                    </div>
-
-                    {/* Quick Preset Buttons */}
-                    <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>
-                      {[
-                        { label: '80%', val: 80 },
-                        { label: '100%', val: 100 },
-                        { label: '120%', val: 120 },
-                        { label: '150%', val: 150 }
-                      ].map(preset => (
-                        <button
-                          key={preset.val}
-                          type="button"
-                          onClick={() => handleSlideZoomChange(slide.id, preset.val)}
-                          disabled={!adminData.hasPermission('popup', 'edit')}
-                          style={{
-                            flex: 1,
-                            fontSize: 10,
-                            fontWeight: 600,
-                            padding: '2px 0',
-                            borderRadius: 4,
-                            border: slideZoom === preset.val ? '1px solid #C9A84C' : '1px solid #30363D',
-                            background: slideZoom === preset.val ? 'rgba(201,168,76,0.2)' : '#0D1117',
-                            color: slideZoom === preset.val ? '#C9A84C' : '#8B949E',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          {preset.label}
-                        </button>
-                      ))}
-                    </div>
                   </div>
 
                   <div>
@@ -3018,6 +3002,62 @@ function AdminPanel({ onLogout }) {
                       disabled={!adminData.hasPermission('popup', 'edit')}
                       style={{ fontSize: 12, padding: '5px 8px', color: '#38BDF8', borderColor: 'rgba(56, 189, 248, 0.4)' }}
                     />
+                  </div>
+
+                  {/* Photo Display Size in Percentage */}
+                  <div style={{ background: '#161B22', border: '1px solid #21262D', borderRadius: 8, padding: '8px 10px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
+                      <label style={{ fontSize: 10, color: '#F59E0B', textTransform: 'uppercase', fontWeight: 700, margin: 0 }}>
+                        📏 Photo Size (%)
+                      </label>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: '#FBBF24', background: 'rgba(245,158,11,0.15)', padding: '1px 6px', borderRadius: 4, border: '1px solid rgba(245,158,11,0.3)' }}>
+                        {slide.sizePercent || 100}%
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <input
+                        type="range"
+                        min="50"
+                        max="180"
+                        step="5"
+                        value={slide.sizePercent || 100}
+                        onChange={e => handleSlideFieldChange(slide.id, 'sizePercent', Number(e.target.value))}
+                        disabled={!adminData.hasPermission('popup', 'edit')}
+                        style={{ flex: 1, accentColor: '#F59E0B', cursor: 'pointer', height: 6 }}
+                      />
+                      <input
+                        type="number"
+                        min="50"
+                        max="200"
+                        value={slide.sizePercent || 100}
+                        onChange={e => handleSlideFieldChange(slide.id, 'sizePercent', Math.max(40, Math.min(250, Number(e.target.value) || 100)))}
+                        disabled={!adminData.hasPermission('popup', 'edit')}
+                        style={{ width: 52, padding: '3px 4px', fontSize: 11, background: '#0D1117', color: '#fff', border: '1px solid #30363D', borderRadius: 4, textAlign: 'center' }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', gap: 4, marginTop: 5 }}>
+                      {[80, 100, 120, 140, 160].map(pct => (
+                        <button
+                          key={pct}
+                          type="button"
+                          onClick={() => handleSlideFieldChange(slide.id, 'sizePercent', pct)}
+                          disabled={!adminData.hasPermission('popup', 'edit')}
+                          style={{
+                            flex: 1,
+                            padding: '3px 0',
+                            fontSize: 10,
+                            fontWeight: (slide.sizePercent || 100) === pct ? 800 : 500,
+                            background: (slide.sizePercent || 100) === pct ? '#F59E0B' : '#21262D',
+                            color: (slide.sizePercent || 100) === pct ? '#000' : '#8B949E',
+                            border: '1px solid ' + ((slide.sizePercent || 100) === pct ? '#F59E0B' : '#30363D'),
+                            borderRadius: 4,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {pct}%
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   {adminData.hasPermission('popup', 'edit') && slides.length > 1 && (
