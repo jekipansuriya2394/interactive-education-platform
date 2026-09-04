@@ -608,11 +608,40 @@ export const adminData = {
     return DEFAULTS[key] !== undefined ? DEFAULTS[key] : [];
   },
 
+  _syncListeners: new Set(),
+  _lastKnownHashes: {},
+  _isPollingActive: false,
+  _globalPollTimer: null,
+  _storageListenerBound: false,
+
+  subscribe(key, callback) {
+    if (typeof callback !== 'function') return () => {};
+    const listener = { key: key || null, callback };
+    this._syncListeners.add(listener);
+
+    // Ensure single shared background poller is running
+    this._ensureGlobalPoller();
+
+    return () => {
+      this._syncListeners.delete(listener);
+    };
+  },
+
   notifySubscribers(key, value) {
     try {
       window.dispatchEvent(new CustomEvent('noble_admin_data_change', { detail: { key, value } }));
-    } catch {
-      // Ignore
+    } catch {}
+
+    if (this._syncListeners && this._syncListeners.size > 0) {
+      this._syncListeners.forEach(listener => {
+        try {
+          if (!listener.key || listener.key === key) {
+            listener.callback(value, key);
+          }
+        } catch (e) {
+          console.error('[adminData] Listener callback error:', e);
+        }
+      });
     }
   },
 
@@ -717,10 +746,16 @@ export const adminData = {
       if (res.ok) {
         const json = await res.json();
         if (json !== null && json !== undefined) {
+          const jsonStr = JSON.stringify(json);
+          if (this._lastKnownHashes && this._lastKnownHashes[key] === jsonStr) {
+            return json;
+          }
+          if (!this._lastKnownHashes) this._lastKnownHashes = {};
+          this._lastKnownHashes[key] = jsonStr;
           if (!this._memoryCache) this._memoryCache = {};
           this._memoryCache[key] = json;
           try {
-            localStorage.setItem(PREFIX + key, JSON.stringify(json));
+            localStorage.setItem(PREFIX + key, jsonStr);
           } catch {}
           try {
             this.notifySubscribers(key, json);
@@ -824,13 +859,20 @@ export const adminData = {
         'blogPosts', 'seoConfig'
       ]));
 
+      if (!this._lastKnownHashes) this._lastKnownHashes = {};
       if (!this._memoryCache) this._memoryCache = {};
 
       allKeys.forEach(k => {
         const serverVal = data[k];
         if (serverVal !== undefined) {
           const serverValStr = typeof serverVal === 'string' ? serverVal : JSON.stringify(serverVal);
-          const localValStr = localStorage.getItem(PREFIX + k);
+
+          // If the server data matches our last known hash, do not notify!
+          if (this._lastKnownHashes[k] === serverValStr) {
+            return;
+          }
+
+          this._lastKnownHashes[k] = serverValStr;
 
           // Always sync to memory cache
           try {
@@ -839,17 +881,16 @@ export const adminData = {
             this._memoryCache[k] = serverVal;
           }
 
-          if (serverValStr !== localValStr) {
-            try {
-              localStorage.setItem(PREFIX + k, serverValStr);
-            } catch (e) {
-              // Ignore quota limit, memory cache has the fresh data
-            }
-            try {
-              this.notifySubscribers(k, this._memoryCache[k]);
-            } catch {}
-            changed = true;
+          try {
+            localStorage.setItem(PREFIX + k, serverValStr);
+          } catch (e) {
+            // Ignore quota limit, memory cache has the fresh data
           }
+
+          try {
+            this.notifySubscribers(k, this._memoryCache[k]);
+          } catch {}
+          changed = true;
         }
       });
       return changed;
@@ -857,64 +898,44 @@ export const adminData = {
     return false;
   },
 
-  initSync(onUpdate) {
-    // 1. Same-tab/same-window custom event listener (instant update everywhere)
-    const customHandler = () => onUpdate();
-    window.addEventListener('noble_admin_data_change', customHandler);
+  _ensureGlobalPoller() {
+    if (this._isPollingActive) return;
+    this._isPollingActive = true;
 
-    // 2. Same-device multi-tab local listener (instant storage event)
-    const storageHandler = (e) => {
-      if (!e.key || e.key.startsWith(PREFIX)) {
-        onUpdate();
-      }
-    };
-    window.addEventListener('storage', storageHandler);
+    // Cross-tab storage listener
+    if (typeof window !== 'undefined' && !this._storageListenerBound) {
+      this._storageListenerBound = true;
+      window.addEventListener('storage', (e) => {
+        if (!e.key || e.key.startsWith(PREFIX)) {
+          const changedKey = e.key ? e.key.replace(PREFIX, '') : null;
+          this.notifySubscribers(changedKey);
+        }
+      });
+    }
 
-    // 3. Initial sync immediately on mount
-    this.syncFromServer().then(changed => {
-      if (changed) onUpdate();
-    }).catch(() => {});
-
-    // 4. Cross-device adaptive poll loop with jitter, backoff and visibility awareness
     const self = this;
-    let stopped = false;
-    let pollTimer = null;
-
-    const scheduleNext = (delay) => {
-      if (stopped) return;
-      const jitter = Math.floor(Math.random() * 1000);
-      pollTimer = setTimeout(runPoll, Math.max(1000, delay + jitter));
-    };
-
     const runPoll = async () => {
-      if (stopped) return;
-      // Pause polling while tab is hidden to reduce network noise
-      if (document.hidden) {
-        scheduleNext(5000);
+      if (!self._isPollingActive) return;
+      if (typeof document !== 'undefined' && document.hidden) {
+        // Tab is backgrounded, check in 45 seconds
+        self._globalPollTimer = setTimeout(runPoll, 45000);
         return;
       }
       try {
-        const changed = await self.syncFromServer();
-        if (changed) onUpdate();
-      } catch {
-        // ignore
-      }
-      const nextDelay = self._backoffDelay && self._backoffDelay > 0 ? self._backoffDelay : self.minSyncInterval;
-      scheduleNext(nextDelay);
+        await self.syncFromServer();
+      } catch (err) {}
+
+      // Relaxed, calm background sync every 30 seconds
+      const nextDelay = 30000 + Math.floor(Math.random() * 5000);
+      self._globalPollTimer = setTimeout(runPoll, nextDelay);
     };
 
-    // Start the poll loop
-    scheduleNext(0);
+    // Initial sync after 3 seconds so page load is instant
+    self._globalPollTimer = setTimeout(runPoll, 3000);
+  },
 
-    // Stopper & cleanup
-    const cleanup = () => {
-      stopped = true;
-      if (pollTimer) clearTimeout(pollTimer);
-      window.removeEventListener('noble_admin_data_change', customHandler);
-      window.removeEventListener('storage', storageHandler);
-    };
-
-    return cleanup;
+  initSync(onUpdate) {
+    return this.subscribe(null, onUpdate);
   },
 
   // Import / Export backup utilities

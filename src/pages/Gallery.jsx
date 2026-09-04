@@ -161,18 +161,20 @@ export default function Gallery() {
   const [lightboxError, setLightboxError] = useState(false);
 
   useEffect(() => {
-    const refreshGallery = () => setItems(adminData.getData('gallery') || []);
-    refreshGallery();
-    const cleanup = adminData.initSync(refreshGallery);
-    // Instantly pull freshest gallery items from Cloud Database
+    // 1. Targeted subscription: only updates when gallery items actually change
+    const cleanup = adminData.subscribe('gallery', (freshGallery) => {
+      if (Array.isArray(freshGallery) && freshGallery.length > 0) {
+        setItems(freshGallery);
+      }
+    });
+
+    // 2. Fetch freshest gallery items from cloud on mount once
     adminData.fetchKeyFromServer('gallery').then(fresh => {
       if (fresh && Array.isArray(fresh) && fresh.length > 0) {
         setItems(fresh);
       }
     });
-    adminData.syncFromServer().then(changed => {
-      if (changed) refreshGallery();
-    });
+
     return () => {
       if (typeof cleanup === 'function') cleanup();
     };
