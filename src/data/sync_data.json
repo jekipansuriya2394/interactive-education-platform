@@ -131,24 +131,31 @@
     "autoSlide": true,
     "interval": 3000,
     "link": "/contact",
+    "imageScale": 100,
     "images": [
       {
         "id": "1784786987791",
         "url": "https://drive.google.com/file/d/1ntTEEQbmpNa3-x69aCJw7LDYo76KIbwY/view?usp=sharing",
         "title": "Slide 1",
-        "link": "/contact"
+        "link": "/contact",
+        "zoom": 100,
+        "imageScale": 100
       },
       {
         "id": "1784787002813",
         "url": "https://drive.google.com/file/d/1rDAigx-jGXeXUcg5yK61cMfZ5tr9Pi_3/view?usp=sharing",
         "title": "Slide 2",
-        "link": "/contact"
+        "link": "/contact",
+        "zoom": 100,
+        "imageScale": 100
       },
       {
         "id": "1784787015302",
         "url": "https://drive.google.com/file/d/1SC8QYc16gG6eNJ6WkUMPDF964XiaRNsx/view?usp=sharing",
         "title": "Slide 3",
-        "link": "/contact"
+        "link": "/contact",
+        "zoom": 100,
+        "imageScale": 100
       }
     ]
   },

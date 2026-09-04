@@ -165,9 +165,10 @@ const DEFAULTS = {
     autoSlide: true,
     interval: 4000,
     link: '#inquiry-form',
+    imageScale: 100,
     images: [
-      { id: '1', url: '/images/jagannath_rath_yatra.jpg', title: 'Admissions Open 2026 Batch', link: '#inquiry-form' },
-      { id: '2', url: '/images/shital-result.png', title: 'Record Breaking 99.60 PR in SSC Board', link: '/results' }
+      { id: '1', url: '/images/jagannath_rath_yatra.jpg', title: 'Admissions Open 2026 Batch', link: '#inquiry-form', zoom: 100, imageScale: 100 },
+      { id: '2', url: '/images/shital-result.png', title: 'Record Breaking 99.60 PR in SSC Board', link: '/results', zoom: 100, imageScale: 100 }
     ]
   },
   pageImages: {

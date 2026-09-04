@@ -12,6 +12,11 @@ export default function PromoPopup({ isLoading, currentPath }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(1);
   const [popupConfig, setPopupConfig] = useState(() => adminData.getData('popupConfig') || {});
+  const [interactiveZoom, setInteractiveZoom] = useState(null);
+
+  useEffect(() => {
+    setInteractiveZoom(null);
+  }, [currentIndex]);
 
   useEffect(() => { setShowPopup(true); }, [currentPath, isLoading]);
 
@@ -76,6 +81,9 @@ export default function PromoPopup({ isLoading, currentPath }) {
   const prevSlide = (e) => { if (e) e.stopPropagation(); setDirection(-1); setCurrentIndex(prev => (prev - 1 + slides.length) % slides.length); };
   const redirectLink = currentSlide.link || popupConfig.link || '/contact';
 
+  const baseZoom = Number(currentSlide.zoom || currentSlide.imageScale || popupConfig.imageScale || 100);
+  const activeZoom = interactiveZoom !== null ? interactiveZoom : baseZoom;
+
   const slideVariants = {
     enter: (dir) => ({ x: dir > 0 ? 300 : -300, opacity: 0 }),
     center: { x: 0, opacity: 1 },
@@ -137,12 +145,71 @@ export default function PromoPopup({ isLoading, currentPath }) {
           position: relative; width: 100%;
           background: transparent; overflow: hidden;
           border-radius: 16px;
+          display: flex; align-items: center; justify-content: center;
         }
         .pp-img {
           width: 100%; height: auto; max-height: 78vh;
           display: block; object-fit: contain;
           background: transparent;
           border-radius: 16px;
+          transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .pp-zoom-bar {
+          position: absolute;
+          bottom: 12px; right: 12px;
+          z-index: 2147483648;
+          display: flex; align-items: center; gap: 4px;
+          background: rgba(10, 20, 40, 0.85);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          border: 1px solid rgba(201, 168, 76, 0.35);
+          border-radius: 20px;
+          padding: 3px 8px;
+          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+          user-select: none;
+        }
+        .pp-zoom-val {
+          font-size: 11px;
+          font-weight: 700;
+          color: #C9A84C;
+          padding: 0 5px;
+          white-space: nowrap;
+          letter-spacing: 0.3px;
+        }
+        .pp-zoom-btn {
+          width: 22px; height: 22px;
+          border-radius: 50%;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          background: rgba(255, 255, 255, 0.1);
+          color: #fff;
+          font-size: 14px;
+          font-weight: 700;
+          line-height: 1;
+          display: flex; align-items: center; justify-content: center;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          padding: 0;
+        }
+        .pp-zoom-btn:hover {
+          background: #C9A84C;
+          color: #0A1428;
+          border-color: #C9A84C;
+          transform: scale(1.08);
+        }
+        .pp-zoom-reset {
+          width: auto;
+          border-radius: 10px;
+          font-size: 10px;
+          padding: 0 7px;
+          height: 20px;
+          font-weight: 600;
+          background: rgba(201, 168, 76, 0.2);
+          border-color: rgba(201, 168, 76, 0.5);
+          color: #FCD34D;
+        }
+        .pp-zoom-reset:hover {
+          background: #C9A84C;
+          color: #0A1428;
         }
         .pp-arrow {
           position: absolute; top: 50%;
@@ -205,6 +272,9 @@ export default function PromoPopup({ isLoading, currentPath }) {
           .pp-arrow-prev { left: -12px; }
           .pp-arrow-next { right: -12px; }
           .pp-dots { margin-top: 10px; padding: 5px 12px; gap: 6px; }
+          .pp-zoom-bar { bottom: 8px; right: 8px; padding: 2px 6px; }
+          .pp-zoom-val { font-size: 10px; }
+          .pp-zoom-btn { width: 20px; height: 20px; font-size: 12px; }
         }
       `}</style>
 
@@ -247,20 +317,78 @@ export default function PromoPopup({ isLoading, currentPath }) {
                 >
                   <div className="pp-img-wrap">
                     <AnimatePresence mode="wait" custom={direction} initial={false}>
-                      <motion.img
+                      <motion.div
                         key={currentSlide.id || currentIndex}
-                        className="pp-img"
-                        src={currentSlide.displayUrl}
-                        alt={currentSlide.title || 'Noble Education Announcement'}
                         custom={direction}
                         variants={slideVariants}
                         initial="enter"
                         animate="center"
                         exit="exit"
                         transition={{ x: { type: 'spring', stiffness: 350, damping: 32 }, opacity: { duration: 0.2 } }}
-                        onError={handleImageError}
-                      />
+                        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}
+                      >
+                        <img
+                          className="pp-img"
+                          src={currentSlide.displayUrl}
+                          alt={currentSlide.title || 'Noble Education Announcement'}
+                          style={{
+                            transform: `scale(${activeZoom / 100})`,
+                            transformOrigin: 'center center'
+                          }}
+                          onError={handleImageError}
+                        />
+                      </motion.div>
                     </AnimatePresence>
+
+                    {/* Floating Zoom Percentage Viewer & Controls */}
+                    <div
+                      className="pp-zoom-bar"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                    >
+                      <button
+                        type="button"
+                        className="pp-zoom-btn"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setInteractiveZoom(prev => Math.max(30, (prev !== null ? prev : baseZoom) - 10));
+                        }}
+                        title="Zoom Out"
+                        aria-label="Zoom Out"
+                      >
+                        −
+                      </button>
+                      <span className="pp-zoom-val" title="Current Zoom Percentage">
+                        🔍 {Math.round(activeZoom)}%
+                      </span>
+                      <button
+                        type="button"
+                        className="pp-zoom-btn"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setInteractiveZoom(prev => Math.min(250, (prev !== null ? prev : baseZoom) + 10));
+                        }}
+                        title="Zoom In"
+                        aria-label="Zoom In"
+                      >
+                        +
+                      </button>
+                      {activeZoom !== baseZoom && (
+                        <button
+                          type="button"
+                          className="pp-zoom-btn pp-zoom-reset"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setInteractiveZoom(baseZoom);
+                          }}
+                          title="Reset to default zoom"
+                        >
+                          Reset
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </a>
               </div>
