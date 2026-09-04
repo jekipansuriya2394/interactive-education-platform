@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { adminData } from '../utils/adminData'; // Assuming named export or fallback
+import { getEmbedImageUrl } from '../utils/imageUrl';
 
 // Helper for formatting dates
 const formatDate = (dateString) => {
@@ -87,36 +88,32 @@ const BlogPage = () => {
 
   if (selectedPost) {
     return (
-      <div className="min-h-screen bg-slate-50 text-slate-900 pb-20">
+      <div className="pt-24 pb-20 bg-[#F4F6F9] bg-dots-pattern text-[#5A6472]">
         {/* Post Hero */}
-        <div className="relative w-full h-[40vh] md:h-[50vh] bg-[#0E2146] overflow-hidden">
-          {selectedPost.featuredImage ? (
-            <img 
-              src={selectedPost.featuredImage} 
-              alt={selectedPost.title}
-              className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-overlay"
-            />
-          ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-[#0E2146] to-[#1a3a6e]"></div>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 to-transparent"></div>
-          
-          <div className="absolute inset-0 flex flex-col justify-end max-w-4xl mx-auto px-6 pb-12">
+        <section
+          className="py-20 text-white relative overflow-hidden bg-cover bg-no-repeat"
+          style={{
+            backgroundImage: `url('${getEmbedImageUrl(selectedPost.featuredImage || '/images/bg-blog-hero.png')}')`,
+            backgroundPosition: 'center 60%'
+          }}
+        >
+          <div className="absolute inset-0 bg-[#1C2E60]/85 w-full h-full" />
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <button 
               onClick={() => setSelectedPost(null)}
-              className="group flex items-center space-x-2 text-white/80 hover:text-white mb-6 w-fit transition-colors"
+              className="group flex items-center space-x-2 text-white/80 hover:text-white mb-6 w-fit transition-colors text-sm font-semibold"
             >
               <ArrowLeftIcon />
-              <span>Back to Blog</span>
+              <span>Back to Articles</span>
             </button>
             
             <div className="mb-4">
-              <span className="px-3 py-1 bg-amber-500/90 text-white text-sm font-semibold rounded-full shadow-sm backdrop-blur-sm">
-                {selectedPost.category}
+              <span className="text-[#DC2626] font-extrabold tracking-widest text-xs uppercase bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20 inline-block">
+                {selectedPost.category || 'Insights'}
               </span>
             </div>
             
-            <h1 className="text-3xl md:text-5xl font-bold text-white mb-6 leading-tight">
+            <h1 className="text-3xl md:text-5xl font-black text-white mb-6 leading-tight text-glow-blue">
               {selectedPost.title}
             </h1>
             
@@ -141,7 +138,7 @@ const BlogPage = () => {
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* Post Content */}
         <div className="max-w-4xl mx-auto px-6 py-12">
@@ -206,51 +203,58 @@ const BlogPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="pt-24 pb-20 bg-[#F4F6F9] bg-dots-pattern text-[#5A6472]">
       {/* Hero Header */}
-      <div className="bg-gradient-to-br from-[#0E2146] to-[#1a3a6e] pt-32 pb-24 px-6 text-center relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white to-transparent"></div>
-        <div className="max-w-3xl mx-auto relative z-10">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white mb-6 tracking-tight">
-            Our Latest <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">Insights</span>
+      <section
+        className="py-20 text-white text-center relative overflow-hidden bg-cover bg-no-repeat"
+        style={{ backgroundImage: `url('${getEmbedImageUrl('/images/bg-blog-hero.png')}')`, backgroundPosition: 'center 60%' }}
+      >
+        <div className="absolute inset-0 bg-[#1C2E60]/80 w-full h-full" />
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <span className="text-[#DC2626] font-extrabold tracking-widest text-xs uppercase bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20 inline-block">
+            Articles & Insights
+          </span>
+          <h1 className="text-4xl sm:text-5xl font-black mt-6 mb-6 text-white leading-tight text-glow-blue">
+            Our Latest <span className="text-[#DC2626]">Insights</span>
           </h1>
-          <p className="text-lg md:text-xl text-indigo-100 mb-10 max-w-2xl mx-auto">
+          <p className="text-zinc-300 text-sm sm:text-base font-light leading-relaxed max-w-2xl mx-auto mb-8">
             Stay updated with the latest education tips, exam guides, and announcements from Noble Education.
           </p>
-          
+
           {/* Search Bar */}
-          <div className="relative max-w-xl mx-auto">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+          <div className="relative max-w-lg mx-auto">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/50">
               <SearchIcon />
             </div>
             <input
               type="text"
-              placeholder="Search articles..."
+              placeholder="Search articles by title or keyword..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full py-4 pl-12 pr-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-indigo-200 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white/20 backdrop-blur-md transition-all shadow-lg"
+              className="w-full py-3.5 pl-12 pr-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#DC2626] focus:bg-black/30 backdrop-blur-md transition-all shadow-lg text-sm"
             />
           </div>
         </div>
+      </section>
+
+      {/* Filter Tabs */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex justify-center gap-3 flex-wrap">
+        {categories.map((cat, idx) => (
+          <button
+            key={idx}
+            onClick={() => setActiveCategory(cat)}
+            className={`px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all border ${
+              activeCategory === cat
+                ? 'bg-[#1C2E60] text-white border-[#1C2E60] shadow-md'
+                : 'bg-white text-zinc-500 border-slate-200 hover:text-[#0F172A] hover:border-slate-300'
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-12 -mt-8 relative z-20">
-        {/* Filter Tabs */}
-        <div className="flex flex-nowrap overflow-x-auto pb-4 mb-8 gap-2 md:gap-4 scrollbar-hide snap-x">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`snap-start whitespace-nowrap px-6 py-3 rounded-full text-sm font-semibold transition-all shadow-sm ${
-                activeCategory === cat
-                  ? 'bg-amber-500 text-white shadow-amber-500/30'
-                  : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 hover:border-slate-300'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
 
         {/* Blog Grid */}
         {loading ? (
