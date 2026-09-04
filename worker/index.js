@@ -163,11 +163,25 @@ async function githubRequest(path, options, env) {
 
 /**
  * Set CORS headers
+ * @param {Request} request 
  * @param {Object} env 
  * @returns {Object}
  */
-function getCorsHeaders(env) {
-  const origin = env.CORS_ORIGIN || '*';
+function getCorsHeaders(request, env) {
+  const reqOrigin = request ? request.headers?.get('Origin') : null;
+  const allowed = [
+    'https://www.nobleedu.in',
+    'https://nobleedu.in',
+    'https://jekipansuriya2394.github.io',
+    'http://localhost:5173',
+    'http://localhost:3000'
+  ];
+  let origin = '*';
+  if (reqOrigin && (allowed.includes(reqOrigin) || reqOrigin.endsWith('.nobleedu.in') || reqOrigin.includes('github.io') || reqOrigin.includes('localhost'))) {
+    origin = reqOrigin;
+  } else if (env && env.CORS_ORIGIN) {
+    origin = env.CORS_ORIGIN;
+  }
   return {
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
@@ -232,7 +246,7 @@ function checkRateLimit(request) {
 
 export default {
   async fetch(request, env, ctx) {
-    const corsHeaders = getCorsHeaders(env);
+    const corsHeaders = getCorsHeaders(request, env);
     
     // Handle OPTIONS preflight
     if (request.method === 'OPTIONS') {

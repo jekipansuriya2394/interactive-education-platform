@@ -2275,33 +2275,55 @@ function AdminPanel({ onLogout }) {
     setDeploymentLoading(false);
   };
 
+  useEffect(() => {
+    if (activeSection === 'deployment') {
+      loadDeploymentData();
+    }
+  }, [activeSection]);
+
   const STATUS_COLORS = { success: '#059669', failure: '#DC2626', in_progress: '#F59E0B', queued: '#6366F1', completed: '#059669' };
   const STATUS_EMOJI  = { success: '✅', failure: '❌', in_progress: '🔄', queued: '⏳', cancelled: '⛔', completed: '✅' };
 
   const renderDeployment = () => (
     <div>
       <SectionHeader title="Deployment Status" subtitle="Live GitHub Actions runs and commit history from your repository."
-        action={<button className="ap-btn-secondary" onClick={loadDeploymentData} disabled={deploymentLoading}>
-          <FiRefreshCw size={14} style={deploymentLoading ? { animation: 'spin 1s linear infinite' } : {}} /> Refresh
-        </button>}
+        action={
+          <div style={{ display: 'flex', gap: 8 }}>
+            <a
+              href={`https://github.com/${import.meta.env.VITE_GH_OWNER || 'jekipansuriya2394'}/${import.meta.env.VITE_GH_REPO || 'interactive-education-platform'}/actions`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ap-btn ap-btn-secondary"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            >
+              <FiExternalLink size={13} /> GitHub Actions
+            </a>
+            <button className="ap-btn ap-btn-primary" onClick={loadDeploymentData} disabled={deploymentLoading}>
+              <FiRefreshCw size={13} style={deploymentLoading ? { animation: 'spin 1s linear infinite' } : {}} /> Refresh
+            </button>
+          </div>
+        }
       />
       {/* Worker Health */}
       <div className="ap-card" style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16 }}>
         <div style={{ width: 12, height: 12, borderRadius: '50%', background: workerHealth.ok === null ? '#64748B' : workerHealth.ok ? '#059669' : '#DC2626', flexShrink: 0 }} />
         <div>
           <div style={{ fontWeight: 700, color: '#fff', fontSize: 14 }}>
-            Cloudflare Worker: {workerHealth.ok === null ? 'Not checked' : workerHealth.ok ? '● Online' : '● Offline'}
+            Cloudflare Worker Bridge: {workerHealth.ok === null ? (deploymentLoading ? 'Checking connection...' : 'Not checked') : workerHealth.ok ? '● Online' : '● Offline'}
           </div>
-          {workerHealth.latencyMs > 0 && <div style={{ fontSize: 12, color: '#64748B' }}>Latency: {workerHealth.latencyMs}ms</div>}
+          {workerHealth.latencyMs > 0 && <div style={{ fontSize: 12, color: '#64748B' }}>Server Response Latency: {workerHealth.latencyMs}ms</div>}
         </div>
-        <button className="ap-btn-secondary" style={{ marginLeft: 'auto' }} onClick={loadDeploymentData}>Check Status</button>
+        <button className="ap-btn-secondary" style={{ marginLeft: 'auto' }} onClick={loadDeploymentData} disabled={deploymentLoading}>
+          {deploymentLoading ? 'Checking...' : 'Check Status'}
+        </button>
       </div>
+
       {/* GitHub Actions Runs */}
       <h3 style={{ color: '#fff', fontSize: 14, fontWeight: 700, marginBottom: 12 }}>🚀 Recent Deployments</h3>
       {deploymentRuns.length === 0 ? (
         <div className="ap-card" style={{ textAlign: 'center', padding: 32 }}>
           <p style={{ color: '#64748B', fontSize: 14 }}>
-            {deploymentLoading ? 'Loading...' : 'Click "Refresh" to load GitHub Actions deployment runs. Make sure your Worker URL is configured in Settings.'}
+            {deploymentLoading ? 'Loading live deployment runs from GitHub...' : 'No runs loaded. Click "Refresh" to fetch latest deployment status.'}
           </p>
         </div>
       ) : (
@@ -2316,27 +2338,37 @@ function AdminPanel({ onLogout }) {
                 </div>
               </div>
               {run.html_url && (
-                <a href={run.html_url} target="_blank" rel="noopener noreferrer" className="ap-btn-secondary" style={{ fontSize: 12, padding: '4px 10px' }}>
-                  <FiExternalLink size={12}/> View
+                <a href={run.html_url} target="_blank" rel="noopener noreferrer" className="ap-btn-secondary" style={{ fontSize: 12, padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <FiExternalLink size={12}/> View Run
                 </a>
               )}
             </div>
           ))}
         </div>
       )}
+
       {/* Commit Log */}
       <h3 style={{ color: '#fff', fontSize: 14, fontWeight: 700, marginBottom: 12 }}>📝 Recent Commits</h3>
       {commitLog.length === 0 ? (
-        <p style={{ color: '#64748B', fontSize: 13 }}>No commit data. Click Refresh after configuring your Worker URL.</p>
+        <div className="ap-card" style={{ textAlign: 'center', padding: 24 }}>
+          <p style={{ color: '#64748B', fontSize: 13 }}>{deploymentLoading ? 'Fetching commits...' : 'No commit data. Click Refresh to query commit history.'}</p>
+        </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {commitLog.map((c, i) => (
-            <div key={i} className="ap-card" style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-              <code style={{ fontSize: 11, color: '#60A5FA', background: '#0F172A', borderRadius: 4, padding: '2px 6px', flexShrink: 0 }}>{c.sha?.substring(0,7)}</code>
+            <div key={i} className="ap-card" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+              <code style={{ fontSize: 11, color: '#60A5FA', background: '#0F172A', borderRadius: 4, padding: '2px 6px', flexShrink: 0 }}>
+                {c.sha?.substring(0,7)}
+              </code>
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 500, color: '#E2E8F0', fontSize: 13 }}>{c.message?.split('\n')[0]}</div>
                 <div style={{ fontSize: 11, color: '#64748B' }}>{c.author} · {c.date ? new Date(c.date).toLocaleString('en-IN') : ''}</div>
               </div>
+              {c.url && (
+                <a href={c.url} target="_blank" rel="noopener noreferrer" className="ap-btn-secondary" style={{ fontSize: 11, padding: '3px 8px' }}>
+                  Diff
+                </a>
+              )}
             </div>
           ))}
         </div>

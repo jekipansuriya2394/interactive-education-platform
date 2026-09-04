@@ -8,7 +8,7 @@ workers_dev = true
 GH_OWNER = "jekipansuriya2394"
 GH_REPO = "interactive-education-platform"
 GH_BRANCH = "main"
-CORS_ORIGIN = "https://jekipansuriya2394.github.io"
+CORS_ORIGIN = "*"
 
 # Secrets to set via: wrangler secret put <NAME>
 # GH_PAT
