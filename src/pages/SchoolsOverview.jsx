@@ -136,82 +136,80 @@ export default function SchoolsOverview() {
   return (
     <div className="bg-[#F8FAFC] min-h-screen text-[#1C2E60]">
 
-      {/* 1. HERO HEADER SECTION (MATCHING STANDARD SITE DESIGN) */}
-      <section 
-        className="pt-28 sm:pt-32 pb-20 text-white text-center relative overflow-hidden bg-cover bg-no-repeat"
-        style={{ backgroundImage: `url('${getEmbedImageUrl('/images/bg-about-hero.png')}')`, backgroundPosition: 'center 65%' }}
+      {/* 1. HERO HEADER SECTION (MATCHING COURSES, RESULTS & ABOUT STANDARD HEROES) */}
+      <section
+        className="py-16 sm:py-20 text-white text-center relative overflow-hidden bg-cover bg-no-repeat bg-center"
+        style={{ backgroundImage: `url('${getEmbedImageUrl('/images/bg-courses-hero.png')}')` }}
       >
-        {/* Navy semi-transparent backdrop overlay */}
         <div className="absolute inset-0 bg-[#1C2E60]/85 w-full h-full" />
-        
-        {/* Glowing ambient accents */}
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           
           {/* Breadcrumb Navigation */}
-          <div className="flex items-center justify-center gap-2 text-xs font-semibold text-blue-200/80 mb-6">
+          <div className="flex items-center justify-center gap-2 text-xs font-semibold text-blue-200/80 mb-4">
             <span onClick={() => navigate('/')} className="hover:text-white cursor-pointer transition-colors">Home</span>
             <FiChevronRight className="text-xs" />
             <span className="text-white font-extrabold">Partner Schools Network</span>
           </div>
 
-          <div className="text-center max-w-4xl mx-auto">
-            <span className="text-[#DC2626] font-extrabold tracking-widest text-xs uppercase bg-red-500/10 px-4 py-1.5 rounded-full border border-red-500/20 inline-block mb-4">
-              Integrated Partner Schools Network • Vadodara
-            </span>
+          <span className="text-[#DC2626] font-extrabold tracking-widest text-xs uppercase bg-red-500/10 px-3.5 py-1.5 rounded-full border border-red-500/20 inline-block mb-3">
+            🏫 Integrated Partner Schools
+          </span>
 
-            <h1 className="text-4xl sm:text-5xl font-black mt-2 mb-6 text-white leading-tight text-glow-blue">
-              Our Integrated Partner Campuses
-            </h1>
+          <h1 className="text-3xl sm:text-5xl font-black mb-3 text-white leading-tight text-glow-blue">
+            Our Integrated Partner Campuses
+          </h1>
 
-            <p className="text-zinc-300 text-sm sm:text-base font-light leading-relaxed max-w-2xl mx-auto">
-              Noble Education partners directly with premier schools across Vadodara to deliver 100% board-synchronized coaching, NEET/JEE foundation, and personalized doubt resolution — with zero student travel fatigue.
-            </p>
+          <p className="text-zinc-300 text-xs sm:text-sm md:text-base font-light leading-relaxed max-w-2xl mx-auto">
+            Noble Education partners directly with premier schools across Vadodara to deliver 100% board-synchronized coaching, NEET/JEE foundation, and personalized doubt resolution — with zero student travel fatigue.
+          </p>
 
-            {/* Quick Action CTA Buttons */}
-            <div className="flex flex-wrap justify-center gap-4 pt-8">
-              <a
-                href="#campuses"
-                className="bg-[#DC2626] hover:bg-red-700 text-white font-extrabold px-7 py-3.5 rounded-2xl text-xs uppercase tracking-wider shadow-xl shadow-red-600/30 hover:scale-105 transition-all"
-              >
-                Explore Partner Campuses ⬇
-              </a>
-              <a
-                href="#school-inquiry"
-                className="bg-white text-[#1C2E60] hover:bg-slate-100 font-extrabold px-7 py-3.5 rounded-2xl text-xs uppercase tracking-wider shadow-lg hover:scale-105 transition-all"
-              >
-                Book Campus Visit / Inquire
-              </a>
-              <a
-                href="tel:9638256222"
-                className="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-extrabold px-6 py-3.5 rounded-2xl text-xs uppercase tracking-wider shadow-md transition-all flex items-center gap-2"
-              >
-                <FiPhone className="text-green-400" /> Helpline: 96382 56222
-              </a>
-            </div>
+          {/* Quick Action CTA Buttons */}
+          <div className="flex flex-wrap justify-center items-center gap-3 pt-4">
+            <a
+              href="#campuses"
+              className="bg-[#DC2626] hover:bg-red-700 text-white font-extrabold px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider shadow-md hover:scale-105 transition-all"
+            >
+              Explore Campuses ⬇
+            </a>
+            <a
+              href="#school-inquiry"
+              className="bg-white text-[#1C2E60] hover:bg-slate-100 font-extrabold px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider shadow-md hover:scale-105 transition-all"
+            >
+              Admission Inquiry
+            </a>
+            <a
+              href="tel:9638256222"
+              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-extrabold px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all flex items-center gap-1.5"
+            >
+              <FiPhone className="text-green-400 text-xs" /> 96382 56222
+            </a>
           </div>
 
-          {/* 4 Network KPI Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mt-14">
+        </div>
+      </section>
+
+      {/* 2. COMPACT NETWORK HIGHLIGHTS STRIP */}
+      <section className="bg-white border-b border-slate-200 py-4 shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
             {[
               { stat: "3 Prime Campuses", desc: "Ajwa Rd • New VIP Rd • Waghodia Rd", icon: "🏫" },
-              { stat: "Std 8th to 12th", desc: "Secondary Foundation & Science Stream", icon: "🎓" },
+              { stat: "Std 8th to 12th", desc: "Secondary & Science Stream", icon: "🎓" },
               { stat: "Dual Medium", desc: "English & Gujarati Medium Batches", icon: "🌐" },
               { stat: "100% Integrated", desc: "Zero Travel Fatigue • School Sync", icon: "⚡" }
             ].map((kpi, idx) => (
-              <div 
-                key={idx} 
-                className="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-5 text-center hover:bg-white/20 transition-all shadow-lg"
-              >
-                <div className="text-2xl mb-1">{kpi.icon}</div>
-                <div className="text-base sm:text-lg font-black text-white">{kpi.stat}</div>
-                <div className="text-[11px] text-blue-200/90 font-light mt-0.5">{kpi.desc}</div>
+              <div key={idx} className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-colors">
+                <span className="text-2xl flex-shrink-0">{kpi.icon}</span>
+                <div>
+                  <div className="text-xs sm:text-sm font-extrabold text-[#1C2E60]">{kpi.stat}</div>
+                  <div className="text-[11px] text-slate-500 font-medium leading-tight">{kpi.desc}</div>
+                </div>
               </div>
             ))}
           </div>
-
         </div>
       </section>
 
