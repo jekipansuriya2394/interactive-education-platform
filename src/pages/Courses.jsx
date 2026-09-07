@@ -84,7 +84,7 @@ export default function Courses() {
     : normalizedCourses.filter(c => (c.category || '').toLowerCase() === activeCategory.toLowerCase());
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="pt-24 pb-20 bg-[#F4F6F9] bg-dots-pattern text-[#5A6472]">
       
       {/* Hero Header */}
       <section className="py-20 text-white text-center relative overflow-hidden bg-cover bg-no-repeat" style={{ backgroundImage: `url('${getEmbedImageUrl('/images/bg-courses-hero.png')}')`, backgroundPosition: 'center 60%' }}>

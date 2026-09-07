@@ -134,7 +134,7 @@ export default function SchoolsOverview() {
   ];
 
   return (
-    <div className="bg-[#F8FAFC] min-h-screen text-[#1C2E60]">
+    <div className="pt-24 pb-20 bg-[#F4F6F9] bg-dots-pattern text-[#5A6472]">
 
       {/* 1. HERO HEADER SECTION (IDENTICAL SIZING, PADDING & STYLE TO ABOUT PAGE) */}
       <section

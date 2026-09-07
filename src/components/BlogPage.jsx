@@ -209,7 +209,7 @@ const BlogPage = () => {
         className="py-20 text-white text-center relative overflow-hidden bg-cover bg-no-repeat"
         style={{ backgroundImage: `url('${getEmbedImageUrl('/images/bg-blog-hero.png')}')`, backgroundPosition: 'center 60%' }}
       >
-        <div className="absolute inset-0 bg-[#1C2E60]/80 w-full h-full" />
+        <div className="absolute inset-0 bg-[#1C2E60]/75 w-full h-full" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <span className="text-[#DC2626] font-extrabold tracking-widest text-xs uppercase bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20 inline-block">
             Articles & Insights
