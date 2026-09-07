@@ -1,8 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { HiMenu, HiX, HiChevronDown, HiTranslate } from 'react-icons/hi';
-import { FiPhone, FiCalendar, FiMessageCircle, FiBookOpen, FiCompass, FiHeart, FiCpu, FiBriefcase, FiFileText, FiAward, FiTrendingUp, FiMapPin, FiUsers, FiCheckCircle, FiSettings, FiList, FiLock, FiPlay, FiMessageSquare } from 'react-icons/fi';
+import { 
+  FiPhone, FiBookOpen, FiCompass, FiAward, FiHeart, FiCpu, 
+  FiBriefcase, FiUsers, FiMapPin, FiLayers, FiCheckCircle, 
+  FiTrendingUp, FiSmile, FiZap
+} from 'react-icons/fi';
+import { FaWhatsapp } from 'react-icons/fa';
 import { navigate, normalizePathFromLocation } from '../utils/router';
 import { adminData } from '../utils/adminData';
+import { contactData } from '../data/contactData';
 import { logoWhite, getLogoUrl } from '../utils/logo';
 
 export default function Navbar() {
@@ -14,7 +20,7 @@ export default function Navbar() {
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   const [siteLogo, setSiteLogo] = useState(() => getLogoUrl(true));
 
-  // Fetch live announcements & logo from admin panel with real-time sync
+  // Announcements ticker from adminData
   const [announcements, setAnnouncements] = useState(() => adminData.getData('announcements') || []);
 
   useEffect(() => {
@@ -30,16 +36,11 @@ export default function Navbar() {
     };
   }, []);
 
-
   const languages = [
     { code: 'en', name: 'English' },
     { code: 'gu', name: 'ગુજરાતી' },
     { code: 'hi', name: 'હિન્‍દી' },
-    { code: 'mr', name: 'મરાઠી' },
-    { code: 'ta', name: 'தமிழ்' },
-    { code: 'te', name: 'తెలుగు' },
-    { code: 'ml', name: 'മലയാളം' },
-    { code: 'kn', name: 'કન્નડ' }
+    { code: 'mr', name: 'મરાઠી' }
   ];
 
   const handleLangChange = (code) => {
@@ -85,7 +86,8 @@ export default function Navbar() {
   }, []);
 
   const handleNav = (e, path) => {
-    if (path.startsWith('http://') || path.startsWith('https://')) {
+    if (!path) return;
+    if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('tel:')) {
       setIsOpen(false);
       setHoveredMenu(null);
       return;
@@ -114,63 +116,47 @@ export default function Navbar() {
     setExpandedMobileMenu(expandedMobileMenu === menuName ? null : menuName);
   };
 
+  // Exactly matching Blueprint Section 2:
   const navStructure = [
-    { name: 'About', href: '/about' },
+    { name: 'Home', href: '/' },
     {
-      name: 'Schools',
-      href: '/schools',
+      name: 'Academic',
+      href: '/academic',
       dropdownGroups: [
         {
-          title: 'Partner Campuses',
+          title: 'School Programs',
           items: [
-            { name: 'Royal School', href: '/school?name=Royal%20School', desc: 'English Medium • 8th to 12th Science (Ajwa Road)', icon: FiBookOpen },
-            { name: 'Raghukul Vidyalay', href: '/school?name=Raghukul%20Vidyalay', desc: 'Gujarati Medium • 8th to 10th Board (New VIP Road)', icon: FiCompass },
-            { name: 'New Heaven Vidyalaya', href: '/school?name=New%20Heaven%20Vidyalaya', desc: 'Gujarati Medium • 11th & 12th Science (Waghodia Road)', icon: FiAward }
+            { name: 'GSEB', href: '/academic/gseb', desc: '8th to 12th Board Coaching', icon: FiBookOpen },
+            { name: 'CBSE', href: '/academic/cbse', desc: 'NCERT Foundation & Board Focus', icon: FiCompass },
+            { name: 'Foundation', href: '/foundation', desc: '8th to 10th Concepts & Olympiad', icon: FiLayers }
           ]
         },
         {
-          title: 'Campus Life & Admissions',
+          title: 'Higher Secondary Science',
           items: [
-            { name: 'Schools Overview', href: '/schools', desc: 'Network overview & campus comparison', icon: FiMapPin },
-            { name: 'School Toppers & Results', href: '/results', desc: 'Board percentile rankers from our schools', icon: FiTrendingUp },
-            { name: 'Direct School Inquiry', href: '/schools#school-inquiry', desc: 'Admission guidance & batch details', icon: FiMessageSquare }
+            { name: '11th Science', href: '/academic/science/11th', desc: 'Physics, Chemistry, Maths & Biology base', icon: FiCpu },
+            { name: '12th Science', href: '/academic/science/12th', desc: 'Board excellence meets JEE/NEET prep', icon: FiAward }
           ]
         }
       ]
     },
     {
-      name: 'Courses',
-      href: '/courses',
+      name: 'JEE & NEET',
+      href: '/jee',
       dropdownGroups: [
         {
-          title: 'Integrated & Schooling',
+          title: 'Entrance Programs',
           items: [
-            { name: '8th to 10th Standard', href: '/courses#school-8-10', desc: 'Academic foundation & concept building', icon: FiBookOpen },
-            { name: '11th-12th Science', href: '/courses#science-11-12', desc: 'State Board, CBSE & entrance coaching', icon: FiCompass }
+            { name: 'JEE Preparation', href: '/jee', desc: 'Main & Advanced engineering pathway', icon: FiCpu },
+            { name: 'NEET Preparation', href: '/neet', desc: 'Targeted medical entrance coaching', icon: FiHeart },
+            { name: 'Foundation for JEE/NEET', href: '/foundation', desc: 'Early conceptual readiness for competitive exams', icon: FiZap }
           ]
         },
         {
-          title: 'Competitive Prep',
+          title: 'Integrated Batches',
           items: [
-            { name: 'NEET Practice', href: '/courses#neet', desc: 'Medical entrance mock test series', icon: FiHeart },
-            { name: 'JEE Entrance Mock', href: '/courses#jee', desc: 'IIT/NIT engineering preparation', icon: FiCpu },
-            { name: 'GUJCET Batches', href: '/courses#gujcet', desc: 'Gujarat state engineering prep', icon: FiBriefcase }
-          ]
-        },
-        {
-          title: 'Engineering Semesters',
-          items: [
-            { name: 'Diploma Coaching', href: '/engineering#diploma', desc: 'GTU Sem 1 to 6 • All Branches', icon: FiFileText },
-            { name: 'Degree Engineering', href: '/engineering#degree', desc: 'Advanced semester exam guidelines', icon: FiAward },
-            { name: 'DDCET Special Entrance', href: '/engineering#ddcet', desc: 'Lateral entry degree mock tests', icon: FiTrendingUp },
-            { name: 'Industrial Internship', href: '/engineering#internship', desc: 'Live project training & certification', icon: FiCpu }
-          ]
-        },
-        {
-          title: 'Admissions & Career',
-          items: [
-            { name: 'ACPC Option filling', href: '/admission-guidance#stream-selection', desc: 'Counseling choice list support', icon: FiMapPin },
-            { name: 'Student Corner Portal', href: '/student-corner', desc: 'Access study notes & syllabus', icon: FiUsers }
+            { name: 'Integrated JEE Program', href: '/integrated-jee-neet', desc: 'School + JEE in one unified timetable', icon: FiLayers },
+            { name: 'Integrated NEET Program', href: '/integrated-jee-neet', desc: 'School + NEET medical base', icon: FiSmile }
           ]
         }
       ]
@@ -180,58 +166,43 @@ export default function Navbar() {
       href: '/engineering',
       dropdownGroups: [
         {
-          title: 'Noble Engineering Programs',
+          title: 'Noble Technical Division',
           items: [
-            { name: 'Diploma Coaching', href: '/engineering#diploma', desc: 'GTU Sem 1 to 6 • All Branches', icon: FiFileText },
-            { name: 'Degree Engineering', href: '/engineering#degree', desc: 'Maths 1-2-3 & Core Technical Subjects', icon: FiAward },
-            { name: 'DDCET Entrance Prep', href: '/engineering#ddcet', desc: 'Diploma to Degree Lateral Entry Mock Tests', icon: FiTrendingUp },
-            { name: 'Industrial Internship', href: '/engineering#internship', desc: 'Hands-on Software, CAD & Live Projects', icon: FiCpu }
-          ]
-        },
-        {
-          title: 'Admissions & Guidance',
-          items: [
-            { name: 'Engineering Overview', href: '/engineering', desc: 'Full Division Overview & Timetable', icon: FiCompass },
-            { name: 'Engineering Admission Form', href: '/engineering#engineering-inquiry', desc: 'Book Demo Lecture & Batch Timetable', icon: FiMessageSquare },
-            { name: 'Engineering Achievers', href: '/engineering#achievers', desc: 'DDCET Rankers & GTU 10 SPI Toppers', icon: FiCheckCircle },
-            { name: 'ACPC Choice Filling Help', href: '/engineering#faqs', desc: 'Seat Allotment & College Merit Counseling', icon: FiMapPin }
+            { name: 'Diploma Coaching', href: '/engineering/diploma', desc: 'GTU All Semesters & Backlog Support', icon: FiBriefcase },
+            { name: 'Degree Coaching', href: '/engineering/degree', desc: 'Core Engineering Subjects & Maths', icon: FiAward },
+            { name: 'DDCET Coaching', href: '/engineering/ddcet', desc: 'Diploma to Degree Lateral Entry Entrance', icon: FiTrendingUp }
           ]
         }
       ]
     },
     {
-      name: 'Admission',
-      href: '/admission-guidance',
+      name: 'Integrated Schools',
+      href: '/integrated-schools',
       dropdownGroups: [
         {
-          title: 'Direct Guidance',
+          title: 'Partner Campuses in Vadodara',
           items: [
-            { name: 'After 10th Selection', href: '/admission-guidance#stream-selection', desc: 'Stream mapping & science counseling', icon: FiCheckCircle },
-            { name: 'After 12th Counseling', href: '/admission-guidance#after-12th', desc: 'Degree college selection guides', icon: FiAward }
-          ]
-        },
-        {
-          title: 'Admission Steps',
-          items: [
-            { name: 'ACPC Registration Help', href: '/admission-guidance#admission-steps', desc: 'Step-by-step form support', icon: FiSettings },
-            { name: 'Admission Checklists', href: '/admission-guidance#documents-checklist', desc: 'Required documents & deadlines', icon: FiList }
+            { name: 'Royal Eduworld School', href: '/school?name=Royal%20School', desc: 'English Medium • 8th to 12th Science (Ajwa Road)', icon: FiMapPin },
+            { name: 'Newheaven Vidyalaya', href: '/school?name=New%20Heaven%20Vidyalaya', desc: 'Gujarati Medium • 11th & 12th Science (Waghodia Road)', icon: FiMapPin },
+            { name: 'Raghukul Vidyalaya', href: '/school?name=Raghukul%20Vidyalay', desc: 'Gujarati Medium • 8th to 10th Board (New VIP Road)', icon: FiMapPin }
           ]
         }
       ]
     },
     { name: 'Results', href: '/results' },
-    { name: 'Gallery', href: '/gallery' },
-    { name: 'Blog', href: '/blog' },
+    { name: 'Student Zone', href: '/student-zone' },
     {
-      name: 'Student Corner',
-      href: '/student-corner',
+      name: 'About',
+      href: '/about',
       dropdownGroups: [
         {
-          title: 'Active Students Hub',
+          title: 'About Noble',
           items: [
-            { name: 'Online Portal Login', href: 'https://nobleeducation.theonlinetests.com/dynamicwl/login', desc: 'Access your dashboard & reports', icon: FiLock },
-            { name: 'Start Mock Exam Test', href: '/online-test', desc: 'Take interactive timed mock trials', icon: FiPlay },
-            { name: 'Leave Student Feedback', href: '/student-corner#feedback', desc: 'Tell us about your class experience', icon: FiMessageSquare }
+            { name: 'About Noble', href: '/about', desc: '19+ Years of Academic Excellence', icon: FiUsers },
+            { name: 'Our Philosophy', href: '/about/philosophy', desc: 'Concepts First. Foundations. Results.', icon: FiCompass },
+            { name: 'Faculty', href: '/about/faculty', desc: 'Experienced & dedicated educators', icon: FiAward },
+            { name: 'Infrastructure', href: '/infrastructure', desc: 'Classrooms, labs & study spaces', icon: FiCheckCircle },
+            { name: 'Careers', href: '/about#careers', desc: 'Join the Noble Education academic team', icon: FiBriefcase }
           ]
         }
       ]
@@ -243,46 +214,74 @@ export default function Navbar() {
   const shouldBeSolid = scrolled || !isHomePage;
 
   return (
-    <div className="fixed top-0 left-0 w-full z-50 flex flex-col">
-      {/* Top Scrolling Announcement Ticker */}
-      <div className="bg-[#1C2E60] text-white py-1 text-xs font-semibold overflow-hidden relative w-full flex items-center border-b border-[#DC2626]">
+    <header className="fixed top-0 left-0 w-full z-50 flex flex-col font-sans">
+      {/* Top Announcement Ticker */}
+      <div className="bg-[#0A0E1A] text-slate-300 py-1.5 text-xs font-semibold overflow-hidden relative w-full flex items-center border-b border-[#ED1C24]/30">
         <div className="flex w-full overflow-hidden whitespace-nowrap">
-          <div className="animate-ticker flex gap-24 pr-24 select-none uppercase tracking-wide">
-            {announcements.map((ann, idx) => (
-              <span key={idx}>{ann.emoji || '📢'} &nbsp;&nbsp; {ann.text}</span>
-            ))}
+          <div className="animate-ticker flex gap-20 pr-20 select-none uppercase tracking-wider text-[11px]">
+            {announcements.length > 0 ? announcements.map((ann, idx) => (
+              <span key={idx} className="flex items-center gap-2">
+                <span className="text-[#ED1C24]">{ann.emoji || '📢'}</span>
+                <span>{ann.text}</span>
+              </span>
+            )) : (
+              <>
+                <span className="flex items-center gap-2">
+                  <span className="text-[#ED1C24]">🎯</span>
+                  <span>Admissions Open for 2026-27: 8th to 12th Science, GSEB, CBSE, JEE, NEET & DDCET</span>
+                </span>
+                <span className="flex items-center gap-2">
+                  <span className="text-[#ED1C24]">📍</span>
+                  <span>Center: Above Bank Of India, 3rd Floor, Waghodia Road, Vadodara • Call: 91042 06999</span>
+                </span>
+              </>
+            )}
           </div>
-          <div className="animate-ticker flex gap-24 pr-24 select-none uppercase tracking-wide" aria-hidden="true">
-            {announcements.map((ann, idx) => (
-              <span key={`dup-${idx}`}>{ann.emoji || '📢'} &nbsp;&nbsp; {ann.text}</span>
-            ))}
+          <div className="animate-ticker flex gap-20 pr-20 select-none uppercase tracking-wider text-[11px]" aria-hidden="true">
+            {announcements.length > 0 ? announcements.map((ann, idx) => (
+              <span key={`dup-${idx}`} className="flex items-center gap-2">
+                <span className="text-[#ED1C24]">{ann.emoji || '📢'}</span>
+                <span>{ann.text}</span>
+              </span>
+            )) : (
+              <>
+                <span className="flex items-center gap-2">
+                  <span className="text-[#ED1C24]">🎯</span>
+                  <span>Admissions Open for 2026-27: 8th to 12th Science, GSEB, CBSE, JEE, NEET & DDCET</span>
+                </span>
+                <span className="flex items-center gap-2">
+                  <span className="text-[#ED1C24]">📍</span>
+                  <span>Center: Above Bank Of India, 3rd Floor, Waghodia Road, Vadodara • Call: 91042 06999</span>
+                </span>
+              </>
+            )}
           </div>
         </div>
       </div>
 
+      {/* Main Navigation Bar */}
       <nav className={`w-full transition-all duration-300 ${
-        shouldBeSolid ? 'bg-[#1C2E60] shadow-lg' : 'bg-transparent'
+        shouldBeSolid ? 'bg-[#0B0F19]/95 backdrop-blur-md shadow-2xl border-b border-white/10' : 'bg-[#0B0F19]/80 backdrop-blur-sm'
       }`}>
         <div className="max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
           <div className="flex items-center justify-between h-20 gap-3 xl:gap-6">
             
-            {/* Left: Logo */}
-            <div className="flex items-center gap-3 flex-shrink-0 mr-3 lg:mr-5 xl:mr-8">
-              <a href="/" onClick={(e) => handleNav(e, '/')} className="flex items-center gap-3">
+            {/* Left: Brand Logo */}
+            <div className="flex items-center gap-3 flex-shrink-0 mr-2 lg:mr-4">
+              <a href="/" onClick={(e) => handleNav(e, '/')} className="flex items-center gap-3 group">
                 <img
                   src={siteLogo || logoWhite}
                   alt="Noble Education"
-                  className="h-10 sm:h-12 w-auto object-contain transition-transform hover:scale-105"
+                  className="h-10 sm:h-12 w-auto object-contain transition-transform group-hover:scale-105"
                   onError={() => { setSiteLogo(logoWhite); }}
                 />
               </a>
             </div>
 
-
-            {/* Center: Desktop Menu (Clean, spacious, comfortable pill spacing) */}
-            <div className="hidden lg:flex items-center justify-center flex-1 gap-1 xl:gap-2 2xl:gap-3 h-full">
+            {/* Center: Desktop Navigation Links */}
+            <div className="hidden lg:flex items-center justify-center flex-1 gap-1 xl:gap-2 h-full">
               {navStructure.map((nav) => {
-                const isActive = currentPath === nav.href || (nav.href === '/schools' && (currentPath === '/schools' || currentPath.startsWith('/school')));
+                const isActive = currentPath === nav.href || (nav.href !== '/' && currentPath.startsWith(nav.href));
                 return (
                   <div
                     key={nav.name}
@@ -292,148 +291,120 @@ export default function Navbar() {
                   >
                     <a
                       href={nav.href}
-                      onClick={(e) => {
-                        handleNav(e, nav.href);
-                      }}
-                      className={`desktop-nav-link group flex items-center gap-1 font-bold text-[11px] xl:text-[11.5px] 2xl:text-xs uppercase tracking-wide transition-all duration-200 px-2.5 xl:px-3 py-1.5 rounded-xl whitespace-nowrap focus:outline-none ${
+                      onClick={(e) => handleNav(e, nav.href)}
+                      className={`group flex items-center gap-1 font-bold text-[11.5px] xl:text-xs uppercase tracking-wider transition-all duration-200 px-2.5 xl:px-3 py-1.5 rounded-lg whitespace-nowrap focus:outline-none ${
                         isActive
-                          ? 'text-white bg-white/15 shadow-sm font-extrabold'
-                          : shouldBeSolid 
-                            ? 'text-slate-200 hover:text-white hover:bg-white/10' 
-                            : 'text-zinc-200 hover:text-white hover:bg-white/10'
+                          ? 'text-white bg-[#ED1C24] shadow-md font-extrabold'
+                          : 'text-slate-200 hover:text-white hover:bg-white/10'
                       }`}
                     >
                       <span>{nav.name}</span>
                       {nav.dropdownGroups && (
                         <HiChevronDown className={`text-xs transition-transform duration-200 opacity-70 group-hover:opacity-100 ${
-                          hoveredMenu === nav.name ? 'rotate-180 text-[#DC2626]' : ''
+                          hoveredMenu === nav.name ? 'rotate-180 text-[#ED1C24]' : ''
                         }`} />
                       )}
                     </a>
 
-                  {/* Smart Responsive Mega Dropdown Panel (100% VISIBLE, NO LEFT OR RIGHT CUTOFFS) */}
-                  {nav.dropdownGroups && hoveredMenu === nav.name && (
-                    <div 
-                      className={`absolute top-full pt-2 z-50 animate-fadeIn max-w-[calc(100vw-24px)] ${
-                        nav.name === 'Courses' 
-                          ? 'left-[-80px] sm:left-[-140px] md:left-[-200px] lg:left-[-160px] xl:left-1/2 xl:-translate-x-1/2' 
-                          : nav.name === 'Schools'
-                            ? 'left-[-20px] sm:left-[-60px] lg:left-1/2 lg:-translate-x-1/2'
-                            : nav.name === 'Engineering'
-                              ? 'left-[-40px] sm:left-[-100px] lg:left-1/2 lg:-translate-x-1/2'
-                              : nav.name === 'Admission' 
-                                ? 'left-[-40px] sm:left-[-80px] lg:left-1/2 lg:-translate-x-1/2' 
-                                : 'right-0 lg:left-1/2 lg:-translate-x-1/2'
-                      }`}
-                      onMouseEnter={() => handleMouseEnter(nav.name)}
-                      onMouseLeave={() => handleMouseLeave(nav.name)}
-                    >
+                    {/* Dropdown Menu Panel */}
+                    {nav.dropdownGroups && hoveredMenu === nav.name && (
                       <div 
-                        className={`bg-white border border-slate-200 shadow-2xl rounded-3xl grid max-w-[calc(100vw-32px)] max-h-[85vh] overflow-y-auto ${
-                          nav.dropdownGroups.length === 1 
-                            ? 'w-[320px] grid-cols-1 p-5 sm:p-6 gap-4' 
-                            : nav.dropdownGroups.length === 2 
-                              ? 'w-[540px] sm:w-[580px] grid-cols-1 sm:grid-cols-2 p-5 sm:p-6 gap-5 sm:gap-6' 
-                              : 'w-[900px] xl:w-[940px] grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 p-5 sm:p-8 gap-5 sm:gap-6'
-                        }`}
+                        className="absolute top-full pt-2 z-50 animate-fadeIn left-1/2 -translate-x-1/2 max-w-[calc(100vw-24px)]"
+                        onMouseEnter={() => handleMouseEnter(nav.name)}
+                        onMouseLeave={() => handleMouseLeave(nav.name)}
                       >
-                        {nav.dropdownGroups.map((group, gIdx) => (
-                          <div key={gIdx} className="space-y-4">
-                            <span className="text-[10px] font-black text-[#1C2E60] uppercase tracking-widest block border-b border-slate-100 pb-2">
-                              {group.title}
-                            </span>
-                            <div className="flex flex-col gap-3">
-                              {group.items.map((item, iIdx) => {
-                                const IconComponent = item.icon;
-                                return (
-                                  <a
-                                    key={iIdx}
-                                    href={item.href}
-                                    target={item.href.startsWith('http') ? "_blank" : undefined}
-                                    rel={item.href.startsWith('http') ? "noopener noreferrer" : undefined}
-                                    onClick={(e) => handleNav(e, item.href)}
-                                    className="group flex items-start gap-3 p-2 rounded-2xl hover:bg-slate-50/70 transition-all duration-200 -mx-2"
-                                  >
-                                    {IconComponent && (
-                                      <div className="p-2 rounded-xl bg-[#1C2E60]/5 text-[#1C2E60] group-hover:bg-[#DC2626]/5 group-hover:text-[#DC2626] transition-colors mt-0.5">
-                                        <IconComponent className="text-sm" />
-                                      </div>
-                                    )}
-                                    <div className="flex-1 min-w-0">
-                                      <span className="text-xs font-bold text-slate-800 group-hover:text-[#DC2626] transition-colors block">
-                                        {item.name}
-                                      </span>
-                                      {item.desc && (
-                                        <span className="text-[10px] text-zinc-500 font-light leading-normal block mt-0.5">
-                                          {item.desc}
-                                        </span>
+                        <div 
+                          className={`bg-[#0F1626] border border-slate-700/60 shadow-[0_20px_50px_rgba(0,0,0,0.6)] rounded-2xl grid p-6 gap-6 ${
+                            nav.dropdownGroups.length === 1 
+                              ? 'w-[360px] grid-cols-1' 
+                              : 'w-[580px] grid-cols-2'
+                          }`}
+                        >
+                          {nav.dropdownGroups.map((group, gIdx) => (
+                            <div key={gIdx} className="space-y-3">
+                              <span className="text-[10.5px] font-black text-[#ED1C24] uppercase tracking-widest block border-b border-white/10 pb-2">
+                                {group.title}
+                              </span>
+                              <div className="flex flex-col gap-2.5">
+                                {group.items.map((item, iIdx) => {
+                                  const IconComponent = item.icon;
+                                  return (
+                                    <a
+                                      key={iIdx}
+                                      href={item.href}
+                                      target={item.href.startsWith('http') ? "_blank" : undefined}
+                                      rel={item.href.startsWith('http') ? "noopener noreferrer" : undefined}
+                                      onClick={(e) => handleNav(e, item.href)}
+                                      className="group/item flex items-start gap-3 p-2 rounded-xl hover:bg-white/5 transition-all duration-200"
+                                    >
+                                      {IconComponent && (
+                                        <div className="p-2 rounded-lg bg-white/5 text-slate-300 group-hover/item:bg-[#ED1C24] group-hover/item:text-white transition-colors mt-0.5">
+                                          <IconComponent className="text-sm" />
+                                        </div>
                                       )}
-                                    </div>
-                                  </a>
-                                );
-                              })}
+                                      <div className="flex-1 min-w-0">
+                                        <span className="text-xs font-bold text-white group-hover/item:text-[#ED1C24] transition-colors block">
+                                          {item.name}
+                                        </span>
+                                        {item.desc && (
+                                          <span className="text-[11px] text-slate-400 font-normal leading-snug block mt-0.5">
+                                            {item.desc}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </a>
+                                  );
+                                })}
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                        {nav.name === 'Engineering' && (
-                          <div className="col-span-full pt-3 mt-1 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs">
-                            <span className="text-slate-500 font-medium flex items-center gap-1.5 text-[11px]">
-                              <span>📍</span> Waghodia Road Campus (Above Bank of India) • 📞 96382 56222
-                            </span>
-                            <a
-                              href="/engineering"
-                              onClick={(e) => handleNav(e, '/engineering')}
-                              className="text-[#DC2626] hover:text-red-700 font-extrabold flex items-center gap-1 text-[11px] uppercase tracking-wider"
-                            >
-                              Explore Noble Engineering Page →
-                            </a>
-                          </div>
-                        )}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Right: Header CTA Combination */}
-            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 ml-3 lg:ml-5 xl:ml-8 relative">
+            {/* Right: Header Buttons per Blueprint Section 2 */}
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
               
-              {/* Google Translate Hidden Element - active in DOM, hidden visually to let loader initialize it */}
-              <div id="google_translate_element" style={{ opacity: 0, width: 0, height: 0, overflow: 'hidden', position: 'absolute', pointerEvents: 'none' }}></div>
+              {/* Call Now Button (Desktop) */}
+              <a
+                href={`tel:${contactData.phone1}`}
+                className="hidden xl:flex items-center gap-2 text-slate-200 hover:text-white font-bold text-xs uppercase tracking-wider px-3.5 py-2.5 rounded-xl border border-white/15 hover:border-white/30 hover:bg-white/5 transition-all"
+                title="Call Noble Education"
+              >
+                <FiPhone className="text-[#ED1C24]" />
+                <span>Call Now</span>
+              </a>
 
-              <div className="hidden lg:flex items-center gap-3 flex-shrink-0">
-                <a 
-                  href="#inquiry-form" 
-                  className="bg-[#DC2626] hover:bg-[#B91C1C] text-white font-bold px-3 xl:px-4 py-2.5 rounded-xl text-xs transition-all shadow-[0_0_15px_rgba(220,38,38,0.25)] hover:scale-105 flex-shrink-0 whitespace-nowrap"
-                >
-                  Book Free Counselling
-                </a>
-              </div>
+              {/* Admission Enquiry Button */}
+              <a
+                href="/admissions"
+                onClick={(e) => handleNav(e, '/admissions')}
+                className="hidden sm:inline-flex items-center justify-center bg-[#ED1C24] hover:bg-[#C8141B] text-white font-black px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(237,28,36,0.35)] hover:shadow-[0_0_25px_rgba(237,28,36,0.5)] hover:scale-105 flex-shrink-0"
+              >
+                Admission Enquiry
+              </a>
 
-              {/* Custom Circular Translate Button (文/A Icon) */}
+              {/* Language Translate Trigger */}
               <div className="relative">
                 <button
                   onClick={() => setLangDropdownOpen(!langDropdownOpen)}
-                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-sm border cursor-pointer hover:scale-105 active:scale-95 ${
-                    shouldBeSolid 
-                      ? 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-[#1C2E60]' 
-                      : 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
-                  }`}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all hover:scale-105 active:scale-95"
                   title="Change Language"
                 >
-                  <HiTranslate className="text-lg" />
+                  <HiTranslate className="text-base" />
                 </button>
 
-                {/* Dropdown Menu */}
                 {langDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-32 bg-white border border-slate-200 shadow-xl rounded-2xl py-2 z-50 animate-fadeIn text-left">
+                  <div className="absolute right-0 mt-2 w-32 bg-[#0F1626] border border-slate-700 shadow-xl rounded-xl py-2 z-50 animate-fadeIn text-left">
                     {languages.map((lang) => (
                       <button
                         key={lang.code}
                         onClick={() => handleLangChange(lang.code)}
-                        className="w-full text-left px-4 py-2 text-xs font-bold text-[#1C2E60] hover:bg-slate-50 transition-colors uppercase tracking-wider block"
+                        className="w-full text-left px-4 py-2 text-xs font-bold text-slate-200 hover:text-white hover:bg-white/10 transition-colors uppercase tracking-wider block"
                       >
                         {lang.name}
                       </button>
@@ -442,11 +413,12 @@ export default function Navbar() {
                 )}
               </div>
 
-              {/* Hamburger Mobile Icon */}
+              {/* Mobile Hamburger Toggle */}
               <div className="lg:hidden flex items-center">
                 <button
                   onClick={() => setIsOpen(!isOpen)}
-                  className="p-2 rounded-xl text-white hover:bg-white/5 transition-colors"
+                  className="p-2.5 rounded-xl text-white hover:bg-white/10 transition-colors"
+                  aria-label="Toggle navigation menu"
                 >
                   {isOpen ? <HiX className="text-2xl" /> : <HiMenu className="text-2xl" />}
                 </button>
@@ -456,34 +428,34 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Drawer */}
+        {/* Mobile Slide-Out Navigation Drawer */}
         {isOpen && (
-          <div className="lg:hidden fixed inset-x-0 top-[110px] bottom-0 bg-white z-40 overflow-y-auto border-t border-slate-200 animate-fadeIn">
+          <div className="lg:hidden fixed inset-x-0 top-[115px] bottom-0 bg-[#0B0F19] text-white z-40 overflow-y-auto border-t border-white/10 animate-fadeIn pb-24">
             <div className="p-6 space-y-6">
               
-              {/* Mobile Header CTAs at top as requested */}
-              <div className="grid grid-cols-2 gap-3 pb-4 border-b border-slate-100">
+              {/* Header Quick Actions */}
+              <div className="grid grid-cols-2 gap-3 pb-4 border-b border-white/10">
                 <a 
-                  href="#inquiry-form" 
-                  onClick={() => setIsOpen(false)}
-                  className="bg-[#DC2626] hover:bg-[#B91C1C] text-white font-bold py-3.5 rounded-xl text-xs text-center shadow-md block"
+                  href="/admissions" 
+                  onClick={(e) => handleNav(e, '/admissions')}
+                  className="bg-[#ED1C24] hover:bg-[#C8141B] text-white font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider text-center shadow-lg block"
                 >
-                  Book Counselling
+                  Admission Enquiry
                 </a>
                 <a 
-                  href="tel:9104206999" 
-                  className="border border-[#1C2E60] text-[#1C2E60] font-bold py-3.5 rounded-xl text-xs text-center block hover:bg-slate-50"
+                  href={`tel:${contactData.phone1}`}
+                  className="border border-white/20 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-wider text-center block hover:bg-white/5"
                 >
-                  Call: 9104206999
+                  Call: {contactData.phone1}
                 </a>
               </div>
 
-              {/* Menu items */}
-              <div className="space-y-4">
+              {/* Navigation Items */}
+              <div className="space-y-3">
                 {navStructure.map((nav) => (
-                  <div key={nav.name} className="border-b border-slate-100 pb-3.5 last:border-b-0 last:pb-0">
+                  <div key={nav.name} className="border-b border-white/5 pb-3 last:border-b-0 last:pb-0">
                     <div 
-                      className="flex justify-between items-center cursor-pointer py-1 select-none"
+                      className="flex justify-between items-center cursor-pointer py-1.5 select-none"
                       onClick={(e) => {
                         if (nav.dropdownGroups) {
                           toggleMobileSub(nav.name);
@@ -492,36 +464,36 @@ export default function Navbar() {
                         }
                       }}
                     >
-                      <span className="font-extrabold text-xs text-[#1C2E60] uppercase tracking-wider block">
+                      <span className="font-extrabold text-xs text-white uppercase tracking-wider block">
                         {nav.name}
                       </span>
                       {nav.dropdownGroups && (
-                        <div className="p-1.5 text-zinc-500">
+                        <div className="p-1 text-slate-400">
                           <HiChevronDown className={`text-base transition-transform duration-200 ${
-                            expandedMobileMenu === nav.name ? 'rotate-180 text-[#DC2626]' : ''
+                            expandedMobileMenu === nav.name ? 'rotate-180 text-[#ED1C24]' : ''
                           }`} />
                         </div>
                       )}
                     </div>
 
                     {nav.dropdownGroups && expandedMobileMenu === nav.name && (
-                      <div className="mt-3 pl-3 space-y-4 border-l-2 border-[#1C2E60]/20 animate-fadeIn">
-                        {/* Direct link to main page */}
+                      <div className="mt-2 pl-3 space-y-3 border-l-2 border-[#ED1C24] animate-fadeIn">
+                        {/* Direct link to parent page */}
                         <a
                           href={nav.href}
                           onClick={(e) => handleNav(e, nav.href)}
-                          className="flex items-center gap-2 text-xs font-black text-[#DC2626] py-1 uppercase tracking-wider"
+                          className="flex items-center gap-2 text-xs font-black text-[#ED1C24] py-1 uppercase tracking-wider"
                         >
-                          <span>Explore All {nav.name}</span>
+                          <span>Explore {nav.name}</span>
                           <span>➜</span>
                         </a>
 
                         {nav.dropdownGroups.map((group, gIdx) => (
                           <div key={gIdx} className="space-y-2">
-                            <span className="text-[10px] font-black text-[#1C2E60] uppercase tracking-widest block opacity-70">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
                               {group.title}
                             </span>
-                            <div className="flex flex-col gap-2 pl-2">
+                            <div className="flex flex-col gap-2 pl-1">
                               {group.items.map((item, iIdx) => {
                                 const IconComponent = item.icon;
                                 return (
@@ -531,9 +503,9 @@ export default function Navbar() {
                                     target={item.href.startsWith('http') ? "_blank" : undefined}
                                     rel={item.href.startsWith('http') ? "noopener noreferrer" : undefined}
                                     onClick={(e) => handleNav(e, item.href)}
-                                    className="flex items-center gap-2.5 text-xs font-bold text-slate-700 py-1.5 hover:text-[#DC2626] active:text-[#DC2626] transition-colors"
+                                    className="flex items-center gap-2.5 text-xs font-semibold text-slate-200 py-1 hover:text-[#ED1C24] transition-colors"
                                   >
-                                    {IconComponent && <IconComponent className="text-[#1C2E60] text-sm flex-shrink-0" />}
+                                    {IconComponent && <IconComponent className="text-[#ED1C24] text-sm flex-shrink-0" />}
                                     <span>{item.name}</span>
                                   </a>
                                 );
@@ -550,6 +522,6 @@ export default function Navbar() {
           </div>
         )}
       </nav>
-    </div>
+    </header>
   );
 }

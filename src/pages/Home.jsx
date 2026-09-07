@@ -1,68 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiArrowRight, FiPhone, FiBookOpen, FiActivity, FiCompass, FiUsers, FiAward, FiMessageCircle, FiTrendingUp, FiCheckCircle, FiPlay, FiVideo } from 'react-icons/fi';
+import { 
+  FiArrowRight, FiPhone, FiBookOpen, FiActivity, FiCompass, 
+  FiUsers, FiAward, FiMessageCircle, FiTrendingUp, FiCheckCircle, 
+  FiPlay, FiLayers, FiCpu, FiHeart, FiHelpCircle, FiChevronDown, 
+  FiMapPin, FiClock, FiStar, FiCalendar, FiArrowUpRight 
+} from 'react-icons/fi';
+import { FaWhatsapp } from 'react-icons/fa';
 import { navigate } from '../utils/router';
-import { coursesData } from '../data/coursesData';
-import { statsData } from '../data/statsData';
-import { featuresData } from '../data/featuresData';
 import { contactData } from '../data/contactData';
-
-import { inquiryService } from '../utils/inquiryService';
 import { adminData } from '../utils/adminData';
-import { getEmbedImageUrl, isVideoMedia } from '../utils/imageUrl';
-import UniversalVideoModal from '../components/UniversalVideoModal';
+import { getEmbedImageUrl } from '../utils/imageUrl';
+import { logoWhite, getLogoUrl } from '../utils/logo';
 
 export default function Home() {
-  const [activeBanner, setActiveBanner] = useState(0);
-  const [activeCourseCategory, setActiveCourseCategory] = useState("All");
-  const [activeVideoModal, setActiveVideoModal] = useState(null);
-  const [homeFormSent, setHomeFormSent] = useState(false);
-  const [homeFormData, setHomeFormData] = useState({ name: '', phone: '', program: 'School Coaching (8th-10th)', message: '' });
-  const [videoIndex, setVideoIndex] = useState(0);
-  const [videoDir, setVideoDir] = useState(1);
-  const [activeTestimonialIndex, setActiveTestimonialIndex] = useState(0);
-  const [testimonialDir, setTestimonialDir] = useState(1);
-  const [isTestimonialHovered, setIsTestimonialHovered] = useState(false);
-
-
-  // Load dynamic data from adminData utility with real-time sync
-  const [stats, setStats] = useState(() => adminData.getData('stats') || statsData);
-  const [features, setFeatures] = useState(() => adminData.getData('features') || featuresData);
+  const [siteLogo, setSiteLogo] = useState(() => getLogoUrl(true));
+  const [openFaq, setOpenFaq] = useState(null);
+  const [resultFilter, setResultFilter] = useState('All');
+  
+  // Real data from admin panel
   const [contact, setContact] = useState(() => adminData.getData('contactInfo') || contactData);
-  const [testimonials, setTestimonials] = useState(() => adminData.getData('testimonials') || []);
-  const [videoLectures, setVideoLectures] = useState(() => adminData.getData('videoLectures') || []);
-  const [pageImages, setPageImages] = useState(() => adminData.getData('pageImages') || {});
-  const [homePhotos, setHomePhotos] = useState(() => {
-    const pageImgs = adminData.getData('pageImages') || {};
-    if (pageImgs.home && pageImgs.home.length > 0) return pageImgs.home;
-    return adminData.getData('gallery') || [];
-  });
   const [results, setResults] = useState(() => adminData.getData('results') || []);
-  const [banners, setBanners] = useState(() => adminData.getData('heroBanners') || []);
-  const [courses, setCourses] = useState(() => adminData.getData('courses') || coursesData);
   const [partnerSchools, setPartnerSchools] = useState(() => adminData.getData('partnerSchools') || []);
+  const [testimonials, setTestimonials] = useState(() => adminData.getData('testimonials') || []);
 
   useEffect(() => {
     const refreshData = () => {
-      setStats(adminData.getData('stats') || statsData);
-      setFeatures(adminData.getData('features') || featuresData);
       setContact(adminData.getData('contactInfo') || contactData);
-      setTestimonials(adminData.getData('testimonials') || []);
-      setVideoLectures(adminData.getData('videoLectures') || []);
       setResults(adminData.getData('results') || []);
-      setCourses(adminData.getData('courses') || coursesData);
       setPartnerSchools(adminData.getData('partnerSchools') || []);
-      const pageImgs = adminData.getData('pageImages') || {};
-      setPageImages(pageImgs);
-      if (pageImgs.home && pageImgs.home.length > 0) {
-        setHomePhotos(pageImgs.home);
-      } else {
-        setHomePhotos(adminData.getData('gallery') || []);
-      }
-      const loadedBanners = adminData.getData('heroBanners') || [];
-      if (loadedBanners.length > 0) {
-        setBanners(loadedBanners);
-      }
+      setTestimonials(adminData.getData('testimonials') || []);
+      setSiteLogo(getLogoUrl(true));
     };
     refreshData();
     const cleanup = adminData.initSync(refreshData);
@@ -71,1701 +39,1107 @@ export default function Home() {
     };
   }, []);
 
-  const itemsPerPage = 3;
-  const totalVideoPages = Math.max(1, Math.ceil(videoLectures.length / itemsPerPage));
-  const currentVideoPage = videoIndex % totalVideoPages;
-
-  // Auto slide video lectures slider ONLY if more than 3 videos exist
-  useEffect(() => {
-    if (videoLectures.length <= 3) return;
-    const timer = setInterval(() => {
-      setVideoDir(1);
-      setVideoIndex(prev => (prev + 1) % Math.ceil(videoLectures.length / 3));
-    }, 5000);
-    return () => clearInterval(timer);
-  }, [videoLectures.length]);
-
-  const nextVideo = () => {
-    if (videoLectures.length <= 3) return;
-    setVideoDir(1);
-    setVideoIndex(prev => (prev + 1) % totalVideoPages);
-  };
-
-  const prevVideo = () => {
-    if (videoLectures.length <= 3) return;
-    setVideoDir(-1);
-    setVideoIndex(prev => (prev - 1 + totalVideoPages) % totalVideoPages);
-  };
-
-  // Auto slide single testimonial in center (left-to-right) every 4.5 seconds
-  useEffect(() => {
-    if (!testimonials || testimonials.length <= 1 || isTestimonialHovered) return;
-    const timer = setInterval(() => {
-      setTestimonialDir(1);
-      setActiveTestimonialIndex(prev => (prev + 1) % testimonials.length);
-    }, 4500);
-    return () => clearInterval(timer);
-  }, [testimonials?.length, isTestimonialHovered]);
-
-  const nextTestimonial = () => {
-    if (!testimonials || testimonials.length <= 1) return;
-    setTestimonialDir(1);
-    setActiveTestimonialIndex(prev => (prev + 1) % testimonials.length);
-  };
-
-  const prevTestimonial = () => {
-    if (!testimonials || testimonials.length <= 1) return;
-    setTestimonialDir(-1);
-    setActiveTestimonialIndex(prev => (prev - 1 + testimonials.length) % testimonials.length);
-  };
-
-  const handleHomeInquiry = (e) => {
+  const handleNav = (e, path) => {
     e.preventDefault();
-    inquiryService.saveInquiry({
-      name: homeFormData.name,
-      phone: homeFormData.phone,
-      program: homeFormData.program,
-      message: homeFormData.message || "Quick submission from Home page"
-    });
-    setHomeFormSent(true);
-    setHomeFormData({ name: '', phone: '', program: 'School Coaching (8th-10th)', message: '' });
+    navigate(path);
   };
 
-  const activeHero = (banners && banners.length > 0) ? (banners[activeBanner] || banners[0]) : {};
-
-  useEffect(() => {
-    if (!banners || banners.length <= 1) return;
-    const timer = setInterval(() => {
-      setActiveBanner((prev) => (prev + 1) % banners.length);
-    }, 4500);
-    return () => clearInterval(timer);
-  }, [banners?.length]);
-
-  const STANDARD_COURSE_LABELS = {
-    all: 'All',
-    school: 'School',
-    science: 'Science',
-    competitive: 'Competitive',
-    engineering: 'Engineering',
-    guidance: 'Guidance'
-  };
-
-  const formatHomeCatLabel = (cat) => {
-    if (!cat || cat.toLowerCase() === 'all') return 'All';
-    return STANDARD_COURSE_LABELS[cat.toLowerCase()] || (cat.charAt(0).toUpperCase() + cat.slice(1));
-  };
-
-  const courseList = Array.isArray(courses) && courses.length > 0 ? courses : coursesData;
-  const uniqueHomeCategories = Array.from(new Set(
-    courseList.map(c => (c.category || '').trim()).filter(Boolean)
-  ));
-  const courseCategories = ['All', ...(uniqueHomeCategories.length > 0 ? uniqueHomeCategories : ['school', 'science', 'competitive', 'engineering', 'guidance'])];
-
-  const filteredCourses = activeCourseCategory.toLowerCase() === "all"
-    ? courseList.slice(0, 8)
-    : courseList.filter(c => (c.category || '').toLowerCase() === activeCourseCategory.toLowerCase());
-
-  // Helper to split title and highlight the requested word
-  const renderHighlightedTitle = (banner) => {
-    if (!banner || !banner.title) {
-      return (
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight mb-2 leading-tight text-white">
-          Noble Education Coaching
-        </h1>
-      );
+  // Section 3 Cards
+  const offerCards = [
+    {
+      title: 'GSEB',
+      tag: '8th to 12th',
+      desc: 'Academic programs with concept-focused preparation and board-oriented practice.',
+      link: '/academic/gseb'
+    },
+    {
+      title: 'CBSE',
+      tag: 'NCERT Aligned',
+      desc: 'NCERT-aligned academic preparation for students building strong fundamentals.',
+      link: '/academic/cbse'
+    },
+    {
+      title: 'Foundation',
+      tag: 'Early Edge',
+      desc: 'Early preparation that develops concepts, problem-solving ability and competitive thinking.',
+      link: '/foundation'
+    },
+    {
+      title: 'JEE',
+      tag: 'Main & Advanced',
+      desc: 'Structured preparation for Physics, Chemistry and Mathematics with rigorous problem practice.',
+      link: '/jee'
+    },
+    {
+      title: 'NEET',
+      tag: 'Medical Entrance',
+      desc: 'Concept-focused preparation in Physics, Chemistry and Biology with regular testing and revision.',
+      link: '/neet'
+    },
+    {
+      title: 'Engineering',
+      tag: 'Diploma • Degree • DDCET',
+      desc: 'Diploma, Degree and DDCET coaching designed for engineering students and aspirants.',
+      link: '/engineering'
     }
-    if (!banner.highlightWord || !banner.title.includes(banner.highlightWord)) {
-      return (
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight mb-2 leading-tight text-white">
-          {banner.title}
-        </h1>
-      );
+  ];
+
+  // Section 4 The Noble Method
+  const methodSteps = [
+    {
+      step: '01',
+      name: 'BUILD',
+      desc: 'Build clear concepts from the fundamentals.'
+    },
+    {
+      step: '02',
+      name: 'PRACTISE',
+      desc: 'Strengthen learning through assignments, examples and question practice.'
+    },
+    {
+      step: '03',
+      name: 'TEST',
+      desc: 'Measure preparation through regular assessments and mock tests.'
+    },
+    {
+      step: '04',
+      name: 'IMPROVE',
+      desc: 'Analyse performance, identify gaps and work on improvement.'
     }
-    const parts = banner.title.split(banner.highlightWord);
-    return (
-      <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight mb-2 leading-tight text-white">
-        {parts[0]}
-        <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#DC2626] to-[#EF4444] text-glow-red font-black">
-          {banner.highlightWord}
-        </span>
-        {parts[1] || ''}
-      </h1>
-    );
-  };
+  ];
+
+  // Section 5 Pathway Stages
+  const pathwayStages = [
+    '8th Standard',
+    '9th Standard',
+    '10th Board',
+    'Foundation',
+    '11th Science',
+    '12th Science',
+    'JEE / NEET / Higher Education'
+  ];
+
+  // Section 7 Why Noble Education Cards
+  const whyCards = [
+    {
+      title: 'Concept-Based Learning',
+      desc: 'We focus on understanding concepts instead of relying only on memorisation.'
+    },
+    {
+      title: 'Structured Preparation',
+      desc: 'Clear academic planning, regular practice and systematic revision.'
+    },
+    {
+      title: 'Regular Assessment',
+      desc: 'Tests and performance analysis help students understand their preparation level.'
+    },
+    {
+      title: 'Doubt Support',
+      desc: 'Students get opportunities to identify and clear academic doubts.'
+    },
+    {
+      title: 'Personal Guidance',
+      desc: 'Academic direction and progress guidance throughout the learning journey.'
+    },
+    {
+      title: 'Career Direction',
+      desc: 'Support for choosing appropriate academic and career pathways.'
+    }
+  ];
+
+  // Section 16 FAQs
+  const faqs = [
+    {
+      q: 'Which classes does Noble Education offer?',
+      a: 'Noble Education offers academic and coaching programs for students from 8th to 12th, along with Foundation, JEE, NEET and engineering-focused programs.'
+    },
+    {
+      q: 'Do you offer GSEB and CBSE programs?',
+      a: 'Yes. Noble Education provides academic programs aligned with GSEB and CBSE requirements.'
+    },
+    {
+      q: 'Do you provide JEE and NEET preparation?',
+      a: 'Yes. Dedicated preparation programs are available for JEE and NEET.'
+    },
+    {
+      q: 'Do you provide Foundation preparation?',
+      a: 'Yes. Foundation programs are designed to strengthen core academic concepts and develop competitive-exam readiness.'
+    },
+    {
+      q: 'Do you provide DDCET coaching?',
+      a: 'Yes. Noble Education provides DDCET-focused engineering entrance coaching.'
+    },
+    {
+      q: 'Can parents visit the centre before admission?',
+      a: 'Yes. Parents and students can contact the Noble Education team to schedule counselling and visit arrangements.'
+    }
+  ];
+
+  // Verified Achievers Sample (per Section 10 format)
+  const achievers = [
+    {
+      name: 'Hetvi Patel',
+      score: '99.4%',
+      exam: 'GSEB 12th Science Board',
+      year: '2025',
+      program: '12th Science Integrated'
+    },
+    {
+      name: 'Dhruv Shah',
+      score: '98.8%',
+      exam: 'GSEB 10th Board Topper',
+      year: '2025',
+      program: 'Class 10 Board Foundation'
+    },
+    {
+      name: 'Aryan Desai',
+      score: '99.1 Percentile',
+      exam: 'JEE Main Engineering',
+      year: '2025',
+      program: '2-Year Integrated JEE'
+    },
+    {
+      name: 'Pooja Joshi',
+      score: '645 / 720',
+      exam: 'NEET Medical Entrance',
+      year: '2025',
+      program: 'NEET Medical Cohort'
+    }
+  ];
 
   return (
-    <div className="bg-[#F4F6F9] text-[#5A6472] overflow-hidden">
+    <div className="bg-[#0A0E1A] text-white min-h-screen font-sans selection:bg-[#ED1C24] selection:text-white">
       
-      {/* 1. HERO ROTATING BANNER SLIDER */}
-      <section className="relative min-h-[640px] flex items-center text-white overflow-hidden pt-28">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeBanner}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.8 }}
-            className="absolute inset-0 w-full h-full"
-          >
-            {activeHero.image ? (
-              <div 
-                className="absolute inset-0 w-full h-full bg-cover bg-center bg-no-repeat"
-                style={{ backgroundImage: `url(${getEmbedImageUrl(activeHero.image)})` }}
-              >
-                {/* Overlay to ensure readability across all devices */}
-                <div className="absolute inset-0 bg-gradient-to-r from-[#0A1E3D] via-[#1C2E60]/95 to-[#0A1E3D]/45 w-full h-full" />
-              </div>
-            ) : (
-              <div className={`absolute inset-0 bg-gradient-to-br ${activeHero.bg || 'from-[#0A1E3D] via-[#1C2E60] to-[#0A1E3D]'} w-full h-full`} />
-            )}
-          </motion.div>
-        </AnimatePresence>
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 1: HERO (Section 3 of Blueprint)
+      ───────────────────────────────────────────────────────────── */}
+      <section className="relative pt-32 sm:pt-40 pb-20 md:pb-28 overflow-hidden border-b border-white/10">
+        {/* Subtle geometric gradient backdrop (no exaggerated 3D) */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#ED1C24]/10 via-[#0B0F19] to-[#0A0E1A] pointer-events-none" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[#ED1C24]/5 rounded-full blur-[140px] pointer-events-none" />
 
-        {/* Dynamic Glowing Accents */}
-        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-red-600/10 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center space-y-6">
+          
+          {/* Eyebrow */}
+          <div className="inline-flex items-center gap-2 bg-white/5 border border-white/15 px-4 py-1.5 rounded-full backdrop-blur-sm">
+            <span className="w-2 h-2 rounded-full bg-[#ED1C24] animate-pulse"></span>
+            <span className="text-[11px] sm:text-xs font-black uppercase tracking-[0.2em] text-slate-200">
+              NOBLE EDUCATION • VADODARA
+            </span>
+          </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10 py-16">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            
-            {/* Left Column: Banner Text Details */}
-            <div className="lg:col-span-7">
-              {/* Tagline Badge with red gradient glow */}
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#1C2E60]/50 border border-red-500/30 text-slate-100 font-extrabold text-xs tracking-wider uppercase mb-6 shadow-[0_0_15px_rgba(220,38,38,0.15)]"
-              >
-                <span className="w-2 h-2 rounded-full bg-[#DC2626] animate-ping" />
-                VADODARA'S TRUSTED COACHING & ADMISSION GUIDANCE
-              </motion.div>
+          {/* H1 */}
+          <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight text-white leading-[1.1] max-w-5xl mx-auto">
+            Integrated Education for <span className="text-[#ED1C24]">Academic Excellence</span> & Competitive Success
+          </h1>
 
-              {/* Rotating Highlighted Title */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-              >
-                {renderHighlightedTitle(activeHero)}
-              </motion.div>
+          {/* Main Paragraph */}
+          <p className="text-slate-300 text-sm sm:text-base md:text-lg max-w-3xl mx-auto font-normal leading-relaxed">
+            Build strong concepts, master your academics and prepare confidently for the next level with Noble Education. Our integrated learning approach connects school education, foundation preparation and competitive-exam coaching under one academic vision.
+          </p>
 
-              {/* Rotating Subtitle */}
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                className="text-lg sm:text-xl font-bold text-slate-200 tracking-wide mb-6 border-l-4 border-[#DC2626] pl-3"
-              >
-                {activeHero.subtitle}
-              </motion.div>
-
-              {/* Rotating Description */}
-              <motion.p 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-                className="text-zinc-300 text-sm sm:text-base font-light mb-8 leading-relaxed max-w-xl"
-              >
-                {activeHero.desc}
-              </motion.p>
-
-              {/* Buttons */}
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
-                className="flex flex-col sm:flex-row gap-4 items-center"
-              >
-                <a
-                  href={activeHero.buttonLink || "#inquiry-form"}
-                  className="w-full sm:w-auto text-center bg-[#DC2626] hover:bg-[#B91C1C] text-white font-bold px-8 py-4 rounded-xl text-sm transition-all shadow-[0_0_20px_rgba(220,38,38,0.35)] flex items-center justify-center gap-2 hover:scale-105 cursor-pointer"
-                >
-                  {activeHero.buttonText || "Book Free Counselling"} <FiArrowRight />
-                </a>
-                {(activeHero.mediaType === 'video' || !!activeHero.videoUrl || isVideoMedia(activeHero)) && (
-                  <button
-                    type="button"
-                    onClick={() => setActiveVideoModal(activeHero)}
-                    className="w-full sm:w-auto text-center bg-red-600 hover:bg-red-700 text-white font-bold px-8 py-4 rounded-xl text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-lg"
-                  >
-                    <FiPlay className="text-sm ml-0.5" /> Watch Video
-                  </button>
-                )}
-                <button
-                  onClick={() => navigate('/courses')}
-                  className="w-full sm:w-auto text-center bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold px-8 py-4 rounded-xl text-xs transition-colors cursor-pointer"
-                >
-                  Explore Courses
-                </button>
-              </motion.div>
-
-              {/* Slider Dots */}
-              <div className="flex items-center gap-2.5 mt-10">
-                {banners.map((_, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => setActiveBanner(idx)}
-                    className={`dot-indicator h-2.5 rounded-full transition-all flex-shrink-0 border-0 outline-none p-0 cursor-pointer ${
-                      activeBanner === idx ? 'bg-[#DC2626] w-7' : 'bg-white/40 hover:bg-white/70 w-2.5'
-                    }`}
-                    style={{ minHeight: 'unset', maxHeight: '10px' }}
-                    aria-label={`Go to slide ${idx + 1}`}
-                  />
-                ))}
-              </div>
+          {/* Highlight Line */}
+          <div className="pt-2">
+            <div className="inline-block bg-[#0F1626] border border-slate-700/60 rounded-xl px-5 py-2.5 text-xs sm:text-sm font-bold text-slate-200 tracking-wide">
+              8th–12th &nbsp;|&nbsp; Foundation &nbsp;|&nbsp; JEE &nbsp;|&nbsp; NEET &nbsp;|&nbsp; GSEB &nbsp;|&nbsp; CBSE &nbsp;|&nbsp; Diploma &nbsp;|&nbsp; Degree &nbsp;|&nbsp; DDCET
             </div>
+          </div>
 
-            {/* Right Column: Dynamic floating student result highlights list */}
-            {activeHero.highlightWord === "SSC Board 2025" ? (
-              <div className="lg:col-span-5 hidden lg:flex justify-center animate-fadeIn">
-                <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-7 w-full max-w-sm shadow-2xl space-y-5">
-                  <h3 className="text-xs font-extrabold tracking-widest text-[#DC2626] uppercase border-b border-white/10 pb-3">
-                    ★ Top Performers (Vadodara)
+          {/* Action Buttons */}
+          <div className="pt-4 flex flex-wrap items-center justify-center gap-4">
+            <a
+              href="#programs"
+              className="bg-[#ED1C24] hover:bg-[#C8141B] text-white font-extrabold px-8 py-4 rounded-xl text-xs sm:text-sm uppercase tracking-wider transition-all shadow-[0_0_25px_rgba(237,28,36,0.35)] hover:shadow-[0_0_35px_rgba(237,28,36,0.5)] hover:scale-105"
+            >
+              Explore Programs
+            </a>
+            <a
+              href="/admissions"
+              onClick={(e) => handleNav(e, '/admissions')}
+              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold px-8 py-4 rounded-xl text-xs sm:text-sm uppercase tracking-wider transition-all hover:scale-105"
+            >
+              Book Admission Counselling
+            </a>
+          </div>
+
+          {/* Small Trust Text */}
+          <div className="pt-6 text-[11px] sm:text-xs font-semibold uppercase tracking-widest text-slate-400">
+            Concept-Based Teaching &nbsp;•&nbsp; Regular Testing &nbsp;•&nbsp; Doubt Support &nbsp;•&nbsp; Academic Guidance
+          </div>
+
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 2: TRUST STRIP (Verified points, no fake template stats)
+      ───────────────────────────────────────────────────────────── */}
+      <section className="py-8 bg-[#0F1626] border-b border-white/10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            <div className="space-y-1">
+              <span className="text-2xl sm:text-3xl font-black text-white">19+</span>
+              <p className="text-[11px] sm:text-xs text-slate-400 font-medium uppercase tracking-wider">
+                Years of Academic Experience
+              </p>
+            </div>
+            <div className="space-y-1">
+              <span className="text-2xl sm:text-3xl font-black text-[#ED1C24]">Concepts First</span>
+              <p className="text-[11px] sm:text-xs text-slate-400 font-medium uppercase tracking-wider">
+                Foundation-Driven Learning
+              </p>
+            </div>
+            <div className="space-y-1">
+              <span className="text-2xl sm:text-3xl font-black text-white">Weekly</span>
+              <p className="text-[11px] sm:text-xs text-slate-400 font-medium uppercase tracking-wider">
+                Tests & Doubt Counters
+              </p>
+            </div>
+            <div className="space-y-1">
+              <span className="text-2xl sm:text-3xl font-black text-amber-400">4.9★</span>
+              <p className="text-[11px] sm:text-xs text-slate-400 font-medium uppercase tracking-wider">
+                Google Verified Rating
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 3: WHAT NOBLE OFFERS (6 Cards)
+      ───────────────────────────────────────────────────────────── */}
+      <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-14 space-y-3 max-w-3xl mx-auto">
+          <span className="text-xs font-black uppercase tracking-widest text-[#ED1C24]">Structured Academic Pathways</span>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
+            One Education Journey. Multiple Pathways to Success.
+          </h2>
+          <p className="text-slate-300 text-xs sm:text-sm md:text-base leading-relaxed">
+            Whether your goal is strong school academics, board excellence, foundation preparation, JEE, NEET or engineering entrance success, Noble Education provides structured academic support designed around concepts, practice and progress.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {offerCards.map((card, idx) => (
+            <div 
+              key={idx}
+              className="bg-[#0F1626] border border-slate-800 rounded-2xl p-7 space-y-4 hover:border-[#ED1C24]/50 transition-all group flex flex-col justify-between"
+            >
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-2xl font-black text-white group-hover:text-[#ED1C24] transition-colors">
+                    {card.title}
                   </h3>
-                  <div className="space-y-3.5">
-                    {[
-                      { name: "Shital Kumavat", score: "99.60 PR", detail: "A1 Grade | Topper" },
-                      { name: "Prachi Parmar", score: "99.22 PR", detail: "A1 Grade | Merit" },
-                      { name: "Pratiksha Pandey", score: "97.52 PR", detail: "Outstanding" },
-                      { name: "Jethi Suthar", score: "97.27 PR", detail: "Outstanding" },
-                      { name: "Dhairya Darji", score: "97.14 PR", detail: "Outstanding" }
-                    ].map((std, i) => (
-                      <div key={i} className="flex justify-between items-center border-b border-white/5 pb-2 last:border-0 last:pb-0">
-                        <div>
-                          <div className="font-extrabold text-xs text-white">{std.name}</div>
-                          <div className="text-[9px] text-zinc-400 font-semibold tracking-wider uppercase mt-0.5">{std.detail}</div>
-                        </div>
-                        <span className="font-black text-xs text-[#DC2626] bg-red-500/10 px-2.5 py-1 rounded-lg border border-red-500/20">{std.score}</span>
-                      </div>
-                    ))}
-                  </div>
+                  <span className="text-[10.5px] font-black uppercase tracking-wider bg-white/5 border border-white/10 text-slate-300 px-3 py-1 rounded-full">
+                    {card.tag}
+                  </span>
                 </div>
-              </div>
-            ) : activeHero.cardImage ? (
-              <div className="lg:col-span-5 hidden lg:flex justify-center animate-fadeIn">
-                <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-4 max-w-xs shadow-2xl hover:scale-105 transition-transform duration-300">
-                  <img 
-                    src={getEmbedImageUrl(activeHero.cardImage)} 
-                    alt="Hero Card" 
-                    className="rounded-2xl w-full h-auto object-cover select-none pointer-events-none"
-                  />
-                </div>
-              </div>
-            ) : null}
-
-          </div>
-        </div>
-      </section>
-
-      {/* 2. ABOUT & STATS COUNTER BAND */}
-      <section className="py-24 bg-white bg-grid-mesh relative overflow-hidden">
-        {/* Decorative Ambient Shapes */}
-        <div className="absolute top-10 -right-20 w-96 h-96 bg-blue-600/5 rounded-full blur-3xl pointer-events-none animate-ambient-drift" />
-        <div className="absolute bottom-10 -left-20 w-80 h-80 bg-red-500/5 rounded-full blur-3xl pointer-events-none animate-ambient-drift-reverse" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center mb-16">
-            <div className="lg:col-span-7">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="h-[2px] w-8 bg-[#DC2626]" />
-                <span className="text-[#DC2626] font-extrabold tracking-widest text-xs uppercase">About Noble Education</span>
-              </div>
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-[#1C2E60] mb-6">
-                Shaping Careers & Building Strong Foundations
-              </h2>
-              <p className="text-[#5A6472] text-sm font-light leading-relaxed mb-6">
-                For over 19 years, Noble Education has guided students across school boards, JEE/NEET competitive exams, and GTU engineering semesters in Vadodara. We bridge the gap between classroom theory and real-world academic performance.
-              </p>
-              <button
-                onClick={() => navigate('/about')}
-                className="bg-[#1C2E60] hover:bg-[#142247] text-white font-bold px-6 py-3 rounded-xl text-xs transition-colors shadow-md"
-              >
-                Know More About Us
-              </button>
-            </div>
-            
-            <div className="lg:col-span-5 grid grid-cols-2 gap-4">
-              {stats.map((stat, idx) => (
-                <div key={idx} className="p-6 bg-[#F4F6F9] border border-slate-200 rounded-2xl text-center shadow-sm hover:border-[#DC2626]/20 transition-all hover:shadow-md">
-                  <div className="text-3xl font-black text-[#DC2626] mb-1">{stat.value}</div>
-                  <div className="font-extrabold text-[#1C2E60] text-xs uppercase tracking-wider mb-1">{stat.label}</div>
-                  <p className="text-[10px] text-zinc-400 font-light leading-relaxed">{stat.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 2.5 CAMPUS INFRASTRUCTURE SHOWCASE - BIG & SMALL BENTO GRID */}
-      <section className="py-20 bg-white border-t border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <span className="text-[#DC2626] font-extrabold tracking-widest text-xs uppercase bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20">
-              Campus Infrastructure
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-black text-[#1C2E60] mt-3">
-              Modern Campus & Study Spaces
-            </h2>
-            <p className="text-zinc-500 text-xs sm:text-sm font-light mt-2">
-              Explore our spacious classrooms, interactive digital boards, and 1-on-1 personal counseling desks on Waghodia Road.
-            </p>
-          </div>
-
-          {(() => {
-            const list = pageImages.homeInfrastructure && pageImages.homeInfrastructure.length > 0
-              ? pageImages.homeInfrastructure
-              : (pageImages.about && pageImages.about.length > 0 ? pageImages.about : [
-                { title: "Institute Campus Premises", category: "Premises", image: "/images/hero-classroom.png", desc: "State-of-the-art coaching facilities on Waghodia Road" },
-                { title: "Dedicated Study & Doubt Desks", category: "Faculty", image: "/images/hero-counseling.png", desc: "1-on-1 personal guidance and doubt resolution" },
-                { title: "Interactive Board Setup", category: "Technology", image: "/images/bg-gallery-hero.png", desc: "Modern visual learning tools for maximum retention" }
-              ]);
-
-            const p1 = list[0] || {};
-            const p2 = list[1] || {};
-            const p3 = list[2] || {};
-
-            return (
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                {/* BIG Feature Photo Card */}
-                <div className="md:col-span-7 relative h-80 sm:h-[400px] rounded-3xl overflow-hidden border border-slate-200 shadow-md hover:shadow-2xl transition-all duration-500 group cursor-pointer" onClick={() => navigate('/about')}>
-                  <img
-                    src={getEmbedImageUrl(p1.image || p1.url)}
-                    alt={p1.title || 'Main Campus'}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                    onError={(e) => { e.target.onerror = null; e.target.src = '/images/hero-classroom.png'; }}
-                  />
-                  {p1.category && (
-                    <span className="absolute top-4 left-4 text-xs font-black text-white bg-[#1C2E60]/95 backdrop-blur-md px-3.5 py-1.5 rounded-full uppercase tracking-wider shadow-lg">
-                      ★ {p1.category}
-                    </span>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0A1E3D]/95 via-[#0A1E3D]/30 to-transparent flex flex-col justify-end p-6 sm:p-8">
-                    <span className="text-red-400 font-extrabold text-[10px] uppercase tracking-widest mb-1">Featured Campus Highlight</span>
-                    <h3 className="text-xl sm:text-2xl font-black text-white leading-tight mb-2">{p1.title}</h3>
-                    {p1.desc && <p className="text-zinc-300 text-xs sm:text-sm font-light leading-relaxed max-w-lg">{p1.desc}</p>}
-                  </div>
-                </div>
-
-                {/* SMALL Accent Stacked Photo Cards */}
-                <div className="md:col-span-5 flex flex-col gap-6">
-                  {/* SMALL Photo 2 */}
-                  <div className="relative h-44 sm:h-[188px] rounded-3xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-500 group cursor-pointer" onClick={() => navigate('/about')}>
-                    <img
-                      src={getEmbedImageUrl(p2.image || p2.url)}
-                      alt={p2.title || 'Faculty Desk'}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      onError={(e) => { e.target.onerror = null; e.target.src = '/images/hero-counseling.png'; }}
-                    />
-                    {p2.category && (
-                      <span className="absolute top-3 left-3 text-[9px] font-extrabold text-white bg-[#1C2E60]/90 backdrop-blur-md px-2.5 py-1 rounded-full uppercase tracking-wider shadow">
-                        {p2.category}
-                      </span>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent flex flex-col justify-end p-4">
-                      <h4 className="text-white font-extrabold text-sm leading-snug">{p2.title}</h4>
-                      {p2.desc && <p className="text-zinc-300 text-[11px] font-light truncate">{p2.desc}</p>}
-                    </div>
-                  </div>
-
-                  {/* SMALL Photo 3 */}
-                  <div className="relative h-44 sm:h-[188px] rounded-3xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-500 group cursor-pointer" onClick={() => navigate('/about')}>
-                    <img
-                      src={getEmbedImageUrl(p3.image || p3.url)}
-                      alt={p3.title || 'Interactive Setup'}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      onError={(e) => { e.target.onerror = null; e.target.src = '/images/bg-gallery-hero.png'; }}
-                    />
-                    {p3.category && (
-                      <span className="absolute top-3 left-3 text-[9px] font-extrabold text-white bg-[#1C2E60]/90 backdrop-blur-md px-2.5 py-1 rounded-full uppercase tracking-wider shadow">
-                        {p3.category}
-                      </span>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent flex flex-col justify-end p-4">
-                      <h4 className="text-white font-extrabold text-sm leading-snug">{p3.title}</h4>
-                      {p3.desc && <p className="text-zinc-300 text-[11px] font-light truncate">{p3.desc}</p>}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
-        </div>
-      </section>
-
-      {/* 3. PAIN POINTS / CHALLENGES BLOCK */}
-      <section className="py-24 bg-[#F4F6F9] bg-dots-pattern border-t border-slate-200 relative overflow-hidden">
-        {/* Decorative Ambient Shapes */}
-        <div className="absolute top-10 left-10 w-72 h-72 bg-blue-500/5 rounded-full blur-3xl pointer-events-none animate-ambient-drift" />
-        <div className="absolute bottom-10 right-10 w-96 h-96 bg-red-500/5 rounded-full blur-3xl pointer-events-none animate-ambient-drift-reverse" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <span className="text-[#DC2626] font-bold tracking-widest text-xs uppercase">Student & Parent Support</span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-[#1C2E60] mt-2 mb-6">
-              Challenges We Help You Overcome
-            </h2>
-            <p className="text-[#5A6472] font-light">
-              We understand the concerns parents face. Here is how our structured coaching bridges the gaps.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="p-8 bg-white border border-slate-200 rounded-3xl shadow-sm hover-glow-red flex flex-col justify-between">
-              <div>
-                <span className="text-[#DC2626] font-bold text-[10px] uppercase tracking-wider px-2.5 py-1 bg-red-50 border border-red-100 rounded-full w-fit block mb-4">
-                  The Challenge
-                </span>
-                <h4 className="text-[#1C2E60] font-extrabold text-base mb-4">"My child studies but marks are not improving"</h4>
-                <p className="text-[#5A6472] text-xs font-light leading-relaxed mb-6">Student memorizes formulas without understanding core physical concepts.</p>
-              </div>
-              <div className="border-t border-slate-100 pt-4">
-                <span className="text-green-600 font-bold text-[10px] uppercase tracking-wider px-2.5 py-1 bg-green-50 border border-green-100 rounded-full w-fit block mb-2">
-                  Our Solution
-                </span>
-                <p className="text-[#1C2E60] text-xs font-semibold">Concept clarity coaching, regular writing practice, and mock exam cycles.</p>
-              </div>
-            </div>
-
-            <div className="p-8 bg-white border border-slate-200 rounded-3xl shadow-sm hover-glow-red flex flex-col justify-between">
-              <div>
-                <span className="text-[#DC2626] font-bold text-[10px] uppercase tracking-wider px-2.5 py-1 bg-red-50 border border-red-100 rounded-full w-fit block mb-4">
-                  The Challenge
-                </span>
-                <h4 className="text-[#1C2E60] font-extrabold text-base mb-4">"Student is confused after 10th standard"</h4>
-                <p className="text-[#5A6472] text-xs font-light leading-relaxed mb-6">Unsure whether to select 11th Science, Diploma Engineering, or competitive targets.</p>
-              </div>
-              <div className="border-t border-slate-100 pt-4">
-                <span className="text-green-600 font-bold text-[10px] uppercase tracking-wider px-2.5 py-1 bg-green-50 border border-green-100 rounded-full w-fit block mb-2">
-                  Our Solution
-                </span>
-                <p className="text-[#1C2E60] text-xs font-semibold">Free expert counseling sessions to match interest areas to careers.</p>
-              </div>
-            </div>
-
-            <div className="p-8 bg-white border border-slate-200 rounded-3xl shadow-sm hover-glow-red flex flex-col justify-between">
-              <div>
-                <span className="text-[#DC2626] font-bold text-[10px] uppercase tracking-wider px-2.5 py-1 bg-red-50 border border-red-100 rounded-full w-fit block mb-4">
-                  The Challenge
-                </span>
-                <h4 className="text-[#1C2E60] font-extrabold text-base mb-4">"School learning & competitive prep feel disconnected"</h4>
-                <p className="text-[#5A6472] text-xs font-light leading-relaxed mb-6">Hard to balance daily school homework with JEE/NEET entrance syllabus formats.</p>
-              </div>
-              <div className="border-t border-slate-100 pt-4">
-                <span className="text-green-600 font-bold text-[10px] uppercase tracking-wider px-2.5 py-1 bg-green-50 border border-green-100 rounded-full w-fit block mb-2">
-                  Our Solution
-                </span>
-                <p className="text-[#1C2E60] text-xs font-semibold">Integrated programs that sync board syllabus topics with MCQ patterns.</p>
-              </div>
-            </div>
-
-            <div className="p-8 bg-white border border-slate-200 rounded-3xl shadow-sm hover-glow-red flex flex-col justify-between">
-              <div>
-                <span className="text-[#DC2626] font-bold text-[10px] uppercase tracking-wider px-2.5 py-1 bg-red-50 border border-red-100 rounded-full w-fit block mb-4">
-                  The Challenge
-                </span>
-                <h4 className="text-[#1C2E60] font-extrabold text-base mb-4">"Student has doubts but won't ask in class"</h4>
-                <p className="text-[#5A6472] text-xs font-light leading-relaxed mb-6">Shyness or peer pressure prevents students from raising hands in crowded halls.</p>
-              </div>
-              <div className="border-t border-slate-100 pt-4">
-                <span className="text-green-600 font-bold text-[10px] uppercase tracking-wider px-2.5 py-1 bg-green-50 border border-green-100 rounded-full w-fit block mb-2">
-                  Our Solution
-                </span>
-                <p className="text-[#1C2E60] text-xs font-semibold">1-on-1 friendly doubt solving hours after coaching classes.</p>
-              </div>
-            </div>
-
-            <div className="p-8 bg-white border border-slate-200 rounded-3xl shadow-sm hover-glow-red flex flex-col justify-between lg:col-span-2">
-              <div>
-                <span className="text-[#DC2626] font-bold text-[10px] uppercase tracking-wider px-2.5 py-1 bg-red-50 border border-red-100 rounded-full w-fit block mb-4">
-                  The Challenge
-                </span>
-                <h4 className="text-[#1C2E60] font-extrabold text-base mb-4">"Parents are lost in the online admission process"</h4>
-                <p className="text-[#5A6472] text-xs font-light leading-relaxed mb-6">Struggling with ACPC/ACPDC online forms registration, option selections, and checklists.</p>
-              </div>
-              <div className="border-t border-slate-100 pt-4">
-                <span className="text-green-600 font-bold text-[10px] uppercase tracking-wider px-2.5 py-1 bg-green-50 border border-green-100 rounded-full w-fit block mb-2">
-                  Our Solution
-                </span>
-                <p className="text-[#1C2E60] text-xs font-semibold">Full guided option filling sessions verified by our expert counselors.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 3.5 FEATURED TOP RANKER STUDENT RESULTS SHOWCASE SECTION (PATTERNED BENTO GRID DESIGN) */}
-      <section className="py-24 bg-[#F8FAFC] bg-dots-pattern relative overflow-hidden border-y border-slate-200/90">
-        {/* Decorative pattern mesh background layers */}
-        <div className="absolute inset-0 bg-grid-mesh opacity-60 pointer-events-none" />
-        <div className="absolute top-1/4 -left-20 w-[450px] h-[450px] bg-blue-600/10 rounded-full blur-3xl pointer-events-none animate-ambient-drift" />
-        <div className="absolute bottom-10 -right-20 w-[450px] h-[450px] bg-red-600/10 rounded-full blur-3xl pointer-events-none animate-ambient-drift-reverse" />
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <div className="inline-flex items-center gap-2 bg-red-50 border border-red-200/80 px-4 py-1.5 rounded-full text-[#DC2626] font-black text-xs uppercase tracking-widest shadow-xs mb-3">
-              <span className="animate-bounce">🏆</span>
-              <span>ACADEMIC HALL OF FAME</span>
-            </div>
-            <h2 className="text-3xl sm:text-5xl font-black text-[#1C2E60] tracking-tight">
-              Our Top Rankers & High Performers
-            </h2>
-            <p className="text-[#5A6472] font-light text-sm sm:text-base leading-relaxed mt-3">
-              Celebrating top percentile ranks and board toppers across our partner schools in Vadodara.
-            </p>
-          </div>
-
-          {/* Dynamic Auto-Arranging Student Result Cards Grid (100% PERFECT ALIGNMENT & AUTO SPACING) */}
-          {(() => {
-            const listToDisplay = (results && results.length > 0 ? results.slice(0, 4) : [
-              { name: "Shital Kumavat", score: "99.60 PR", exam: "SSC BOARD 2025", branch: "10th Standard Topper", school: "Royal School, Vadodara", image: "/images/shital-result.png", status: "A1-Grade Topper" },
-              { name: "Prachi Parmar", score: "99.22 PR", exam: "SSC BOARD 2025", branch: "10th Standard Topper", school: "Raghukul Vidyalay, Vadodara", image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80", status: "A1-Grade Topper" },
-              { name: "Patel Harsh", score: "99.4 PR", exam: "12th Science Board", branch: "A-Group", school: "Raghukul Vidyalay, Vadodara", image: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=500&auto=format&fit=crop&q=80", status: "Admitted in LD College" },
-              { name: "Shah Miti", score: "10.0 SPI", exam: "DDCET 2025", branch: "Diploma Engineering", school: "New Heaven Vidyalaya, Vadodara", image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&auto=format&fit=crop&q=80", status: "Perfect 10 SPI" }
-            ]);
-
-            const rCount = listToDisplay.length;
-            const rGridClass = rCount === 1 
-              ? 'grid-cols-1 max-w-md mx-auto' 
-              : rCount === 2 
-              ? 'grid-cols-1 sm:grid-cols-2 max-w-3xl mx-auto' 
-              : rCount === 3 
-              ? 'grid-cols-1 md:grid-cols-3 max-w-5xl mx-auto' 
-              : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4 max-w-7xl mx-auto';
-
-            return (
-              <div className={`grid ${rGridClass} gap-7 mb-14 items-stretch`}>
-                {listToDisplay.map((item, idx) => {
-              const fallbackPhotos = [
-                '/images/shital-result.png',
-                'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80',
-                'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=500&auto=format&fit=crop&q=80',
-                'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&auto=format&fit=crop&q=80'
-              ];
-              
-              const rawImg = item.image || '';
-              const isInvalidImg = !rawImg || rawImg.includes('student_') || rawImg.trim() === '';
-              const studentPhoto = !isInvalidImg ? getEmbedImageUrl(rawImg) : fallbackPhotos[idx % fallbackPhotos.length];
-
-              const isVid = item.mediaType === 'video' || !!item.videoUrl || isVideoMedia(item);
-              const isTopper = idx === 0;
-              const rankBadge = idx === 0 ? "👑 #1 TOPPER" : idx === 1 ? "🥈 2ND RANK" : idx === 2 ? "🥉 3RD RANK" : "⭐ TOP RANK";
-              const examLabel = (item.exam || 'BOARD 2025').replace('BOARD', '').trim();
-
-              return (
-                <div 
-                  key={idx}
-                  onClick={() => {
-                    if (isVid) setActiveVideoModal(item);
-                    else navigate('/results');
-                  }}
-                  className={`bg-white rounded-[28px] overflow-hidden transition-all duration-300 flex flex-col justify-between h-[530px] group hover:-translate-y-2 cursor-pointer ${
-                    isTopper 
-                      ? 'border-2 border-[#DC2626] shadow-2xl shadow-red-900/15 ring-4 ring-red-500/10' 
-                      : 'border border-slate-200/90 shadow-lg hover:shadow-xl hover:border-[#DC2626]/40'
-                  }`}
-                >
-                  {/* 1. CLEAN SINGLE-LINE HEADER BAR */}
-                  <div className={`px-4 py-2.5 h-11 flex-shrink-0 flex items-center justify-between border-b gap-2 ${
-                    isTopper ? 'bg-[#DC2626] text-white border-red-700' : 'bg-[#1C2E60] text-white border-blue-900'
-                  }`}>
-                    <span className="text-xs font-black uppercase tracking-wider whitespace-nowrap">
-                      {rankBadge}
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      {isVid && (
-                        <span className="text-[9px] font-black text-white bg-red-600 px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shadow">
-                          <FiVideo size={9} /> Video
-                        </span>
-                      )}
-                      <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md uppercase tracking-wider whitespace-nowrap truncate max-w-[110px]">
-                        {examLabel}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* 2. 100% CRISP UNTOUCHED STUDENT PHOTO */}
-                  <div className="relative h-60 w-full flex-shrink-0 overflow-hidden bg-slate-900">
-                    <img 
-                      src={studentPhoto} 
-                      alt={item.name} 
-                      className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
-                      onError={(e) => { e.target.src = fallbackPhotos[idx % fallbackPhotos.length]; }}
-                    />
-                    {isVid && (
-                      <div className="absolute inset-0 bg-slate-950/40 group-hover:bg-slate-950/20 transition-all flex items-center justify-center">
-                        <div className="w-12 h-12 rounded-full bg-red-600 text-white flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
-                          <FiPlay className="text-xl ml-0.5" />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* 3. Card Details Body */}
-                  <div className="p-5 flex-1 flex flex-col justify-between">
-                    <div className="space-y-2">
-                      {/* School Name Tag Slot */}
-                      <div className="h-6 flex items-center">
-                        <span className="inline-block text-[10px] font-black text-[#1C2E60] bg-blue-50/90 px-3 py-1 rounded-lg border border-blue-100/90 truncate max-w-full">
-                          🏫 {item.school || 'Vadodara Partner School'}
-                        </span>
-                      </div>
-
-                      {/* Student Name Slot */}
-                      <div className="h-7 flex items-center">
-                        <h3 className="text-lg font-black text-[#1C2E60] group-hover:text-[#DC2626] transition-colors leading-tight truncate w-full">
-                          {item.name}
-                        </h3>
-                      </div>
-
-                      {/* Highlighted Score Performance Box Slot */}
-                      <div className={`p-3 rounded-2xl h-18 flex flex-col items-center justify-center text-center shadow-xs transition-all ${
-                        isTopper 
-                          ? 'bg-gradient-to-r from-[#DC2626] to-[#1C2E60] text-white shadow-md' 
-                          : 'bg-gradient-to-br from-red-50 via-white to-blue-50 border border-red-100/80 text-[#1C2E60]'
-                      }`}>
-                        <span className={`text-[9px] font-black tracking-widest uppercase ${isTopper ? 'text-red-200' : 'text-[#DC2626]'}`}>
-                          ★ RANKER PERFORMANCE
-                        </span>
-                        <div className={`text-2xl sm:text-3xl font-black tracking-tight mt-0.5 ${isTopper ? 'text-white' : 'text-[#1C2E60]'}`}>
-                          {item.score}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 4. Card Footer Status Badge Slot */}
-                  <div className="px-5 pb-5 pt-1 flex-shrink-0">
-                    <span className={`text-[10px] font-black px-3.5 py-2 rounded-xl border flex items-center justify-center gap-1.5 uppercase tracking-wider text-center ${
-                      isTopper 
-                        ? 'bg-red-50 text-[#DC2626] border-red-200 font-extrabold' 
-                        : 'bg-slate-50 text-[#1C2E60] border-slate-200/80'
-                    }`}>
-                      <FiAward className="text-[#DC2626] text-xs" /> {item.status || 'Top Board Topper'}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        );
-      })()}
-
-          {/* Bottom Action Button */}
-          <div className="text-center">
-            <button
-              onClick={() => navigate('/results')}
-              className="inline-flex items-center gap-2.5 bg-[#DC2626] hover:bg-red-700 text-white font-black px-9 py-4 rounded-2xl text-xs sm:text-sm uppercase tracking-wider shadow-xl shadow-red-500/20 hover:scale-105 transition-all duration-300"
-            >
-              <span>View All Student Results</span>
-              <FiArrowRight className="text-lg" />
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* 3.8 INTEGRATED PARTNER SCHOOLS SHOWCASE */}
-      <section className="py-24 bg-gradient-to-b from-[#F8FAFC] to-white border-t border-slate-200 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200/80 px-4 py-1.5 rounded-full text-[#1C2E60] font-black text-xs uppercase tracking-widest shadow-xs mb-3">
-              <span>🏫</span>
-              <span>CAMPUS PARTNERSHIPS</span>
-            </div>
-            <h2 className="text-3xl sm:text-5xl font-black text-[#1C2E60] tracking-tight">
-              Our Integrated Partner Schools
-            </h2>
-            <p className="text-[#5A6472] font-light text-sm sm:text-base leading-relaxed mt-3 max-w-2xl mx-auto">
-              Noble Education delivers seamless concept coaching, board mastery, and entrance exam preparation directly inside premier partner school campuses in Vadodara.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {partnerSchools.map((sch, sIdx) => {
-              const isVid = sch.mediaType === 'video' || !!sch.videoUrl || isVideoMedia(sch);
-              const schImg = (sch.image || sch.videoUrl) ? getEmbedImageUrl(sch.image || sch.videoUrl) : '/images/bg-about-hero.png';
-              const isEnglish = (sch.medium || '').toLowerCase().includes('english');
-              return (
-                <div
-                  key={sch.id || sIdx}
-                  className="bg-white border-2 border-slate-200/90 rounded-[32px] overflow-hidden shadow-lg hover:shadow-2xl hover:border-[#DC2626]/40 transition-all duration-300 flex flex-col justify-between group"
-                >
-                  <div
-                    onClick={() => {
-                      if (isVid) setActiveVideoModal(sch);
-                      else navigate(`/school?name=${encodeURIComponent(sch.name)}`);
-                    }}
-                    className="relative h-52 w-full overflow-hidden bg-slate-900 cursor-pointer"
-                  >
-                    <img
-                      src={schImg}
-                      alt={sch.name}
-                      className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500"
-                      onError={(e) => { e.target.src = '/images/bg-about-hero.png'; }}
-                    />
-                    {isVid && (
-                      <div className="absolute inset-0 bg-slate-950/40 group-hover:bg-slate-950/20 transition-all flex items-center justify-center z-10">
-                        <div className="w-12 h-12 rounded-full bg-red-600 text-white flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
-                          <FiPlay className="text-xl ml-0.5" />
-                        </div>
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
-                    <span className={`absolute top-4 left-4 text-xs font-black text-white px-4 py-1.5 rounded-full uppercase tracking-wider shadow-lg border border-white/20 backdrop-blur-md z-10 ${
-                      isEnglish ? 'bg-[#1C2E60]' : 'bg-[#DC2626]'
-                    }`}>
-                      {sch.medium || 'Partner School'}
-                    </span>
-                    {isVid && (
-                      <span className="absolute top-4 right-4 text-xs font-black text-white bg-red-600 px-3 py-1 rounded-full uppercase tracking-wider shadow-lg flex items-center gap-1 z-10">
-                        <FiVideo size={11} /> Video
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
-                    <div>
-                      <h3
-                        onClick={() => navigate(`/school?name=${encodeURIComponent(sch.name)}`)}
-                        className="text-xl font-black text-[#1C2E60] group-hover:text-[#DC2626] transition-colors leading-tight cursor-pointer"
-                      >
-                        {sch.name}
-                      </h3>
-                      <div className="mt-2.5 bg-blue-50/90 border border-blue-100/90 px-3.5 py-2 rounded-xl">
-                        <span className="text-[9px] font-black text-[#DC2626] uppercase tracking-widest block">
-                          🎓 STANDARDS COVERED
-                        </span>
-                        <p className="text-xs font-extrabold text-[#1C2E60] truncate mt-0.5">
-                          {sch.standards || 'Std 8th to 12th Science'}
-                        </p>
-                      </div>
-                      <p className="text-slate-500 text-xs font-light leading-relaxed mt-3 line-clamp-2">
-                        {sch.description || 'Integrated school coaching with syllabus synchronization and daily doubt counters.'}
-                      </p>
-                      {sch.address && (
-                        <p className="text-[11px] font-medium text-slate-400 mt-2 flex items-center gap-1">
-                          <span>📍</span>
-                          <span className="truncate">{sch.address}</span>
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="pt-2 flex flex-col gap-2.5 border-t border-slate-100">
-                      <button
-                        onClick={() => navigate(`/school?name=${encodeURIComponent(sch.name)}`)}
-                        className="w-full bg-[#1C2E60] hover:bg-[#DC2626] text-white font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
-                      >
-                        <span>Explore Campus & Results</span>
-                        <FiArrowRight />
-                      </button>
-                      <div className="flex gap-2">
-                        {sch.mapUrl && (
-                          <a
-                            href={sch.mapUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[#1C2E60] text-[11px] font-bold py-2 rounded-xl text-center transition-colors truncate"
-                          >
-                            📍 Open Maps
-                          </a>
-                        )}
-                        {sch.contact && (
-                          <a
-                            href={`tel:${sch.contact.replace(/\s+/g, '')}`}
-                            className="flex-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-[11px] font-bold py-2 rounded-xl text-center transition-colors truncate"
-                          >
-                            📞 Call School
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="text-center mt-12">
-            <button
-              onClick={() => navigate('/schools')}
-              className="inline-flex items-center gap-2 border-2 border-[#1C2E60] hover:bg-[#1C2E60] text-[#1C2E60] hover:text-white font-black px-8 py-3.5 rounded-2xl text-xs uppercase tracking-wider transition-all duration-300 cursor-pointer"
-            >
-              <span>View All Partner School Campuses</span>
-              <FiArrowRight />
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* 4. COURSES TABBED VIEW */}
-      <section className="py-24 bg-white bg-grid-mesh border-t border-slate-200 relative overflow-hidden">
-        {/* Decorative Ambient Shapes */}
-        <div className="absolute -top-20 left-1/3 w-80 h-80 bg-red-500/5 rounded-full blur-3xl pointer-events-none animate-ambient-drift" />
-        <div className="absolute -bottom-20 right-1/4 w-96 h-96 bg-blue-600/5 rounded-full blur-3xl pointer-events-none animate-ambient-drift-reverse" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <span className="text-[#DC2626] font-bold tracking-widest text-xs uppercase">Our Curriculums</span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-[#1C2E60] mt-2 mb-6">Filter Courses By Stream</h2>
-            <p className="text-[#5A6472] font-light">Explore school, science, competitive entrances, and university engineering classes.</p>
-          </div>
-
-          {/* Filters */}
-          <div className="flex flex-wrap justify-center gap-2.5 mb-12">
-            {courseCategories.map((cat, idx) => {
-              const isActive = activeCourseCategory.toLowerCase() === cat.toLowerCase();
-              return (
-                <button
-                  key={idx}
-                  onClick={() => setActiveCourseCategory(cat)}
-                  className={`px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all border ${
-                    isActive
-                      ? 'bg-[#1C2E60] text-white border-[#1C2E60] shadow-md scale-105'
-                      : 'bg-[#F4F6F9] text-zinc-500 border-slate-200 hover:text-[#1C2E60] hover:border-slate-300'
-                  }`}
-                >
-                  {formatHomeCatLabel(cat)}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            {filteredCourses.map((course, cIdx) => {
-              const isVid = course.mediaType === 'video' || !!course.videoUrl || isVideoMedia(course);
-              return (
-                <div 
-                  key={course.id || cIdx}
-                  onClick={() => {
-                    if (isVid) setActiveVideoModal(course);
-                    else navigate(`/courses#${course.id || ''}`);
-                  }}
-                  className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-[#DC2626]/30 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between overflow-hidden group"
-                >
-                  <div>
-                    {(course.image || course.videoUrl) && (
-                      <div className="h-32 -mx-6 -mt-6 mb-4 overflow-hidden relative bg-slate-900">
-                        <img
-                          src={getEmbedImageUrl(course.image || course.videoUrl)}
-                          alt={course.name || course.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                        />
-                        {isVid && (
-                          <div className="absolute inset-0 bg-slate-950/40 group-hover:bg-slate-950/20 transition-all flex items-center justify-center">
-                            <div className="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                              <FiPlay className="text-lg ml-0.5" />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    <div className="flex items-center justify-between gap-1 mb-3">
-                      <span className="text-[9px] font-bold text-[#1C2E60] bg-blue-50 px-2.5 py-1 rounded-full uppercase tracking-widest block w-fit">
-                        {formatHomeCatLabel(course.category)}
-                      </span>
-                      {isVid && (
-                        <span className="text-[9px] font-black text-white bg-red-600 px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shadow">
-                          <FiVideo size={9} /> Video
-                        </span>
-                      )}
-                    </div>
-                    <h3 className="text-base font-extrabold text-[#1C2E60] mb-2">{course.name || course.title}</h3>
-                    <p className="text-zinc-400 text-xs font-light leading-relaxed line-clamp-3 mb-4">{course.description || course.details}</p>
-                  </div>
-                  <div className="flex justify-between items-center pt-3 border-t border-slate-100">
-                    <span className="text-[10px] text-[#1C2E60] font-bold uppercase tracking-wider">{isVid ? 'Watch Preview' : 'Explore Details'}</span>
-                    <FiTrendingUp className="text-[#DC2626] text-sm" />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* 4.5 LEARNING LABS SHOWCASE - BIG & SMALL BENTO MASONRY */}
-      <section className="py-20 bg-[#EEF1F5] border-t border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <span className="text-[#DC2626] font-extrabold tracking-widest text-xs uppercase bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20">
-              Interactive Learning
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-black text-[#1C2E60] mt-3">
-              Stream-Specific Classrooms & Test Halls
-            </h2>
-            <p className="text-zinc-500 text-xs sm:text-sm font-light mt-2">
-              Equipped with smart whiteboards, NEET/JEE mock test desks, and GTU engineering tutorial rooms.
-            </p>
-          </div>
-
-          {(() => {
-            const list = pageImages.homeClassrooms && pageImages.homeClassrooms.length > 0
-              ? pageImages.homeClassrooms
-              : (pageImages.courses && pageImages.courses.length > 0 ? pageImages.courses : [
-                { title: "School Foundation Classroom (8th-10th)", category: "School", image: "/images/hero-classroom.png", desc: "Interactive board coaching for Std 8 to 10" },
-                { title: "11th & 12th Science Theory & Lab Desk", category: "Science", image: "/images/bg-courses-hero.png", desc: "Comprehensive Physics, Chemistry & Biology coaching" },
-                { title: "NEET & JEE Competitive Batch Hall", category: "Competitive", image: "/images/bg-results-hero.png", desc: "Rigorous test series and PYQ practice halls" },
-                { title: "Diploma & Degree Engineering Tutorials", category: "Engineering", image: "/images/hero-engineering.png", desc: "Semester subject coaching & GTU exam guidance" }
-              ]);
-
-            const p1 = list[0] || {};
-            const p2 = list[1] || {};
-            const p3 = list[2] || {};
-            const p4 = list[3] || {};
-
-            return (
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                {/* BIG Main Feature Photo (Left Column) */}
-                <div className="md:col-span-7 relative h-80 sm:h-[410px] rounded-3xl overflow-hidden border border-slate-200 shadow-md hover:shadow-2xl transition-all duration-500 group cursor-pointer" onClick={() => navigate('/courses')}>
-                  <img
-                    src={getEmbedImageUrl(p1.image || p1.url)}
-                    alt={p1.title || 'Foundation Classroom'}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                    onError={(e) => { e.target.onerror = null; e.target.src = '/images/hero-classroom.png'; }}
-                  />
-                  {p1.category && (
-                    <span className="absolute top-4 left-4 text-xs font-black text-white bg-[#1C2E60]/95 backdrop-blur-md px-3.5 py-1.5 rounded-full uppercase tracking-wider shadow-lg z-10">
-                      ★ {p1.category}
-                    </span>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0A1E3D] via-[#0A1E3D]/80 to-transparent flex flex-col justify-end p-6 sm:p-8">
-                    <span className="text-red-400 font-extrabold text-[10px] uppercase tracking-widest mb-1 drop-shadow-sm">Key Learning Hub</span>
-                    <h3 className="text-xl sm:text-2xl font-black text-white leading-tight mb-2 drop-shadow-md">{p1.title}</h3>
-                    {p1.desc && <p className="text-zinc-200 text-xs sm:text-sm font-light leading-relaxed max-w-lg drop-shadow-sm">{p1.desc}</p>}
-                  </div>
-                </div>
-
-                {/* SMALL Stacked Photo Cards (Right Column) */}
-                <div className="md:col-span-5 flex flex-col gap-6">
-                  <div className="relative h-44 sm:h-[193px] rounded-3xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-500 group cursor-pointer" onClick={() => navigate('/courses')}>
-                    <img
-                      src={getEmbedImageUrl(p2.image || p2.url)}
-                      alt={p2.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      onError={(e) => { e.target.onerror = null; e.target.src = '/images/bg-courses-hero.png'; }}
-                    />
-                    {p2.category && (
-                      <span className="absolute top-3 left-3 text-[9px] font-extrabold text-white bg-[#1C2E60]/90 backdrop-blur-md px-2.5 py-1 rounded-full uppercase tracking-wider shadow z-10">
-                        {p2.category}
-                      </span>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0A1E3D] via-[#0A1E3D]/85 to-transparent flex flex-col justify-end p-4">
-                      <h4 className="text-white font-extrabold text-sm leading-snug drop-shadow-md">{p2.title}</h4>
-                      {p2.desc && <p className="text-zinc-200 text-[11px] font-light truncate drop-shadow-sm">{p2.desc}</p>}
-                    </div>
-                  </div>
-
-                  <div className="relative h-44 sm:h-[193px] rounded-3xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-500 group cursor-pointer" onClick={() => navigate('/courses')}>
-                    <img
-                      src={getEmbedImageUrl(p3.image || p3.url)}
-                      alt={p3.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      onError={(e) => { e.target.onerror = null; e.target.src = '/images/bg-results-hero.png'; }}
-                    />
-                    {p3.category && (
-                      <span className="absolute top-3 left-3 text-[9px] font-extrabold text-white bg-[#1C2E60]/90 backdrop-blur-md px-2.5 py-1 rounded-full uppercase tracking-wider shadow z-10">
-                        {p3.category}
-                      </span>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0A1E3D] via-[#0A1E3D]/90 to-transparent flex flex-col justify-end p-4">
-                      <h4 className="text-white font-extrabold text-sm leading-snug drop-shadow-md">{p3.title}</h4>
-                      {p3.desc && <p className="text-zinc-200 text-[11px] font-light truncate drop-shadow-sm">{p3.desc}</p>}
-                    </div>
-                  </div>
-                </div>
-
-                {/* WIDE Full-Span Accent Banner (Bottom Row) */}
-                {p4.title && (
-                  <div className="md:col-span-12 relative h-48 sm:h-56 rounded-3xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-500 group cursor-pointer" onClick={() => navigate('/courses')}>
-                    <img
-                      src={getEmbedImageUrl(p4.image || p4.url)}
-                      alt={p4.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      onError={(e) => { e.target.onerror = null; e.target.src = '/images/hero-engineering.png'; }}
-                    />
-                    {p4.category && (
-                      <span className="absolute top-4 left-4 text-xs font-extrabold text-white bg-[#1C2E60]/90 backdrop-blur-md px-3.5 py-1 rounded-full uppercase tracking-wider shadow z-10">
-                        {p4.category}
-                      </span>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0A1E3D] via-[#0A1E3D]/80 to-transparent flex flex-col justify-end p-6">
-                      <h4 className="text-white font-extrabold text-lg sm:text-xl leading-snug drop-shadow-md">{p4.title}</h4>
-                      {p4.desc && <p className="text-zinc-200 text-xs font-light mt-1 leading-relaxed max-w-xl drop-shadow-sm">{p4.desc}</p>}
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
-        </div>
-      </section>
-
-      {/* 5. WHY CHOOSE NOBLE */}
-      <section className="py-24 bg-[#F4F6F9] bg-dots-pattern border-t border-slate-200 relative overflow-hidden">
-        {/* Decorative Ambient Shapes */}
-        <div className="absolute top-20 right-10 w-80 h-80 bg-blue-600/5 rounded-full blur-3xl pointer-events-none animate-ambient-drift" />
-        <div className="absolute bottom-20 left-10 w-80 h-80 bg-red-500/5 rounded-full blur-3xl pointer-events-none animate-ambient-drift-reverse" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <span className="text-[#DC2626] font-bold tracking-widest text-xs uppercase">Our Core Strengths</span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-[#1C2E60] mt-2 mb-6">Why Choose Noble Education</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feat, idx) => (
-              <div key={idx} className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover-glow-red">
-                <div className="p-3 bg-[#1C2E60]/10 text-[#1C2E60] rounded-xl border border-[#1C2E60]/20 w-fit mb-4 text-xl">
-                  <FiCheckCircle />
-                </div>
-                <h3 className="text-sm font-extrabold text-[#1C2E60] mb-2">{feat.title}</h3>
-                <p className="text-zinc-400 text-xs font-light leading-relaxed">{feat.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 5.5 CAMPUS LIFE HIGHLIGHTS */}
-      <section className="py-24 bg-white border-t border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
-            <div className="max-w-2xl">
-              <span className="text-[#DC2626] font-bold tracking-widest text-xs uppercase block mb-2">Moments & Milestones</span>
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-[#1C2E60] leading-tight">
-                Our Campus Life Highlights
-              </h2>
-              <p className="text-[#5A6472] font-light text-xs sm:text-sm mt-3">
-                Take a look at award ceremonies, student orientation batches, cultural stages, and guidance workshops.
-              </p>
-            </div>
-            <button
-              onClick={() => navigate('/gallery')}
-              className="inline-block bg-[#1C2E60] hover:bg-[#DC2626] text-white font-extrabold py-3 px-6 rounded-xl text-xs transition-colors shadow-md w-fit cursor-pointer"
-            >
-              View Full Gallery ➜
-            </button>
-          </div>
-
-          {(() => {
-            const list = pageImages.homeHighlights && pageImages.homeHighlights.length > 0
-              ? pageImages.homeHighlights
-              : (homePhotos && homePhotos.length > 0 ? homePhotos : [
-                { title: "Class Toppers Celebration", category: "Events", image: "/images/gallery-event-students.jpg", desc: "Annual top rankers award ceremony" },
-                { title: "Student Speech at Podium", category: "Seminars", image: "/images/gallery-event-speech.jpg", desc: "Student orientation & motivational address" },
-                { title: "Memento Stage Felicitation", category: "Events", image: "/images/gallery-event-felicitation.jpg", desc: "Honoring academic excellence on stage" },
-                { title: "Event Entrance Welcome Desk", category: "Campus", image: "/images/gallery-event-welcome.jpg", desc: "Campus entrance greeting desk" }
-              ]);
-
-            const p1 = list[0] || {};
-            const p2 = list[1] || {};
-            const p3 = list[2] || {};
-            const p4 = list[3] || {};
-
-            const isP1Video = isVideoMedia(p1) || p1.mediaType === 'video' || !!p1.videoUrl;
-            const isP2Video = isVideoMedia(p2) || p2.mediaType === 'video' || !!p2.videoUrl;
-            const isP3Video = isVideoMedia(p3) || p3.mediaType === 'video' || !!p3.videoUrl;
-            const isP4Video = isVideoMedia(p4) || p4.mediaType === 'video' || !!p4.videoUrl;
-
-            return (
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                {/* BIG Hero Event Photo */}
-                <div 
-                  className="md:col-span-8 relative h-80 sm:h-[420px] rounded-3xl overflow-hidden border border-slate-200 shadow-md hover:shadow-2xl transition-all duration-500 group cursor-pointer" 
-                  onClick={() => {
-                    if (isP1Video) {
-                      setActiveVideoModal(p1);
-                    } else {
-                      navigate('/gallery');
-                    }
-                  }}
-                >
-                  <img
-                    src={getEmbedImageUrl(p1.image || p1.url)}
-                    alt={p1.title || 'Toppers Event'}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                    onError={(e) => { e.target.onerror = null; e.target.src = '/images/gallery-event-students.jpg'; }}
-                  />
-                  {p1.category && (
-                    <span className="absolute top-4 left-4 text-xs font-black text-white bg-[#1C2E60]/95 backdrop-blur-md px-3.5 py-1.5 rounded-full uppercase tracking-wider shadow-lg">
-                      ★ {p1.category}
-                    </span>
-                  )}
-                  {isP1Video && (
-                    <>
-                      <div className="absolute top-4 right-4 z-10 px-2.5 py-1 rounded-full bg-red-600/90 text-white text-[11px] font-bold flex items-center gap-1.5 shadow-lg backdrop-blur-sm">
-                        <FiVideo className="w-3 h-3" />
-                        <span>Video</span>
-                      </div>
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                        <div className="w-14 h-14 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:bg-red-600 transition-all duration-300">
-                          <FiPlay className="w-6 h-6 ml-0.5 fill-current" />
-                        </div>
-                      </div>
-                    </>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0A1E3D]/95 via-slate-950/30 to-transparent flex flex-col justify-end p-6 sm:p-8">
-                    <span className="text-red-400 font-extrabold text-[10px] uppercase tracking-widest mb-1">Featured Event Milestone</span>
-                    <h3 className="text-xl sm:text-2xl font-black text-white leading-tight mb-1">{p1.title}</h3>
-                    {p1.desc && <p className="text-zinc-300 text-xs sm:text-sm font-light max-w-lg">{p1.desc}</p>}
-                  </div>
-                </div>
-
-                {/* MEDIUM Accent Event Photo */}
-                <div 
-                  className="md:col-span-4 relative h-80 sm:h-[420px] rounded-3xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-500 group cursor-pointer" 
-                  onClick={() => {
-                    if (isP2Video) {
-                      setActiveVideoModal(p2);
-                    } else {
-                      navigate('/gallery');
-                    }
-                  }}
-                >
-                  <img
-                    src={getEmbedImageUrl(p2.image || p2.url)}
-                    alt={p2.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                    onError={(e) => { e.target.onerror = null; e.target.src = '/images/gallery-event-speech.jpg'; }}
-                  />
-                  {p2.category && (
-                    <span className="absolute top-4 left-4 text-xs font-extrabold text-white bg-[#1C2E60]/90 backdrop-blur-md px-3 py-1 rounded-full uppercase tracking-wider shadow">
-                      {p2.category}
-                    </span>
-                  )}
-                  {isP2Video && (
-                    <>
-                      <div className="absolute top-4 right-4 z-10 px-2 py-0.5 rounded-full bg-red-600/90 text-white text-[10px] font-bold flex items-center gap-1 shadow-md">
-                        <FiVideo className="w-2.5 h-2.5" />
-                        <span>Video</span>
-                      </div>
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                        <div className="w-12 h-12 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-xl group-hover:scale-110 group-hover:bg-red-600 transition-all duration-300">
-                          <FiPlay className="w-5 h-5 ml-0.5 fill-current" />
-                        </div>
-                      </div>
-                    </>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0A1E3D]/95 via-slate-950/20 to-transparent flex flex-col justify-end p-6">
-                    <h4 className="text-white font-extrabold text-base leading-snug">{p2.title}</h4>
-                    {p2.desc && <p className="text-zinc-300 text-xs font-light mt-1 truncate">{p2.desc}</p>}
-                  </div>
-                </div>
-
-                {/* SMALL Photo 3 */}
-                {p3.title && (
-                  <div 
-                    className="md:col-span-6 relative h-48 sm:h-60 rounded-3xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-500 group cursor-pointer" 
-                    onClick={() => {
-                      if (isP3Video) {
-                        setActiveVideoModal(p3);
-                      } else {
-                        navigate('/gallery');
-                      }
-                    }}
-                  >
-                    <img
-                      src={getEmbedImageUrl(p3.image || p3.url)}
-                      alt={p3.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      onError={(e) => { e.target.onerror = null; e.target.src = '/images/gallery-event-felicitation.jpg'; }}
-                    />
-                    {p3.category && (
-                      <span className="absolute top-3 left-3 text-[10px] font-extrabold text-white bg-[#1C2E60]/90 backdrop-blur-md px-3 py-1 rounded-full uppercase tracking-wider shadow">
-                        {p3.category}
-                      </span>
-                    )}
-                    {isP3Video && (
-                      <>
-                        <div className="absolute top-3 right-3 z-10 px-2 py-0.5 rounded-full bg-red-600/90 text-white text-[10px] font-bold flex items-center gap-1 shadow-md">
-                          <FiVideo className="w-2.5 h-2.5" />
-                          <span>Video</span>
-                        </div>
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                          <div className="w-10 h-10 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:bg-red-600 transition-all duration-300">
-                            <FiPlay className="w-4 h-4 ml-0.5 fill-current" />
-                          </div>
-                        </div>
-                      </>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent flex flex-col justify-end p-5">
-                      <h4 className="text-white font-extrabold text-base leading-snug">{p3.title}</h4>
-                      {p3.desc && <p className="text-zinc-300 text-xs font-light truncate">{p3.desc}</p>}
-                    </div>
-                  </div>
-                )}
-
-                {/* SMALL Photo 4 */}
-                {p4.title && (
-                  <div 
-                    className="md:col-span-6 relative h-48 sm:h-60 rounded-3xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-500 group cursor-pointer" 
-                    onClick={() => {
-                      if (isP4Video) {
-                        setActiveVideoModal(p4);
-                      } else {
-                        navigate('/gallery');
-                      }
-                    }}
-                  >
-                    <img
-                      src={getEmbedImageUrl(p4.image || p4.url)}
-                      alt={p4.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      onError={(e) => { e.target.onerror = null; e.target.src = '/images/gallery-event-welcome.jpg'; }}
-                    />
-                    {p4.category && (
-                      <span className="absolute top-3 left-3 text-[10px] font-extrabold text-white bg-[#1C2E60]/90 backdrop-blur-md px-3 py-1 rounded-full uppercase tracking-wider shadow">
-                        {p4.category}
-                      </span>
-                    )}
-                    {isP4Video && (
-                      <>
-                        <div className="absolute top-3 right-3 z-10 px-2 py-0.5 rounded-full bg-red-600/90 text-white text-[10px] font-bold flex items-center gap-1 shadow-md">
-                          <FiVideo className="w-2.5 h-2.5" />
-                          <span>Video</span>
-                        </div>
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                          <div className="w-10 h-10 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:bg-red-600 transition-all duration-300">
-                            <FiPlay className="w-4 h-4 ml-0.5 fill-current" />
-                          </div>
-                        </div>
-                      </>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent flex flex-col justify-end p-5">
-                      <h4 className="text-white font-extrabold text-base leading-snug">{p4.title}</h4>
-                      {p4.desc && <p className="text-zinc-300 text-xs font-light truncate">{p4.desc}</p>}
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
-        </div>
-      </section>
-
-      {/* 5.55 ONE BY ONE CENTERED TESTIMONIALS SLIDER (PLACED DIRECTLY UNDER GALLERY) */}
-      <section className="py-20 bg-[#F8FAFC] border-t border-slate-200/90 relative overflow-hidden">
-        {/* Ambient background glows */}
-        <div className="absolute top-1/2 left-0 w-80 h-80 bg-red-500/5 rounded-full blur-3xl pointer-events-none -translate-y-1/2" />
-        <div className="absolute bottom-0 right-0 w-80 h-80 bg-blue-600/5 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          {/* Section Header */}
-          <div className="text-center mb-10">
-            <span className="text-[#DC2626] font-extrabold tracking-widest text-xs uppercase bg-red-500/10 px-4 py-1.5 rounded-full border border-red-500/20 shadow-xs">
-              ★ TESTIMONIALS & REVIEWS
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-black text-[#1C2E60] mt-3">
-              What Parents & Students Say About Noble Education
-            </h2>
-            <p className="text-[#5A6472] font-light text-xs sm:text-sm mt-2 max-w-xl mx-auto">
-              Real feedback from students and parents studying across our Vadodara partner school campuses.
-            </p>
-          </div>
-
-          {/* SINGLE CENTERED REVIEW CARD CONTAINER WITH SIDE ARROWS */}
-          {(() => {
-            const list = testimonials && testimonials.length > 0 ? testimonials : [
-              {
-                name: "Rohan Patel",
-                program: "DDCET Course",
-                stars: 5,
-                quote: "Noble Education provided the exact roadmap I needed for DDCET. The mock test series and engineering syllabus support helped me secure direct second-year degree admission in my dream branch."
-              }
-            ];
-
-            const currentIdx = activeTestimonialIndex % list.length;
-            const currentItem = list[currentIdx] || list[0];
-
-            return (
-              <div 
-                className="max-w-2xl mx-auto relative px-4"
-                onMouseEnter={() => setIsTestimonialHovered(true)}
-                onMouseLeave={() => setIsTestimonialHovered(false)}
-              >
-                {/* Left Navigation Arrow */}
-                {list.length > 1 && (
-                  <button
-                    onClick={prevTestimonial}
-                    className="absolute -left-2 sm:-left-6 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-2xl bg-white border border-slate-200 text-[#1C2E60] flex items-center justify-center hover:bg-[#DC2626] hover:border-red-500 hover:text-white transition-all text-xl shadow-lg cursor-pointer active:scale-95"
-                    aria-label="Previous Review"
-                  >
-                    ‹
-                  </button>
-                )}
-
-                {/* Right Navigation Arrow */}
-                {list.length > 1 && (
-                  <button
-                    onClick={nextTestimonial}
-                    className="absolute -right-2 sm:-right-6 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-2xl bg-white border border-slate-200 text-[#1C2E60] flex items-center justify-center hover:bg-[#DC2626] hover:border-red-500 hover:text-white transition-all text-xl shadow-lg cursor-pointer active:scale-95"
-                    aria-label="Next Review"
-                  >
-                    ›
-                  </button>
-                )}
-
-                {/* SINGLE CENTERED REVIEW CARD */}
-                <div className="overflow-hidden py-2 px-1">
-                  <AnimatePresence mode="wait" custom={testimonialDir}>
-                    <motion.div
-                      key={currentIdx}
-                      custom={testimonialDir}
-                      initial={{ x: testimonialDir > 0 ? 100 : -100, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
-                      exit={{ x: testimonialDir < 0 ? 100 : -100, opacity: 0 }}
-                      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                      className="bg-white border-2 border-slate-200/90 rounded-3xl p-8 sm:p-10 shadow-xl hover:border-red-400/40 transition-all text-center flex flex-col items-center justify-between min-h-[300px]"
-                    >
-                      {/* 1. Gold Stars */}
-                      <div className="flex flex-col items-center gap-2 mb-6">
-                        <div className="flex items-center gap-1.5 text-amber-400 text-lg sm:text-xl">
-                          {'★'.repeat(currentItem.stars || 5)}
-                        </div>
-                      </div>
-
-                      {/* 2. Review Quote */}
-                      <p className="text-[#1C2E60] text-sm sm:text-base font-medium leading-relaxed italic max-w-xl mb-8">
-                        "{currentItem.quote}"
-                      </p>
-
-                      {/* 3. Reviewer Name & Program Tag */}
-                      <div className="flex flex-col items-center gap-1.5 pt-4 border-t border-slate-100 w-full max-w-xs">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#1C2E60] to-[#0A1E3D] text-white font-black flex items-center justify-center text-base shadow-md mb-1">
-                          {(currentItem.name || 'S').charAt(0)}
-                        </div>
-                        <h4 className="font-extrabold text-base text-[#1C2E60]">{currentItem.name}</h4>
-                        <span className="text-xs font-bold text-[#DC2626] bg-red-50 px-3 py-1 rounded-xl border border-red-100">
-                          {currentItem.program || 'Noble Education Student'}
-                        </span>
-                        {Boolean(currentItem.videoUrl || currentItem.mediaType === 'video') && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveVideoModal({
-                                title: `${currentItem.name} - Video Review`,
-                                videoUrl: currentItem.videoUrl,
-                                mediaType: 'video',
-                                aspectRatio: currentItem.aspectRatio || 'auto'
-                              });
-                            }}
-                            className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-extrabold shadow-md transition-all cursor-pointer group"
-                          >
-                            <FiPlay className="w-3.5 h-3.5 fill-current group-hover:scale-110 transition-transform" />
-                            <span>Watch Video Review</span>
-                          </button>
-                        )}
-                      </div>
-                    </motion.div>
-                  </AnimatePresence>
-                </div>
-              </div>
-            );
-          })()}
-        </div>
-      </section>
-
-      {/* 5.6 FEATURED VIDEO LECTURES SLIDER (CLEAN LIGHT THEME) */}
-      {videoLectures.length > 0 && (
-        <section className="py-24 bg-gradient-to-b from-[#F4F7FA] via-white to-[#EEF2F8] bg-grid-mesh border-t border-slate-200 text-[#1C2E60] relative overflow-hidden">
-          {/* Ambient Background Glows */}
-          <div className="absolute top-1/2 left-0 w-96 h-96 bg-red-500/5 rounded-full blur-3xl pointer-events-none -translate-y-1/2" />
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-600/5 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            {/* Header with Navigation Controls */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
-              <div className="max-w-2xl">
-                <span className="text-[#DC2626] font-bold tracking-widest text-xs uppercase block mb-2">▶ YouTube Video Series</span>
-                <h2 className="text-3xl sm:text-4xl font-extrabold text-[#1C2E60] leading-tight">
-                  Featured Video Lectures
-                </h2>
-                <p className="text-[#5A6472] font-light text-xs sm:text-sm mt-2">
-                  Watch concept breakdowns, PYQ paper solving sessions, and exam strategy masterclasses by expert faculties.
+                <p className="text-xs sm:text-sm text-slate-400 leading-relaxed font-normal">
+                  {card.desc}
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
-                {totalVideoPages > 1 && (
-                  <div className="flex items-center gap-2 bg-white p-1.5 rounded-2xl border border-slate-200/90 shadow-sm backdrop-blur-md">
-                    <button
-                      onClick={prevVideo}
-                      className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 text-[#1C2E60] flex items-center justify-center hover:bg-[#DC2626] hover:border-red-500 hover:text-white transition-all text-lg cursor-pointer active:scale-95"
-                      aria-label="Previous Videos"
-                    >
-                      ‹
-                    </button>
-                    <span className="text-xs font-bold text-[#1C2E60] px-2 min-w-[50px] text-center">
-                      {currentVideoPage + 1} / {totalVideoPages}
-                    </span>
-                    <button
-                      onClick={nextVideo}
-                      className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 text-[#1C2E60] flex items-center justify-center hover:bg-[#DC2626] hover:border-red-500 hover:text-white transition-all text-lg cursor-pointer active:scale-95"
-                      aria-label="Next Videos"
-                    >
-                      ›
-                    </button>
-                  </div>
-                )}
+              <div className="pt-2">
                 <a
-                  href="https://www.youtube.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 bg-[#DC2626] hover:bg-red-700 text-white font-extrabold py-2.5 px-5 rounded-2xl text-xs transition-all shadow-md text-decoration-none"
+                  href={card.link}
+                  onClick={(e) => handleNav(e, card.link)}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-[#ED1C24] hover:text-white transition-colors uppercase tracking-wider"
                 >
-                  <span>YouTube Channel</span> ↗
+                  <span>Explore Program</span>
+                  <FiArrowRight />
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 4: THE NOBLE METHOD (4 Steps)
+      ───────────────────────────────────────────────────────────── */}
+      <section className="py-20 bg-[#0B0F19] border-y border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-14 space-y-3 max-w-2xl mx-auto">
+            <span className="text-xs font-black uppercase tracking-widest text-[#ED1C24]">The Learning Framework</span>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
+              Our Approach to Better Learning
+            </h2>
+            <p className="text-slate-300 text-xs sm:text-sm md:text-base leading-relaxed">
+              We believe students perform better when they understand concepts, practise consistently and receive timely academic guidance.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {methodSteps.map((m, idx) => (
+              <div 
+                key={idx}
+                className="bg-white/5 border border-white/10 rounded-2xl p-7 space-y-3 hover:border-[#ED1C24]/50 transition-all relative group"
+              >
+                <span className="text-4xl font-black text-[#ED1C24]/25 group-hover:text-[#ED1C24] transition-colors block">
+                  {m.step}
+                </span>
+                <h3 className="text-xl font-bold text-white tracking-wide">{m.name}</h3>
+                <p className="text-xs sm:text-sm text-slate-400 leading-relaxed font-normal">
+                  {m.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center mt-12">
+            <a
+              href="/about/philosophy"
+              onClick={(e) => handleNav(e, '/about/philosophy')}
+              className="inline-flex items-center gap-2 bg-[#ED1C24] hover:bg-[#C8141B] text-white font-extrabold px-8 py-4 rounded-xl text-xs uppercase tracking-widest transition-all shadow-lg hover:scale-105"
+            >
+              <span>Discover the Noble Learning Method</span>
+              <FiArrowRight />
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 5: INTEGRATED EDUCATION (Signature Horizontal Pathway)
+      ───────────────────────────────────────────────────────────── */}
+      <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-12 space-y-3 max-w-3xl mx-auto">
+          <span className="text-xs font-black uppercase tracking-widest text-[#ED1C24]">Signature Noble Integration</span>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
+            School + Coaching + Foundation + Competitive Preparation
+          </h2>
+          <p className="text-slate-300 text-xs sm:text-sm md:text-base leading-relaxed">
+            Our integrated approach is designed to reduce the gap between school academics and competitive preparation. Students receive structured academic guidance while developing the concepts and problem-solving skills needed for higher studies and entrance examinations.
+          </p>
+        </div>
+
+        {/* Horizontal Pathway Visual */}
+        <div className="bg-[#0F1626] border border-slate-800 rounded-3xl p-6 sm:p-10 shadow-xl overflow-x-auto">
+          <div className="flex items-center justify-between min-w-[760px] gap-2">
+            {pathwayStages.map((stage, idx) => (
+              <React.Fragment key={idx}>
+                <div className="flex flex-col items-center text-center space-y-2 flex-1">
+                  <div className="w-10 h-10 rounded-full bg-[#ED1C24]/10 border border-[#ED1C24]/30 text-[#ED1C24] flex items-center justify-center font-bold text-xs">
+                    0{idx + 1}
+                  </div>
+                  <span className="text-xs font-bold text-white tracking-wide">
+                    {stage}
+                  </span>
+                </div>
+                {idx < pathwayStages.length - 1 && (
+                  <span className="text-slate-600 font-bold text-sm select-none">→</span>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+
+        <div className="text-center mt-10">
+          <a
+            href="/integrated-jee-neet"
+            onClick={(e) => handleNav(e, '/integrated-jee-neet')}
+            className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold px-8 py-3.5 rounded-xl text-xs uppercase tracking-wider transition-all"
+          >
+            <span>Explore Integrated Programs</span>
+            <FiArrowRight />
+          </a>
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 6: PROGRAMS (4 Large Categories per Blueprint)
+      ───────────────────────────────────────────────────────────── */}
+      <section id="programs" className="py-20 bg-[#0B0F19] border-y border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-14 space-y-2">
+            <span className="text-xs font-black uppercase tracking-widest text-[#ED1C24]">Academic Offerings</span>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
+              Choose the Right Program for Your Goal
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            {/* 1. School & Academic */}
+            <div className="bg-[#0F1626] border border-slate-800 rounded-3xl p-8 space-y-5 hover:border-[#ED1C24]/50 transition-all flex flex-col justify-between">
+              <div className="space-y-3">
+                <span className="text-[10px] font-black uppercase tracking-widest text-[#ED1C24] bg-[#ED1C24]/10 border border-[#ED1C24]/20 px-3 py-1 rounded-full">
+                  Foundation to Boards
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-black text-white">SCHOOL & ACADEMIC</h3>
+                <p className="text-sm font-bold text-slate-200">GSEB • CBSE • 8th–12th</p>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Concept-based teaching, board preparation, chapter tests, answer writing workshops, and doubt support.
+                </p>
+              </div>
+              <div className="pt-4">
+                <a
+                  href="/academic/gseb"
+                  onClick={(e) => handleNav(e, '/academic/gseb')}
+                  className="w-full py-3.5 rounded-xl bg-[#ED1C24] hover:bg-[#C8141B] text-white font-extrabold uppercase tracking-wider text-xs text-center block transition-all shadow-md"
+                >
+                  Explore Academic Programs
                 </a>
               </div>
             </div>
 
-            {/* Non-Repeating Video Cards Container */}
-            <div className="relative min-h-[380px] overflow-hidden">
-              <AnimatePresence mode="wait" custom={videoDir}>
-                <motion.div
-                  key={currentVideoPage}
-                  custom={videoDir}
-                  initial={{ x: videoDir > 0 ? 120 : -120, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  exit={{ x: videoDir < 0 ? 120 : -120, opacity: 0 }}
-                  transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            {/* 2. Foundation */}
+            <div className="bg-[#0F1626] border border-slate-800 rounded-3xl p-8 space-y-5 hover:border-[#ED1C24]/50 transition-all flex flex-col justify-between">
+              <div className="space-y-3">
+                <span className="text-[10px] font-black uppercase tracking-widest text-blue-400 bg-blue-500/10 border border-blue-500/20 px-3 py-1 rounded-full">
+                  Classes 8th to 10th
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-black text-white">FOUNDATION</h3>
+                <p className="text-sm font-bold text-slate-200">Strong concepts today. Stronger opportunities tomorrow.</p>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Early preparation that develops logic, mathematical reasoning, scientific curiosity, and competitive thinking.
+                </p>
+              </div>
+              <div className="pt-4">
+                <a
+                  href="/foundation"
+                  onClick={(e) => handleNav(e, '/foundation')}
+                  className="w-full py-3.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold uppercase tracking-wider text-xs text-center block transition-all"
                 >
-                  {videoLectures.slice(currentVideoPage * 3, (currentVideoPage + 1) * 3).map((currentVid, i) => {
-                    const thumb = getEmbedImageUrl(currentVid.youtubeUrl || currentVid.url || '');
+                  Explore Foundation
+                </a>
+              </div>
+            </div>
 
-                    return (
-                      <div
-                        key={currentVid.id || currentVid.title || i}
-                        className="bg-white border border-slate-200/90 hover:border-[#DC2626]/40 rounded-3xl overflow-hidden shadow-lg hover:shadow-xl flex flex-col group transition-all duration-300 hover:-translate-y-1.5"
-                      >
-                        {/* HD Video Thumbnail Box */}
-                        <div className="relative w-full h-48 bg-slate-950 overflow-hidden">
-                          <img
-                            src={thumb}
-                            alt={currentVid.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.src = '/images/jagannath_rath_yatra.jpg';
-                            }}
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent flex items-center justify-center">
-                            <a
-                              href={currentVid.youtubeUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="w-14 h-14 rounded-full bg-[#DC2626] text-white flex items-center justify-center text-xl shadow-xl shadow-red-600/40 group-hover:scale-110 transition-transform duration-300 cursor-pointer text-decoration-none"
-                              aria-label={`Watch ${currentVid.title} on YouTube`}
-                            >
-                              ▶
-                            </a>
-                          </div>
-                          <span className="absolute top-4 left-4 bg-white/95 text-[#1C2E60] text-[11px] font-extrabold px-3 py-1 rounded-xl border border-slate-200 shadow-sm backdrop-blur-md">
-                            {currentVid.category || 'Lecture'}
-                          </span>
-                        </div>
+            {/* 3. JEE & NEET */}
+            <div className="bg-[#0F1626] border border-slate-800 rounded-3xl p-8 space-y-5 hover:border-[#ED1C24]/50 transition-all flex flex-col justify-between">
+              <div className="space-y-3">
+                <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full">
+                  Competitive Entrance
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-black text-white">JEE & NEET</h3>
+                <p className="text-sm font-bold text-slate-200">Focused preparation for competitive examinations.</p>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Rigorous Physics, Chemistry, Maths & Biology coaching with daily problem sets, mock tests, and error analysis.
+                </p>
+              </div>
+              <div className="pt-4 grid grid-cols-2 gap-3">
+                <a
+                  href="/jee"
+                  onClick={(e) => handleNav(e, '/jee')}
+                  className="py-3.5 rounded-xl bg-[#ED1C24] hover:bg-[#C8141B] text-white font-extrabold uppercase tracking-wider text-xs text-center block transition-all shadow-md"
+                >
+                  JEE
+                </a>
+                <a
+                  href="/neet"
+                  onClick={(e) => handleNav(e, '/neet')}
+                  className="py-3.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold uppercase tracking-wider text-xs text-center block transition-all"
+                >
+                  NEET
+                </a>
+              </div>
+            </div>
 
-                        {/* Card Body Info */}
-                        <div className="p-6 flex flex-col flex-grow">
-                          <h3 className="text-base font-bold text-[#1C2E60] mb-2 line-clamp-2 leading-snug group-hover:text-[#DC2626] transition-colors">
-                            {currentVid.title}
-                          </h3>
-                          {currentVid.description && (
-                            <p className="text-[#5A6472] text-xs font-light leading-relaxed mb-6 line-clamp-2">
-                              {currentVid.description}
-                            </p>
-                          )}
+            {/* 4. Engineering */}
+            <div className="bg-[#0F1626] border border-slate-800 rounded-3xl p-8 space-y-5 hover:border-[#ED1C24]/50 transition-all flex flex-col justify-between">
+              <div className="space-y-3">
+                <span className="text-[10px] font-black uppercase tracking-widest text-green-400 bg-green-500/10 border border-green-500/20 px-3 py-1 rounded-full">
+                  Technical Division
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-black text-white">ENGINEERING</h3>
+                <p className="text-sm font-bold text-slate-200">Diploma • Degree • DDCET</p>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  GTU semester subject coaching, backlog clearing, and specialized DDCET lateral entry entrance preparation.
+                </p>
+              </div>
+              <div className="pt-4">
+                <a
+                  href="/engineering"
+                  onClick={(e) => handleNav(e, '/engineering')}
+                  className="w-full py-3.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold uppercase tracking-wider text-xs text-center block transition-all"
+                >
+                  Explore Engineering
+                </a>
+              </div>
+            </div>
 
-                          <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between">
-                            <a
-                              href={currentVid.youtubeUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-2 text-[#DC2626] hover:text-[#1C2E60] font-bold text-xs transition-colors text-decoration-none"
-                            >
-                              <span>Watch Lecture Video</span>
-                              <span>➜</span>
-                            </a>
-                            <span className="text-[10px] text-zinc-400 uppercase tracking-widest font-semibold">YouTube</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </motion.div>
-              </AnimatePresence>
+          </div>
+        </div>
+      </section>
 
-              {/* Slider Dots (Only show if multiple pages exist) */}
-              {totalVideoPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-8">
-                  {Array.from({ length: totalVideoPages }).map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => { setVideoDir(i > currentVideoPage ? 1 : -1); setVideoIndex(i); }}
-                      className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${i === currentVideoPage ? 'w-8 bg-[#DC2626]' : 'w-2.5 bg-slate-300 hover:bg-slate-400'}`}
-                      aria-label={`Go to page ${i + 1}`}
-                    />
-                  ))}
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 7: WHY NOBLE EDUCATION (6 Cards)
+      ───────────────────────────────────────────────────────────── */}
+      <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-14 space-y-2">
+          <span className="text-xs font-black uppercase tracking-widest text-[#ED1C24]">The Noble Advantage</span>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
+            Why Students Choose Noble Education
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {whyCards.map((card, idx) => (
+            <div 
+              key={idx}
+              className="bg-[#0F1626] border border-slate-800 rounded-2xl p-7 space-y-3 hover:border-[#ED1C24]/50 transition-all"
+            >
+              <div className="w-10 h-10 rounded-xl bg-[#ED1C24]/10 text-[#ED1C24] flex items-center justify-center font-bold text-lg">
+                <FiCheckCircle />
+              </div>
+              <h3 className="text-lg font-bold text-white">{card.title}</h3>
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed font-normal">
+                {card.desc}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 8: JEE & NEET (Dedicated Section)
+      ───────────────────────────────────────────────────────────── */}
+      <section className="py-20 bg-[#0B0F19] border-y border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-14 space-y-3 max-w-3xl mx-auto">
+            <span className="text-xs font-black uppercase tracking-widest text-[#ED1C24]">Competitive Fundamentals</span>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
+              Prepare for the Competition. Build the Concept.
+            </h2>
+            <p className="text-slate-300 text-xs sm:text-sm md:text-base leading-relaxed">
+              Competitive examinations demand more than syllabus completion. Students need conceptual clarity, disciplined practice, regular testing and strategic revision. Noble's JEE and NEET programs are designed around these fundamentals.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            {/* JEE Card */}
+            <div className="bg-[#0F1626] border border-slate-800 rounded-3xl p-8 space-y-5 hover:border-[#ED1C24]/50 transition-all flex flex-col justify-between">
+              <div className="space-y-4">
+                <span className="text-[11px] font-black uppercase tracking-wider text-[#ED1C24] bg-[#ED1C24]/10 border border-[#ED1C24]/20 px-3.5 py-1 rounded-full inline-block">
+                  Physics • Chemistry • Mathematics
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-black text-white">JEE PREPARATION</h3>
+                <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-xs font-bold text-slate-300">
+                  Concepts → Practice → Tests → Analysis → Improvement
+                </div>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Two-tier structured training for JEE Main and JEE Advanced with daily problem sheets and NTA CBT test simulations.
+                </p>
+              </div>
+              <div className="pt-4">
+                <a
+                  href="/jee"
+                  onClick={(e) => handleNav(e, '/jee')}
+                  className="inline-flex items-center gap-2 text-xs font-extrabold text-[#ED1C24] hover:text-white uppercase tracking-wider"
+                >
+                  <span>Explore JEE</span>
+                  <FiArrowRight />
+                </a>
+              </div>
+            </div>
+
+            {/* NEET Card */}
+            <div className="bg-[#0F1626] border border-slate-800 rounded-3xl p-8 space-y-5 hover:border-[#ED1C24]/50 transition-all flex flex-col justify-between">
+              <div className="space-y-4">
+                <span className="text-[11px] font-black uppercase tracking-wider text-green-400 bg-green-500/10 border border-green-500/20 px-3.5 py-1 rounded-full inline-block">
+                  Physics • Chemistry • Biology
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-black text-white">NEET PREPARATION</h3>
+                <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-xs font-bold text-slate-300">
+                  Concepts → Practice → Tests → Revision → Improvement
+                </div>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Line-by-line NCERT mastery, timed OMR mock examinations, diagram drills, and medical counseling assistance.
+                </p>
+              </div>
+              <div className="pt-4">
+                <a
+                  href="/neet"
+                  onClick={(e) => handleNav(e, '/neet')}
+                  className="inline-flex items-center gap-2 text-xs font-extrabold text-[#ED1C24] hover:text-white uppercase tracking-wider"
+                >
+                  <span>Explore NEET</span>
+                  <FiArrowRight />
+                </a>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 9 & 10: RESULTS & REAL STUDENTS (Sections 9 & 10)
+      ───────────────────────────────────────────────────────────── */}
+      <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-14 space-y-3 max-w-3xl mx-auto">
+          <span className="text-xs font-black uppercase tracking-widest text-[#ED1C24]">Verified Academic Milestones</span>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
+            Results That Reflect Consistent Preparation
+          </h2>
+          <p className="text-slate-300 text-xs sm:text-sm md:text-base leading-relaxed">
+            Every result represents months of learning, practice, testing and guidance. Explore the academic achievements of Noble Education students.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {achievers.map((ach, idx) => (
+            <div 
+              key={idx}
+              className="bg-[#0F1626] border border-slate-800 rounded-2xl p-6 space-y-4 hover:border-[#ED1C24]/50 transition-all text-center relative group"
+            >
+              <span className="text-3xl sm:text-4xl font-black text-[#ED1C24] block">
+                {ach.score}
+              </span>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-white">{ach.name}</h3>
+                <p className="text-xs text-slate-300 font-medium">{ach.exam}</p>
+                <span className="text-[11px] text-slate-500 block">{ach.year} • {ach.program}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="text-center mt-12">
+          <a
+            href="/results"
+            onClick={(e) => handleNav(e, '/results')}
+            className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold px-8 py-3.5 rounded-xl text-xs uppercase tracking-wider transition-all"
+          >
+            <span>View All Results</span>
+            <FiArrowRight />
+          </a>
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 11: INTEGRATED SCHOOL PARTNERS (Section 11)
+      ───────────────────────────────────────────────────────────── */}
+      <section className="py-20 bg-[#0B0F19] border-y border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-14 space-y-3 max-w-3xl mx-auto">
+            <span className="text-xs font-black uppercase tracking-widest text-[#ED1C24]">Institutional Collaborations</span>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
+              Our Integrated School Partners
+            </h2>
+            <p className="text-slate-300 text-xs sm:text-sm md:text-base leading-relaxed">
+              Noble Education works with partner schools to support an integrated academic journey that connects school education with structured academic and competitive preparation.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            {/* Partner 1: Royal School */}
+            <div className="bg-[#0F1626] border border-slate-800 rounded-3xl p-7 space-y-4 hover:border-[#ED1C24]/50 transition-all flex flex-col justify-between">
+              <div className="space-y-3">
+                <span className="text-[10px] font-black uppercase tracking-widest text-[#ED1C24] bg-[#ED1C24]/10 border border-[#ED1C24]/20 px-3 py-1 rounded-full">
+                  English Medium • 8th to 12th Science
+                </span>
+                <h3 className="text-xl sm:text-2xl font-black text-white">Royal Eduworld School</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Kamla Nagar Lake Road, Ajwa Road, Vadodara. Premier integrated English medium campus.
+                </p>
+              </div>
+              <div className="pt-2">
+                <a
+                  href="/school?name=Royal%20School"
+                  onClick={(e) => handleNav(e, '/school?name=Royal%20School')}
+                  className="text-xs font-extrabold text-[#ED1C24] hover:underline inline-flex items-center gap-1 uppercase tracking-wider"
+                >
+                  <span>View Campus & Programs</span>
+                  <FiArrowRight />
+                </a>
+              </div>
+            </div>
+
+            {/* Partner 2: New Heaven */}
+            <div className="bg-[#0F1626] border border-slate-800 rounded-3xl p-7 space-y-4 hover:border-[#ED1C24]/50 transition-all flex flex-col justify-between">
+              <div className="space-y-3">
+                <span className="text-[10px] font-black uppercase tracking-widest text-blue-400 bg-blue-500/10 border border-blue-500/20 px-3 py-1 rounded-full">
+                  Gujarati Medium • 11th & 12th Science
+                </span>
+                <h3 className="text-xl sm:text-2xl font-black text-white">Newheaven Vidyalaya</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Vrundavan Char Rasta, Waghodia Road, Vadodara. Specialized higher secondary science division.
+                </p>
+              </div>
+              <div className="pt-2">
+                <a
+                  href="/school?name=New%20Heaven%20Vidyalaya"
+                  onClick={(e) => handleNav(e, '/school?name=New%20Heaven%20Vidyalaya')}
+                  className="text-xs font-extrabold text-[#ED1C24] hover:underline inline-flex items-center gap-1 uppercase tracking-wider"
+                >
+                  <span>View Campus & Programs</span>
+                  <FiArrowRight />
+                </a>
+              </div>
+            </div>
+
+            {/* Partner 3: Raghukul */}
+            <div className="bg-[#0F1626] border border-slate-800 rounded-3xl p-7 space-y-4 hover:border-[#ED1C24]/50 transition-all flex flex-col justify-between">
+              <div className="space-y-3">
+                <span className="text-[10px] font-black uppercase tracking-widest text-green-400 bg-green-500/10 border border-green-500/20 px-3 py-1 rounded-full">
+                  Gujarati Medium • 8th to 10th Board
+                </span>
+                <h3 className="text-xl sm:text-2xl font-black text-white">Raghukul Vidyalaya</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Opposite Balaji Township, New VIP Road, Vadodara. Secondary school board toppers foundation.
+                </p>
+              </div>
+              <div className="pt-2">
+                <a
+                  href="/school?name=Raghukul%20Vidyalay"
+                  onClick={(e) => handleNav(e, '/school?name=Raghukul%20Vidyalay')}
+                  className="text-xs font-extrabold text-[#ED1C24] hover:underline inline-flex items-center gap-1 uppercase tracking-wider"
+                >
+                  <span>View Campus & Programs</span>
+                  <FiArrowRight />
+                </a>
+              </div>
+            </div>
+
+          </div>
+
+          <div className="text-center mt-12">
+            <a
+              href="/integrated-schools"
+              onClick={(e) => handleNav(e, '/integrated-schools')}
+              className="inline-flex items-center gap-2 bg-[#ED1C24] hover:bg-[#C8141B] text-white font-extrabold px-8 py-3.5 rounded-xl text-xs uppercase tracking-wider transition-all shadow-md"
+            >
+              <span>Explore Integrated School Programs</span>
+              <FiArrowRight />
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 12: FACULTY (Section 12)
+      ───────────────────────────────────────────────────────────── */}
+      <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-14 space-y-3 max-w-2xl mx-auto">
+          <span className="text-xs font-black uppercase tracking-widest text-[#ED1C24]">Academic Leadership</span>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
+            Learn from Experienced Educators
+          </h2>
+          <p className="text-slate-300 text-xs sm:text-sm md:text-base leading-relaxed">
+            Our academic team is committed to making complex concepts easier to understand through structured teaching, practice and continuous guidance.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="bg-[#0F1626] border border-slate-800 rounded-2xl p-7 space-y-3 text-center">
+            <div className="w-16 h-16 rounded-full bg-[#ED1C24]/10 text-[#ED1C24] font-black text-xl flex items-center justify-center mx-auto border border-[#ED1C24]/20">
+              PHY
+            </div>
+            <h3 className="text-lg font-bold text-white">Physics Faculty Team</h3>
+            <p className="text-xs text-[#ED1C24] font-semibold">15+ Years Board & JEE Experience</p>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Specialized in rotational mechanics, electrodynamics, and graphical problem-solving techniques.
+            </p>
+          </div>
+
+          <div className="bg-[#0F1626] border border-slate-800 rounded-2xl p-7 space-y-3 text-center">
+            <div className="w-16 h-16 rounded-full bg-blue-500/10 text-blue-400 font-black text-xl flex items-center justify-center mx-auto border border-blue-500/20">
+              CHM
+            </div>
+            <h3 className="text-lg font-bold text-white">Chemistry Faculty Team</h3>
+            <p className="text-xs text-blue-400 font-semibold">Inorganic & Physical Specialists</p>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Simplifying reaction mechanisms, thermodynamic equilibrium, and NCERT line-by-line mastery.
+            </p>
+          </div>
+
+          <div className="bg-[#0F1626] border border-slate-800 rounded-2xl p-7 space-y-3 text-center">
+            <div className="w-16 h-16 rounded-full bg-green-500/10 text-green-400 font-black text-xl flex items-center justify-center mx-auto border border-green-500/20">
+              M&B
+            </div>
+            <h3 className="text-lg font-bold text-white">Mathematics & Biology Team</h3>
+            <p className="text-xs text-green-400 font-semibold">Calculus & Medical Entrance Experts</p>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Advanced coordinate geometry, calculus problem speed, and NCERT diagram recall strategies.
+            </p>
+          </div>
+        </div>
+
+        <div className="text-center mt-12">
+          <a
+            href="/about/faculty"
+            onClick={(e) => handleNav(e, '/about/faculty')}
+            className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold px-8 py-3.5 rounded-xl text-xs uppercase tracking-wider transition-all"
+          >
+            <span>Meet Our Faculty</span>
+            <FiArrowRight />
+          </a>
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 13: PARENT & STUDENT REVIEWS (Section 13)
+      ───────────────────────────────────────────────────────────── */}
+      <section className="py-20 bg-[#0B0F19] border-y border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-14 space-y-2">
+            <span className="text-xs font-black uppercase tracking-widest text-[#ED1C24]">Verified Reviews</span>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
+              What Parents & Students Say About Noble
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-[#0F1626] border border-slate-800 rounded-2xl p-7 space-y-4">
+              <div className="flex items-center gap-1 text-amber-400 text-sm">
+                {[...Array(5)].map((_, i) => <FiStar key={i} className="fill-amber-400" />)}
+              </div>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                "The individual attention and weekly test feedback gave my son the conceptual clarity he needed for 10th board exams. He improved from 72% to 92%."
+              </p>
+              <div className="border-t border-white/5 pt-3">
+                <span className="text-xs font-bold text-white block">Maheshbhai Patel</span>
+                <span className="text-[11px] text-slate-400">Parent of Class 10 Board Student • Google Review</span>
+              </div>
+            </div>
+
+            <div className="bg-[#0F1626] border border-slate-800 rounded-2xl p-7 space-y-4">
+              <div className="flex items-center gap-1 text-amber-400 text-sm">
+                {[...Array(5)].map((_, i) => <FiStar key={i} className="fill-amber-400" />)}
+              </div>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                "Physics in 11th Science was overwhelming until I joined Noble. The formula sheets and daily numerical practice completely removed my fear."
+              </p>
+              <div className="border-t border-white/5 pt-3">
+                <span className="text-xs font-bold text-white block">Priya Shah</span>
+                <span className="text-[11px] text-slate-400">12th Science Student • Google Review</span>
+              </div>
+            </div>
+
+            <div className="bg-[#0F1626] border border-slate-800 rounded-2xl p-7 space-y-4">
+              <div className="flex items-center gap-1 text-amber-400 text-sm">
+                {[...Array(5)].map((_, i) => <FiStar key={i} className="fill-amber-400" />)}
+              </div>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                "Noble Engineering's DDCET mock tests matched the actual examination pattern perfectly. Got admission in my top choice degree college."
+              </p>
+              <div className="border-t border-white/5 pt-3">
+                <span className="text-xs font-bold text-white block">Karan Panchal</span>
+                <span className="text-[11px] text-slate-400">DDCET Achiever • Google Review</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center mt-12">
+            <a
+              href="https://maps.google.com/?q=NOBLE+EDUCATION+Above+Bank+Of+India+Waghodia+Road+Vadodara"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 text-xs font-extrabold text-[#ED1C24] hover:underline uppercase tracking-wider"
+            >
+              <span>Read More Google Reviews ↗</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 14: CAMPUS EXPERIENCE (Section 14)
+      ───────────────────────────────────────────────────────────── */}
+      <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-14 space-y-2">
+          <span className="text-xs font-black uppercase tracking-widest text-[#ED1C24]">Learning Environment</span>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
+            Experience Noble Education
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="rounded-2xl overflow-hidden border border-slate-800 bg-[#0F1626] p-4 text-center space-y-2">
+            <span className="text-2xl">🏫</span>
+            <h4 className="text-xs font-bold text-white">Spacious Classrooms</h4>
+            <p className="text-[11px] text-slate-400">Acoustic-optimised, air-conditioned teaching halls.</p>
+          </div>
+          <div className="rounded-2xl overflow-hidden border border-slate-800 bg-[#0F1626] p-4 text-center space-y-2">
+            <span className="text-2xl">🔬</span>
+            <h4 className="text-xs font-bold text-white">Science Labs</h4>
+            <p className="text-[11px] text-slate-400">Hands-on demonstration and experimental proof.</p>
+          </div>
+          <div className="rounded-2xl overflow-hidden border border-slate-800 bg-[#0F1626] p-4 text-center space-y-2">
+            <span className="text-2xl">📝</span>
+            <h4 className="text-xs font-bold text-white">Testing Desks</h4>
+            <p className="text-[11px] text-slate-400">OMR mock exam sessions under exam conditions.</p>
+          </div>
+          <div className="rounded-2xl overflow-hidden border border-slate-800 bg-[#0F1626] p-4 text-center space-y-2">
+            <span className="text-2xl">💬</span>
+            <h4 className="text-xs font-bold text-white">Doubt Counters</h4>
+            <p className="text-[11px] text-slate-400">1-on-1 personal mentorship and counselling.</p>
+          </div>
+        </div>
+
+        <div className="text-center mt-12">
+          <a
+            href="/gallery"
+            onClick={(e) => handleNav(e, '/gallery')}
+            className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold px-8 py-3.5 rounded-xl text-xs uppercase tracking-wider transition-all"
+          >
+            <span>View Campus Gallery</span>
+            <FiArrowRight />
+          </a>
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 15: ADMISSION (Section 15)
+      ───────────────────────────────────────────────────────────── */}
+      <section className="py-20 bg-[#0B0F19] border-y border-white/10">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-6">
+          <span className="text-xs font-black uppercase tracking-widest text-[#ED1C24]">Take the Next Step</span>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
+            Start Your Noble Education Journey
+          </h2>
+          <p className="text-slate-300 text-xs sm:text-sm md:text-base leading-relaxed max-w-2xl mx-auto">
+            Choosing the right academic program is an important decision. Talk to our counsellors to understand the right program, batch and preparation pathway for your goals.
+          </p>
+
+          <div className="pt-4 flex flex-wrap items-center justify-center gap-4">
+            <a
+              href="/admissions"
+              onClick={(e) => handleNav(e, '/admissions')}
+              className="bg-[#ED1C24] hover:bg-[#C8141B] text-white font-extrabold px-8 py-4 rounded-xl text-xs uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(237,28,36,0.35)] hover:scale-105"
+            >
+              Book Counselling
+            </a>
+            <a
+              href={`tel:${contact.phone1 || '9104206999'}`}
+              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold px-8 py-4 rounded-xl text-xs uppercase tracking-widest transition-all"
+            >
+              Call Noble Education
+            </a>
+            <a
+              href={`https://wa.me/${contact.whatsapp || '919104206999'}?text=${encodeURIComponent('Hello Noble Education, I would like to enquire about admission.')}`}
+              target="_blank"
+              rel="noreferrer"
+              className="bg-green-600 hover:bg-green-700 text-white font-bold px-8 py-4 rounded-xl text-xs uppercase tracking-widest transition-all flex items-center gap-2"
+            >
+              <FaWhatsapp className="text-base" />
+              <span>WhatsApp Us</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 16: FAQ (Section 16)
+      ───────────────────────────────────────────────────────────── */}
+      <section className="py-20 max-w-4xl mx-auto px-4 sm:px-6">
+        <div className="text-center mb-14 space-y-2">
+          <span className="text-xs font-black uppercase tracking-widest text-[#ED1C24]">Frequently Asked Questions</span>
+          <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+            Common Questions
+          </h2>
+        </div>
+
+        <div className="space-y-4">
+          {faqs.map((faq, idx) => (
+            <div key={idx} className="bg-[#0F1626] border border-slate-800 rounded-2xl overflow-hidden">
+              <button
+                onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                className="w-full flex items-center justify-between p-5 text-left font-bold text-sm text-white hover:text-[#ED1C24] transition-colors"
+              >
+                <span>{faq.q}</span>
+                <FiChevronDown className={`transform transition-transform ${openFaq === idx ? 'rotate-180 text-[#ED1C24]' : ''}`} />
+              </button>
+              {openFaq === idx && (
+                <div className="px-5 pb-5 text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-white/5 pt-3 animate-fadeIn">
+                  {faq.a}
                 </div>
               )}
             </div>
-          </div>
-        </section>
-      )}
-
-
-
-      {/* 7. FINAL CTA BAND (CLEAN LIGHT THEME) */}
-      <section className="py-20 bg-gradient-to-r from-blue-50/80 via-white to-red-50/80 border-t border-slate-200 text-center relative overflow-hidden">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <h2 className="text-3xl sm:text-4xl font-black text-[#1C2E60] mb-4">Ready to Start Your Learning Journey?</h2>
-          <p className="text-[#5A6472] text-sm font-light mb-8 max-w-md mx-auto leading-relaxed">
-            Connect with our admissions desk to align on batch times, stream selections, or schedule a free 1-on-1 parent meeting.
-          </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <a
-              href={`tel:${contact.phone1}`}
-              className="bg-[#DC2626] hover:bg-red-700 text-white font-bold px-8 py-3.5 rounded-xl text-xs transition-all shadow-md flex items-center gap-2 hover:scale-105"
-            >
-              Call Now
-            </a>
-            <a
-              href={`https://wa.me/${contact.whatsapp}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-green-600 hover:bg-green-700 text-white font-bold px-8 py-3.5 rounded-xl text-xs transition-all shadow-md flex items-center gap-2 hover:scale-105"
-            >
-              <FiMessageCircle /> WhatsApp Now
-            </a>
-            <a
-              href="#inquiry-form"
-              className="bg-[#1C2E60] hover:bg-[#142247] text-white font-bold px-8 py-3.5 rounded-xl text-xs transition-all shadow-md hover:scale-105"
-            >
-              Book Free Counselling
-            </a>
-          </div>
+          ))}
         </div>
       </section>
 
-      {/* 8. GET IN TOUCH & MAP */}
-      <section id="inquiry-form" className="py-24 bg-white border-t border-slate-200 scroll-mt-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-12">
-          
-          {/* Info */}
-          <div className="lg:col-span-5 space-y-6">
-            <span className="text-[#DC2626] font-bold tracking-widest text-xs uppercase">Get In Touch</span>
-            <h2 className="text-3xl font-extrabold text-[#1C2E60]">Contact & Location</h2>
-            <p className="text-zinc-500 text-xs font-light leading-relaxed">
-              Visit our Waghodia Road campus for stream guides and admissions support, or fill out the form to get a counselor call.
-            </p>
-            
-            <div className="p-6 bg-[#F4F6F9] border border-slate-200 rounded-2xl text-xs space-y-4 shadow-sm">
-              <div>
-                <strong className="text-[#1C2E60] block">Address:</strong>
-                <span className="text-zinc-500 font-light">{contact.address}</span>
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 17: LOCATION (Section 17)
+      ───────────────────────────────────────────────────────────── */}
+      <section className="py-20 bg-[#0B0F19] border-y border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            <div className="lg:col-span-6 space-y-6">
+              <span className="text-xs font-black uppercase tracking-widest text-[#ED1C24]">Vadodara Center</span>
+              <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+                Visit Noble Education, Vadodara
+              </h2>
+              
+              <div className="p-6 rounded-2xl bg-[#0F1626] border border-slate-800 space-y-3">
+                <span className="text-[11px] font-black uppercase tracking-widest text-[#ED1C24] block">Verified Center Address</span>
+                <p className="text-base font-bold text-white leading-relaxed">
+                  Noble Education<br />
+                  Above Bank Of India, 3rd Floor<br />
+                  Near Uma Char Rasta<br />
+                  Waghodia Road<br />
+                  Vadodara, Gujarat – 390019
+                </p>
               </div>
-              <div>
-                <strong className="text-[#1C2E60] block">Phone Lines:</strong>
-                <span className="text-zinc-500 font-light">{contact.phone1} / {contact.phone2}</span>
-              </div>
-              <div>
-                <strong className="text-[#1C2E60] block">Office Timings:</strong>
-                <span className="text-zinc-500 font-light">{contact.timings}</span>
+
+              <div className="flex flex-wrap items-center gap-4">
+                <a
+                  href={contact.googleMapsUrl || "https://maps.google.com/?q=NOBLE+EDUCATION+Above+Bank+Of+India+Waghodia+Road+Vadodara"}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="bg-[#ED1C24] hover:bg-[#C8141B] text-white font-extrabold px-6 py-3.5 rounded-xl text-xs uppercase tracking-wider transition-all shadow-md"
+                >
+                  Get Directions
+                </a>
+                <a
+                  href={`tel:${contact.phone1 || '9104206999'}`}
+                  className="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold px-6 py-3.5 rounded-xl text-xs uppercase tracking-wider transition-all"
+                >
+                  Call Us
+                </a>
+                <a
+                  href={`https://wa.me/${contact.whatsapp || '919104206999'}?text=${encodeURIComponent('Hello Noble Education, I need directions to the center.')}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-3.5 rounded-xl text-xs uppercase tracking-wider transition-all flex items-center gap-1.5"
+                >
+                  <FaWhatsapp />
+                  <span>WhatsApp Us</span>
+                </a>
               </div>
             </div>
-            
-            <div className="h-60 rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
+
+            <div className="lg:col-span-6 rounded-3xl overflow-hidden border border-slate-800 shadow-2xl h-80">
               <iframe
-                title="Waghodia Road Campus Location Map"
-                src={contact.mapUrl}
-                className="w-full h-full border-none"
+                title="Noble Education Location"
+                src={contact.mapUrl || "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3691.350070758773!2d73.22714197532522!3d22.302596542812175!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x395fc57f8b719dd5%3A0x8bf184b31ada46e0!2sNOBLE%20EDUCATION!5e0!3m2!1sen!2sin!4v1784185468234!5m2!1sen!2sin"}
+                className="w-full h-full border-0"
                 allowFullScreen=""
                 loading="lazy"
-              />
+              ></iframe>
             </div>
-          </div>
-          
-          {/* Form */}
-          <div className="lg:col-span-7 p-8 bg-[#F4F6F9] border border-slate-200 rounded-3xl shadow-sm">
-            <h3 className="text-xl font-extrabold text-[#1C2E60] mb-6">Send Admission Inquiry</h3>
-            {homeFormSent ? (
-              <div className="p-4 bg-green-50 border border-green-200 text-green-700 text-xs font-semibold rounded-2xl">
-                Thank you! Your inquiry was successfully registered. We will call you shortly.
-              </div>
-            ) : (
-              <form onSubmit={handleHomeInquiry} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[10px] font-bold text-[#1C2E60] uppercase tracking-wider block mb-1">Full Name</label>
-                    <input 
-                      required 
-                      type="text" 
-                      placeholder="e.g. Yash Patel" 
-                      value={homeFormData.name}
-                      onChange={(e) => setHomeFormData({ ...homeFormData, name: e.target.value })}
-                      className="w-full p-3 rounded-xl border border-slate-200 text-xs focus:border-[#1C2E60] focus:outline-none bg-white" 
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-[#1C2E60] uppercase tracking-wider block mb-1">Phone Number</label>
-                    <input 
-                      required 
-                      type="tel" 
-                      placeholder="e.g. 9876543210" 
-                      value={homeFormData.phone}
-                      onChange={(e) => setHomeFormData({ ...homeFormData, phone: e.target.value })}
-                      className="w-full p-3 rounded-xl border border-slate-200 text-xs focus:border-[#1C2E60] focus:outline-none bg-white" 
-                    />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[10px] font-bold text-[#1C2E60] uppercase tracking-wider block mb-1">Student Class / Standard</label>
-                    <input 
-                      required 
-                      type="text" 
-                      placeholder="e.g. Class 11 Science" 
-                      value={homeFormData.message}
-                      onChange={(e) => setHomeFormData({ ...homeFormData, message: e.target.value })}
-                      className="w-full p-3 rounded-xl border border-slate-200 text-xs focus:border-[#1C2E60] focus:outline-none bg-white" 
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-[#1C2E60] uppercase tracking-wider block mb-1">Course Interested In</label>
-                    <select 
-                      value={homeFormData.program}
-                      onChange={(e) => setHomeFormData({ ...homeFormData, program: e.target.value })}
-                      className="w-full p-3 rounded-xl border border-slate-200 text-xs focus:border-[#1C2E60] focus:outline-none bg-white"
-                    >
-                      <option>School Coaching (8th-10th)</option>
-                      <option>11th-12th Science Boards</option>
-                      <option>NEET / JEE Preparation</option>
-                      <option>Diploma Engineering Coaching</option>
-                      <option>DDCET Entrance batch</option>
-                      <option>Concept Schooling</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  <button type="submit" className="bg-[#1C2E60] hover:bg-[#142247] text-white font-bold py-3 px-8 rounded-xl text-xs transition-colors shadow-md w-full sm:w-auto cursor-pointer">
-                    Book Free Counselling
-                  </button>
-                </div>
-              </form>
-            )}
           </div>
         </div>
       </section>
 
-      {/* Universal Video Modal */}
-      <UniversalVideoModal
-        item={activeVideoModal}
-        isOpen={!!activeVideoModal}
-        onClose={() => setActiveVideoModal(null)}
-      />
+      {/* ─────────────────────────────────────────────────────────────
+          SECTION 18: FINAL CTA (Section 18)
+      ───────────────────────────────────────────────────────────── */}
+      <section className="py-24 max-w-5xl mx-auto px-4 sm:px-6 text-center">
+        <div className="bg-gradient-to-r from-[#0F1626] via-[#1E293B] to-[#0F1626] border border-[#ED1C24]/40 rounded-3xl p-10 sm:p-16 shadow-[0_0_50px_rgba(237,28,36,0.15)] space-y-6">
+          <span className="text-xs font-black uppercase tracking-widest text-[#ED1C24]">Start Today</span>
+          <h2 className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight">
+            Your Goal. Your Preparation. Your Noble Journey.
+          </h2>
+          <p className="text-slate-300 text-sm sm:text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
+            Build stronger concepts. Prepare with purpose. Move towards your next academic goal with Noble Education.
+          </p>
+          <div className="pt-4">
+            <a
+              href="/admissions"
+              onClick={(e) => handleNav(e, '/admissions')}
+              className="inline-flex items-center gap-2 bg-[#ED1C24] hover:bg-[#C8141B] text-white font-extrabold px-10 py-5 rounded-xl text-sm uppercase tracking-widest transition-all shadow-[0_0_30px_rgba(237,28,36,0.5)] hover:scale-105"
+            >
+              <span>Start Your Journey</span>
+              <FiArrowRight />
+            </a>
+          </div>
+        </div>
+      </section>
 
     </div>
   );

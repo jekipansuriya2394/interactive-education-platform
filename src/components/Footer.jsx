@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { FiPhone, FiMapPin, FiMessageCircle, FiFacebook, FiInstagram, FiYoutube } from 'react-icons/fi';
+import { FiPhone, FiMapPin, FiMail, FiFacebook, FiInstagram, FiYoutube, FiArrowUpRight } from 'react-icons/fi';
+import { FaWhatsapp } from 'react-icons/fa';
 import { contactData } from '../data/contactData';
 import { adminData } from '../utils/adminData';
 import { logoWhite, getLogoUrl } from '../utils/logo';
+import { navigate } from '../utils/router';
 
 export default function Footer() {
   const [contact, setContact] = useState(() => adminData.getData('contactInfo') || contactData);
@@ -20,165 +22,199 @@ export default function Footer() {
     };
   }, []);
 
-  const quickLinks = [
-    { name: 'Home', href: '/' },
-    { name: 'About Us', href: '/about' },
-    { name: 'Partner Schools', href: '/schools' },
-    { name: 'Noble Engineering', href: '/engineering' },
-    { name: 'Academic Courses', href: '/courses' },
-    { name: 'Admission Guidance', href: '/admission-guidance' },
-    { name: 'Student Results', href: '/results' },
-    { name: 'Gallery', href: '/gallery' },
-    { name: 'Blog', href: '/blog' },
-    { name: 'Contact Us', href: '/contact' }
+  const handleNav = (e, path) => {
+    if (!path) return;
+    if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('tel:')) return;
+    e.preventDefault();
+    navigate(path);
+  };
+
+  const academicLinks = [
+    { name: 'GSEB Coaching (8th–12th)', href: '/academic/gseb' },
+    { name: 'CBSE Preparation', href: '/academic/cbse' },
+    { name: 'Foundation Program', href: '/foundation' },
+    { name: '11th Science Base', href: '/academic/science/11th' },
+    { name: '12th Science Board & Competitive', href: '/academic/science/12th' }
   ];
 
-  const courseLinks = [
-    { name: 'Noble Engineering Hub', href: '/engineering' },
-    { name: 'Diploma Engineering (GTU)', href: '/engineering#diploma' },
-    { name: 'Degree Engineering (B.E./B.Tech)', href: '/engineering#degree' },
-    { name: 'DDCET Entrance Coaching', href: '/engineering#ddcet' },
-    { name: 'Industrial Internship & Projects', href: '/engineering#internship' },
-    { name: '11th & 12th Science (NEET/JEE)', href: '/courses#science-11-12' },
-    { name: '8th to 10th Board Foundation', href: '/courses#school-8-10' }
+  const competitiveLinks = [
+    { name: 'JEE Preparation', href: '/jee' },
+    { name: 'NEET Preparation', href: '/neet' },
+    { name: 'Diploma Engineering Coaching', href: '/engineering/diploma' },
+    { name: 'Degree Engineering Support', href: '/engineering/degree' },
+    { name: 'DDCET Lateral Entry Coaching', href: '/engineering/ddcet' }
   ];
 
-  const schoolLinks = [
-    { name: 'Royal School (Ajwa Rd)', href: '/school?name=Royal%20School' },
-    { name: 'Raghukul Vidyalay (VIP Rd)', href: '/school?name=Raghukul%20Vidyalay' },
-    { name: 'New Heaven (Waghodia Rd)', href: '/school?name=New%20Heaven%20Vidyalaya' },
-    { name: 'All Partner Campuses', href: '/schools' }
+  const companyLinks = [
+    { name: 'About Noble', href: '/about' },
+    { name: 'Our Philosophy', href: '/about/philosophy' },
+    { name: 'Academic Faculty', href: '/about/faculty' },
+    { name: 'Results & Achievers', href: '/results' },
+    { name: 'Scholarship Program', href: '/scholarship' },
+    { name: 'Student Zone', href: '/student-zone' },
+    { name: 'Contact & Location', href: '/contact' }
   ];
 
   return (
-    <footer className="bg-[#0F172A] relative pt-16 pb-8 border-t border-blue-600/20 overflow-hidden text-white">
-      {/* Footer grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-8 mb-12">
-        
-        {/* Col 1: Brand Info */}
-        <div className="lg:col-span-3">
-          <div className="flex items-center mb-6">
-            <img src={siteLogo} alt="Noble Education Logo" className="h-10 max-w-[200px] w-auto object-contain" />
+    <footer className="bg-[#0A0E1A] text-slate-300 border-t border-white/10 relative overflow-hidden font-sans">
+      {/* Subtle brand glow */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#ED1C24]/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-600/5 rounded-full blur-3xl pointer-events-none" />
 
-          </div>
-
-          <p className="text-zinc-400 text-sm leading-relaxed mb-6 font-light max-w-sm">
-            Noble Education provides coaching, academic support, competitive exam preparation, and career guidance. We are your trusted partner for coaching, guidance & career success in Vadodara.
-          </p>
-          {/* Social icons */}
-          <div className="flex gap-4">
-            <a href="https://facebook.com" className="p-2.5 bg-white/5 rounded-xl border border-white/10 text-zinc-400 hover:text-white hover:border-white/20 transition-all">
-              <FiFacebook />
+      {/* Main Footer Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-8 mb-12">
+          
+          {/* Column 1: Brand Positioning (4 cols) */}
+          <div className="lg:col-span-4 space-y-5">
+            <a href="/" onClick={(e) => handleNav(e, '/')} className="inline-block">
+              <img 
+                src={siteLogo || logoWhite} 
+                alt="Noble Education" 
+                className="h-11 w-auto object-contain" 
+              />
             </a>
-            <a href="https://instagram.com" className="p-2.5 bg-white/5 rounded-xl border border-white/10 text-zinc-400 hover:text-white hover:border-white/20 transition-all">
-              <FiInstagram />
-            </a>
-            <a href="https://youtube.com" className="p-2.5 bg-white/5 rounded-xl border border-white/10 text-zinc-400 hover:text-white hover:border-white/20 transition-all">
-              <FiYoutube />
-            </a>
-          </div>
-        </div>
-
-        {/* Col 2: Quick Links */}
-        <div className="lg:col-span-2">
-          <h4 className="text-white font-bold text-sm uppercase tracking-wider mb-6">Quick Links</h4>
-          <ul className="space-y-2.5">
-            {quickLinks.map((link, idx) => (
-              <li key={idx}>
-                <a 
-                  href={link.href}
-                  className="text-zinc-400 hover:text-white text-xs transition-colors font-light"
-                >
-                  {link.name}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Col 3: Programs */}
-        <div className="lg:col-span-2">
-          <h4 className="text-white font-bold text-sm uppercase tracking-wider mb-6">Programs</h4>
-          <ul className="space-y-2.5">
-            {courseLinks.map((link, idx) => (
-              <li key={idx}>
-                <a 
-                  href={link.href}
-                  className="text-zinc-400 hover:text-white text-xs transition-colors font-light"
-                >
-                  {link.name}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Col 4: Partner Schools */}
-        <div className="lg:col-span-2">
-          <h4 className="text-white font-bold text-sm uppercase tracking-wider mb-6">Partner Schools</h4>
-          <ul className="space-y-2.5">
-            {schoolLinks.map((link, idx) => (
-              <li key={idx}>
-                <a 
-                  href={link.href}
-                  className="text-zinc-400 hover:text-[#DC2626] text-xs transition-colors font-semibold flex items-center gap-1.5"
-                >
-                  <span>🏫</span>
-                  <span>{link.name}</span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Col 5: Contact Details */}
-        <div className="lg:col-span-3">
-          <h4 className="text-white font-bold text-sm uppercase tracking-wider mb-6">Contact Info</h4>
-          <div className="space-y-4">
             
-            <div className="flex gap-3 items-start">
-              <FiMapPin className="text-[#DC2626] mt-1 flex-shrink-0" />
-              <a
-                href={contact.googleMapsUrl || `https://maps.google.com/?q=${encodeURIComponent(contact.address || 'Noble Education Waghodia Road Vadodara')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-zinc-400 text-xs leading-relaxed font-light hover:text-white transition-colors cursor-pointer block"
-                title="Click to Open Location on Google Maps"
-              >
-                <span className="underline decoration-dotted underline-offset-4">{contact.address}</span>
-              </a>
-            </div>
+            <p className="text-[#ED1C24] font-black text-xs uppercase tracking-widest">
+              Integrated Education for Academic Excellence & Competitive Success
+            </p>
 
-            <div className="flex gap-3 items-center">
-              <FiPhone className="text-blue-500 flex-shrink-0" />
-              <div className="text-zinc-400 text-xs font-light">
-                <p><a href={`tel:${contact.phone1}`} className="hover:text-white">{contact.phone1}</a></p>
-                <p><a href={`tel:${contact.phone2}`} className="hover:text-white">{contact.phone2}</a></p>
+            <p className="text-slate-400 text-xs sm:text-sm leading-relaxed font-normal max-w-sm">
+              Connecting school education, foundation preparation, JEE, NEET and engineering entrance coaching under one rigorous academic vision in Vadodara.
+            </p>
+
+            <div className="pt-2 text-xs text-slate-400 space-y-2">
+              <div className="flex items-start gap-2.5">
+                <FiMapPin className="text-[#ED1C24] mt-0.5 flex-shrink-0 text-sm" />
+                <span>Above Bank Of India, 3rd Floor, Near Uma Char Rasta, Waghodia Road, Vadodara – 390019</span>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <FiPhone className="text-[#ED1C24] flex-shrink-0 text-sm" />
+                <a href={`tel:${contact.phone1}`} className="hover:text-white transition-colors font-medium">
+                  {contact.phone1} / {contact.phone2 || '9104206888'}
+                </a>
               </div>
             </div>
 
-            <a
-              href={`https://wa.me/${contact.whatsapp}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition-all duration-300 shadow-md w-full justify-center mt-2"
-            >
-              <FiMessageCircle className="text-base" /> Chat on WhatsApp
-            </a>
-
+            {/* Social Links */}
+            <div className="flex items-center gap-3 pt-2">
+              <a 
+                href="https://facebook.com" 
+                target="_blank" 
+                rel="noreferrer" 
+                aria-label="Facebook"
+                className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 hover:border-[#ED1C24] hover:bg-[#ED1C24] text-slate-300 hover:text-white flex items-center justify-center transition-all"
+              >
+                <FiFacebook className="text-sm" />
+              </a>
+              <a 
+                href="https://instagram.com" 
+                target="_blank" 
+                rel="noreferrer" 
+                aria-label="Instagram"
+                className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 hover:border-[#ED1C24] hover:bg-[#ED1C24] text-slate-300 hover:text-white flex items-center justify-center transition-all"
+              >
+                <FiInstagram className="text-sm" />
+              </a>
+              <a 
+                href="https://youtube.com" 
+                target="_blank" 
+                rel="noreferrer" 
+                aria-label="YouTube"
+                className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 hover:border-[#ED1C24] hover:bg-[#ED1C24] text-slate-300 hover:text-white flex items-center justify-center transition-all"
+              >
+                <FiYoutube className="text-sm" />
+              </a>
+              <a 
+                href={`https://wa.me/${contact.whatsapp}`} 
+                target="_blank" 
+                rel="noreferrer" 
+                aria-label="WhatsApp"
+                className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 hover:border-green-500 hover:bg-green-600 text-slate-300 hover:text-white flex items-center justify-center transition-all"
+              >
+                <FaWhatsapp className="text-sm" />
+              </a>
+            </div>
           </div>
+
+          {/* Column 2: Academic (3 cols) */}
+          <div className="lg:col-span-3">
+            <h4 className="text-white font-extrabold text-xs uppercase tracking-widest mb-5 border-b border-white/10 pb-2 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#ED1C24]"></span>
+              Academic Programs
+            </h4>
+            <ul className="space-y-3 text-xs">
+              {academicLinks.map((link, idx) => (
+                <li key={idx}>
+                  <a 
+                    href={link.href}
+                    onClick={(e) => handleNav(e, link.href)}
+                    className="text-slate-400 hover:text-white hover:translate-x-1 inline-flex items-center gap-1.5 transition-all"
+                  >
+                    <span>{link.name}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Column 3: Competitive & Engineering (3 cols) */}
+          <div className="lg:col-span-3">
+            <h4 className="text-white font-extrabold text-xs uppercase tracking-widest mb-5 border-b border-white/10 pb-2 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#ED1C24]"></span>
+              Competitive & Engineering
+            </h4>
+            <ul className="space-y-3 text-xs">
+              {competitiveLinks.map((link, idx) => (
+                <li key={idx}>
+                  <a 
+                    href={link.href}
+                    onClick={(e) => handleNav(e, link.href)}
+                    className="text-slate-400 hover:text-white hover:translate-x-1 inline-flex items-center gap-1.5 transition-all"
+                  >
+                    <span>{link.name}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Column 4: Company & Resources (2 cols) */}
+          <div className="lg:col-span-2">
+            <h4 className="text-white font-extrabold text-xs uppercase tracking-widest mb-5 border-b border-white/10 pb-2 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#ED1C24]"></span>
+              Company
+            </h4>
+            <ul className="space-y-3 text-xs">
+              {companyLinks.map((link, idx) => (
+                <li key={idx}>
+                  <a 
+                    href={link.href}
+                    onClick={(e) => handleNav(e, link.href)}
+                    className="text-slate-400 hover:text-white hover:translate-x-1 inline-flex items-center gap-1.5 transition-all"
+                  >
+                    <span>{link.name}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
         </div>
 
-      </div>
+        {/* Bottom Bar per Blueprint Section 40 */}
+        <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4 text-[11px] text-slate-400">
+          <div>
+            <span className="font-bold text-slate-300">Noble Education</span> • Vadodara, Gujarat – 390019
+          </div>
 
-      {/* Footer Bottom copyright */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 text-center">
-        <p className="text-zinc-500 text-xs font-light">
-          © 2026 Noble Education. All Rights Reserved.
-        </p>
-        <p className="text-zinc-600 text-xs font-light flex items-center gap-1">
-          Trusted Academic Guidance & Coaching in Vadodara.
-        </p>
+          <div className="flex flex-wrap items-center gap-6">
+            <a href="/contact" onClick={(e) => handleNav(e, '/contact')} className="hover:text-white transition-colors">Privacy Policy</a>
+            <a href="/contact" onClick={(e) => handleNav(e, '/contact')} className="hover:text-white transition-colors">Terms of Admission</a>
+            <a href="/admissions" onClick={(e) => handleNav(e, '/admissions')} className="hover:text-white transition-colors">Sitemap</a>
+            <span>© 2026 Noble Education. All rights reserved.</span>
+          </div>
+        </div>
       </div>
     </footer>
   );
