@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   FiCpu, 
   FiAward, 
@@ -7,17 +7,35 @@ import {
   FiCheckCircle, 
   FiArrowRight, 
   FiPhone, 
-  FiSend
+  FiSend,
+  FiPlay,
+  FiImage
 } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
 import { inquiryService } from '../utils/inquiryService';
-import { getEmbedImageUrl } from '../utils/imageUrl';
+import { getEmbedImageUrl, handleImageError, isVideoMedia } from '../utils/imageUrl';
+import { adminData } from '../utils/adminData';
 import UniversalVideoModal from '../components/UniversalVideoModal';
 
 export default function EngineeringPage() {
   const [formSent, setFormSent] = useState(false);
   const [activeFaq, setActiveFaq] = useState(null);
   const [activeVideo, setActiveVideo] = useState(null);
+  const [pageMedia, setPageMedia] = useState(() => (adminData.getData('pageImages') || {}).engineering || []);
+  const [liveResults, setLiveResults] = useState(() => adminData.getData('results') || []);
+
+  useEffect(() => {
+    const refreshData = () => {
+      const pImages = adminData.getData('pageImages') || {};
+      setPageMedia(pImages.engineering || []);
+      setLiveResults(adminData.getData('results') || []);
+    };
+    refreshData();
+    const unsub = adminData.initSync(refreshData);
+    return () => {
+      if (typeof unsub === 'function') unsub();
+    };
+  }, []);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -150,6 +168,25 @@ export default function EngineeringPage() {
       college: "Admitted into LD College of Engg, Ahmedabad",
       image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80"
     }
+  ];
+
+  const dynamicAchievers = [
+    ...achievers,
+    ...(Array.isArray(liveResults) ? liveResults : [])
+      .filter(r => {
+        const exam = (r.exam || '').toLowerCase();
+        const branch = (r.branch || '').toLowerCase();
+        return (exam.includes('ddcet') || exam.includes('diploma') || exam.includes('degree') || branch.includes('engineering')) &&
+               !achievers.some(a => a.name.toLowerCase() === (r.name || '').toLowerCase());
+      })
+      .map(r => ({
+        name: r.name,
+        score: r.score,
+        exam: r.exam || 'Engineering',
+        branch: r.branch || 'Engineering Stream',
+        college: r.status || r.school || 'Noble Engineering, Vadodara',
+        image: r.image || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80'
+      }))
   ];
 
   const faqs = [
@@ -437,16 +474,17 @@ export default function EngineeringPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {achievers.map((item, idx) => (
+          {dynamicAchievers.map((item, idx) => (
             <div
               key={idx}
               className="bg-white rounded-3xl p-6 border border-slate-200 shadow-md hover:shadow-xl transition-all text-center flex flex-col justify-between"
             >
               <div>
                 <img
-                  src={item.image}
+                  src={getEmbedImageUrl(item.image)}
                   alt={item.name}
                   className="w-20 h-20 rounded-full mx-auto object-cover border-4 border-blue-100 mb-4 shadow-sm"
+                  onError={handleImageError}
                 />
                 <h4 className="text-base font-extrabold text-[#1C2E60]">{item.name}</h4>
                 <div className="text-xs font-bold text-[#DC2626] mt-0.5">{item.exam}</div>
@@ -460,6 +498,70 @@ export default function EngineeringPage() {
           ))}
         </div>
       </section>
+
+      {/* 5B. DYNAMIC PAGE PHOTOS & VIDEOS SHOWCASE (MANAGED FROM ADMIN PANEL) */}
+      {pageMedia && pageMedia.length > 0 && (
+        <section className="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <span className="text-[#DC2626] font-bold tracking-widest text-xs uppercase bg-red-50 px-3.5 py-1 rounded-full border border-red-100">
+              Campus & Labs Showcase
+            </span>
+            <h2 className="text-3xl font-black text-[#1C2E60] mt-3">
+              Engineering Labs & Practical Sessions
+            </h2>
+            <p className="text-zinc-600 font-light text-xs sm:text-sm mt-2">
+              State-of-the-art computer labs, CAD workstations, and classroom test hall facilities.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {pageMedia.map((m, idx) => {
+              const isVid = m.mediaType === 'video' || m.videoUrl || isVideoMedia(m);
+              return (
+                <div
+                  key={m.id || idx}
+                  className="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-lg transition-all group"
+                >
+                  <div
+                    className="relative h-48 sm:h-52 bg-slate-900 overflow-hidden cursor-pointer"
+                    onClick={() => {
+                      if (isVid && m.videoUrl) {
+                        setActiveVideo({
+                          url: m.videoUrl,
+                          title: m.title || 'Engineering Video Tour'
+                        });
+                      }
+                    }}
+                  >
+                    <img
+                      src={getEmbedImageUrl(m.image || m.url || '/images/hero-engineering.png')}
+                      alt={m.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      onError={handleImageError}
+                    />
+                    {isVid && (
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                        <div className="w-12 h-12 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center shadow-lg transition-transform group-hover:scale-110">
+                          <FiPlay className="text-xl ml-0.5" />
+                        </div>
+                      </div>
+                    )}
+                    {m.category && (
+                      <span className="absolute top-3 left-3 bg-[#1C2E60]/85 text-white text-[10px] font-bold px-2.5 py-1 rounded-md backdrop-blur-xs">
+                        {m.category}
+                      </span>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <h4 className="text-sm font-bold text-[#1C2E60] leading-snug">{m.title}</h4>
+                    {m.desc && <p className="text-xs text-slate-500 mt-1 line-clamp-2">{m.desc}</p>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* 6. DEDICATED ENGINEERING ADMISSION INQUIRY FORM */}
       <section id="engineering-inquiry" className="py-16 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-24">

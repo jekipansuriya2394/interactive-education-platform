@@ -512,6 +512,10 @@ export const adminData = {
         const photoKeys = ['allPhotos', 'schoolPhotos', 'gallery', 'pagePhotos', 'heroBanners', 'popup'];
         return photoKeys.some(k => perms.includes(k) || perms.includes(`${k}:view`));
       }
+
+      if (permission === 'engineering') {
+        return perms.includes('engineering') || perms.includes('courses') || perms.includes('engineering:view');
+      }
       
       if (perms.includes(permission)) return true;
       const key = `${permission}:${action}`;

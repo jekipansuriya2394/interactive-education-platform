@@ -346,6 +346,7 @@ function AdminPanel({ onLogout }) {
 
   const navItems = [
     { key: 'dashboard',     label: 'Dashboard',            icon: FiGrid,         color: '#3B82F6' },
+    { key: 'engineering',   label: 'Noble Engineering',    icon: FiCpu,          color: '#EC4899' },
     { key: 'allPhotos',     label: 'All Photos & Media',   icon: FiCamera,       color: '#8B5CF6', badge: totalMediaBadgeCount },
     { key: 'partnerSchools',label: 'Partner Schools',     icon: FiBookOpen,     color: '#10B981', badge: Array.isArray(partnerSchools) ? partnerSchools.length : 0 },
     { key: 'announcements', label: 'Announcements',        icon: FiVolume2,      color: '#F59E0B' },
@@ -913,6 +914,7 @@ function AdminPanel({ onLogout }) {
     const totalPagePhotos = Object.values(pageImages || {}).reduce((acc, arr) => acc + (Array.isArray(arr) ? arr.length : 0), 0);
 
     const cards = [
+      { label: 'Noble Engineering', value: `${(Array.isArray(courses) ? courses.filter(c => (c.category || '').toLowerCase() === 'engineering').length : 0) || 4} Pillars`, icon: FiCpu, color: '#EC4899', bg: '#500724', section: 'engineering' },
       { label: 'Hero Banners', value: Array.isArray(heroBanners) ? heroBanners.length : 0, icon: FiLayers, color: '#3B82F6', bg: '#1E3A5F', section: 'heroBanners' },
       { label: 'Total Inquiries', value: Array.isArray(inquiries) ? inquiries.length : 0, icon: FiInbox, color: '#06B6D4', bg: '#083344', section: 'inquiries' },
       { label: 'Gallery Photos', value: Array.isArray(gallery) ? gallery.length : 0, icon: FiImage, color: '#8B5CF6', bg: '#2D1B69', section: 'gallery' },
@@ -931,6 +933,7 @@ function AdminPanel({ onLogout }) {
     const currentUser = adminData.getCurrentUser();
 
     const quickActions = [
+      { label: 'Noble Engineering', icon: FiCpu, action: () => navigate('engineering'), section: 'engineering', actionType: 'view' },
       { label: 'Add Course', icon: FiBookOpen, action: () => { navigate('courses'); setTimeout(() => setEditingCourse({ name:'', category:'school', tagline:'', description:'', subjects:'', mode:'Offline + Online', features:[] }), 100); }, section: 'courses', actionType: 'edit' },
       { label: 'Add Hero Banner', icon: FiLayers, action: () => { navigate('heroBanners'); setTimeout(() => setEditingHeroBanner({ title:'', highlightWord:'', subtitle:'', desc:'', image:'', cardImage:'', buttonText:'Book Free Counselling', buttonLink:'#inquiry-form' }), 100); }, section: 'heroBanners', actionType: 'edit' },
       { label: 'Add Page Photo', icon: FiCamera, action: () => { navigate('pagePhotos'); setTimeout(() => setEditingPagePhoto({ title:'', category:'', image:'', desc:'' }), 100); }, section: 'pagePhotos', actionType: 'edit' },
@@ -1890,6 +1893,10 @@ function AdminPanel({ onLogout }) {
         }
       }
 
+      if (src.includes('engineering') || msg.includes('engineering') || q.formSource === 'Noble Engineering Page') {
+        return 'Noble Engineering';
+      }
+
       if (src.includes('course') || msg.includes('course') || msg.includes('ddcet') || msg.includes('neet') || msg.includes('jee')) {
         return 'Course Forms';
       }
@@ -1908,6 +1915,7 @@ function AdminPanel({ onLogout }) {
 
     const formCategories = [
       { key: 'All', label: '📋 All Forms (Master)', badge: inquiries.length, color: '#388BFD' },
+      { key: 'Noble Engineering', label: '⚙️ Noble Engineering Form', badge: inquiries.filter(q => getFormCategory(q) === 'Noble Engineering').length, color: '#EC4899' },
       { key: 'General Admission', label: '🎓 General Admission Form', badge: inquiries.filter(q => getFormCategory(q) === 'General Admission').length, color: '#3B82F6' },
       ...schoolFormCategories,
       { key: 'Course Forms', label: '📚 Course Page Forms', badge: inquiries.filter(q => getFormCategory(q) === 'Course Forms').length, color: '#06B6D4' },
@@ -2005,7 +2013,8 @@ function AdminPanel({ onLogout }) {
                   const category = getFormCategory(q);
                   const badgeColor = category === 'School Forms' ? '#10B981' :
                                      category === 'Course Forms' ? '#06B6D4' :
-                                     category === 'Counseling Forms' ? '#F59E0B' : '#3B82F6';
+                                     category === 'Counseling Forms' ? '#F59E0B' :
+                                     category === 'Noble Engineering' ? '#EC4899' : '#3B82F6';
 
                   return (
                     <tr key={q.id}>
@@ -3350,7 +3359,8 @@ function AdminPanel({ onLogout }) {
     { key: 'courses', label: '📚 Courses Page' },
     { key: 'admission', label: '🎓 Admission Guidance Page' },
     { key: 'studentCorner', label: '💻 Student Corner Page' },
-    { key: 'contact', label: '📍 Contact & Location Page' }
+    { key: 'contact', label: '📍 Contact & Location Page' },
+    { key: 'engineering', label: '⚙️ Noble Engineering Page' }
   ];
 
   const savePagePhoto = (form) => {
@@ -4090,6 +4100,524 @@ function AdminPanel({ onLogout }) {
 
   };
 
+  // ─── NOBLE ENGINEERING MANAGEMENT ─────────────────────────────────────────
+  const renderEngineering = () => {
+    const engineeringCourses = (Array.isArray(courses) ? courses : []).filter(
+      c => (c.category || '').toLowerCase() === 'engineering'
+    );
+
+    const engineeringInquiries = (Array.isArray(inquiries) ? inquiries : []).filter(q => {
+      const src = (q.formSource || q.formType || '').toLowerCase();
+      const msg = (q.message || '').toLowerCase();
+      const prg = (q.program || '').toLowerCase();
+      return src.includes('engineering') || msg.includes('engineering') || prg.includes('ddcet') || prg.includes('diploma') || prg.includes('degree') || q.formSource === 'Noble Engineering Page';
+    });
+
+    const engineeringResults = (Array.isArray(results) ? results : []).filter(r => {
+      const exam = (r.exam || '').toLowerCase();
+      const branch = (r.branch || '').toLowerCase();
+      return exam.includes('ddcet') || exam.includes('diploma') || exam.includes('degree') || branch.includes('engineering');
+    });
+
+    const engineeringMedia = pageImages?.engineering || [];
+
+    const pillars = [
+      {
+        id: 'diploma',
+        title: 'Diploma Engineering',
+        badge: 'GTU & Autonomous',
+        color: '#3B82F6',
+        bg: '#1E3A5F',
+        icon: FiFileText,
+        desc: 'Sem 1 to 6 coaching, GTU past 10-year question papers, mid-sem score booster tests, and remedial backlog clearance.'
+      },
+      {
+        id: 'degree',
+        title: 'Degree Engineering',
+        badge: 'B.E. / B.Tech',
+        color: '#10B981',
+        bg: '#064E3B',
+        icon: FiAward,
+        desc: 'Engineering Maths (1, 2, 3), core mechanical, civil, computer & IT subjects across GTU, MSU, Parul, SVIT.'
+      },
+      {
+        id: 'ddcet',
+        title: 'DDCET Entrance Coaching',
+        badge: 'Lateral Entry to Degree',
+        color: '#DC2626',
+        bg: '#450A0A',
+        icon: FiTrendingUp,
+        desc: 'Diploma to Degree common entrance test, 15 full OMR mock trials, 300+ DPP banks, and ACPC choice filling.'
+      },
+      {
+        id: 'internship',
+        title: 'Industrial Internship',
+        badge: 'Projects & Training',
+        color: '#8B5CF6',
+        bg: '#2D1B69',
+        icon: FiCpu,
+        desc: 'Live projects in MERN, Python, AutoCAD, SolidWorks, ISO-compliant internship certificates & college submission reports.'
+      }
+    ];
+
+    return (
+      <div>
+        <SectionHeader
+          title="Noble Engineering Management"
+          subtitle="Diploma Coaching (GTU), Degree Engineering, DDCET Lateral Entry, Industrial Projects & Media"
+          action={
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <a
+                href="/engineering"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ap-btn ap-btn-secondary"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+              >
+                <FiExternalLink /> View Live Page ↗
+              </a>
+              {adminData.hasPermission('courses', 'edit') && (
+                <button
+                  className="ap-btn ap-btn-primary"
+                  onClick={() => setEditingCourse({
+                    name: '',
+                    category: 'engineering',
+                    tagline: 'Semester & Exam Prep',
+                    description: '',
+                    subjects: '',
+                    mode: 'Offline + Online',
+                    features: []
+                  })}
+                >
+                  <FiPlus /> Add Engineering Course
+                </button>
+              )}
+              {adminData.hasPermission('pagePhotos', 'edit') && (
+                <button
+                  className="ap-btn"
+                  style={{ background: '#4F46E5', color: '#fff', border: 'none' }}
+                  onClick={() => {
+                    setActivePageTab('engineering');
+                    setActivePhotoSubTab('pagePhotos');
+                    setActiveSection('allPhotos');
+                  }}
+                >
+                  <FiCamera /> Manage Page Photos & Media ({engineeringMedia.length})
+                </button>
+              )}
+            </div>
+          }
+        />
+
+        {/* 4 Core Pillars Overview Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16, marginBottom: 28 }}>
+          {pillars.map(p => {
+            const Icon = p.icon;
+            return (
+              <div
+                key={p.id}
+                className="ap-card"
+                style={{
+                  background: `linear-gradient(135deg, #0F172A 0%, ${p.bg} 100%)`,
+                  border: `1px solid ${p.color}44`,
+                  borderLeft: `4px solid ${p.color}`,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                    <span style={{
+                      background: `${p.color}22`,
+                      color: p.color,
+                      fontSize: 10,
+                      fontWeight: 800,
+                      padding: '3px 8px',
+                      borderRadius: 6,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.04em'
+                    }}>
+                      {p.badge}
+                    </span>
+                    <span style={{ color: p.color }}>
+                      <Icon size={20} />
+                    </span>
+                  </div>
+                  <h4 style={{ color: '#fff', fontSize: 16, fontWeight: 700, margin: '0 0 6px' }}>{p.title}</h4>
+                  <p style={{ color: '#94A3B8', fontSize: 12, lineHeight: 1.5, margin: 0 }}>{p.desc}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* SECTION 1: Active Engineering Courses */}
+        <div style={{ marginBottom: 32 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
+            <div>
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: '#F3F4F6', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                📚 Noble Engineering Courses & Modules ({engineeringCourses.length})
+              </h3>
+              <p style={{ color: '#6B7280', fontSize: 12, margin: '2px 0 0' }}>
+                Courses displayed on the website under Engineering division
+              </p>
+            </div>
+            {adminData.hasPermission('courses', 'edit') && (
+              <button
+                className="ap-btn ap-btn-primary ap-btn-sm"
+                onClick={() => setEditingCourse({
+                  name: '',
+                  category: 'engineering',
+                  tagline: 'GTU & Competitive Support',
+                  description: '',
+                  subjects: '',
+                  mode: 'Offline + Online',
+                  features: []
+                })}
+              >
+                <FiPlus /> Add Course
+              </button>
+            )}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+            {engineeringCourses.map(c => {
+              const realIdx = courses.indexOf(c);
+              const feats = Array.isArray(c.features)
+                ? c.features
+                : (typeof c.features === 'string' ? c.features.split('\n').filter(Boolean) : []);
+
+              return (
+                <div
+                  key={c.id || realIdx}
+                  className="ap-card"
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    borderLeft: '4px solid #EC4899',
+                    position: 'relative'
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                      <span style={{
+                        background: '#EC489922',
+                        color: '#F472B6',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        padding: '2px 8px',
+                        borderRadius: 6,
+                        border: '1px solid #EC489944',
+                        textTransform: 'uppercase'
+                      }}>
+                        {c.category}
+                      </span>
+                      {c.tagline && (
+                        <span style={{
+                          background: '#F59E0B1A',
+                          color: '#FBBF24',
+                          fontSize: 11,
+                          fontWeight: 600,
+                          padding: '2px 8px',
+                          borderRadius: 6
+                        }}>
+                          {c.tagline}
+                        </span>
+                      )}
+                    </div>
+                    <h4 style={{ color: '#fff', fontSize: 16, fontWeight: 700, margin: '0 0 6px' }}>{c.name || c.title}</h4>
+                    <p style={{ color: '#9CA3AF', fontSize: 12, lineHeight: 1.5, marginBottom: 10 }}>{c.description}</p>
+                    {c.subjects && (
+                      <div style={{ fontSize: 12, color: '#C9D1D9', marginBottom: 8, background: '#0F172A', padding: '6px 10px', borderRadius: 6 }}>
+                        <span style={{ color: '#60A5FA', fontWeight: 600 }}>Subjects:</span> {c.subjects}
+                      </div>
+                    )}
+                    {feats.length > 0 && (
+                      <ul style={{ margin: '8px 0 0', paddingLeft: 16, color: '#9CA3AF', fontSize: 11, lineHeight: 1.5 }}>
+                        {feats.slice(0, 3).map((f, idx) => (
+                          <li key={idx}>{f}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, borderTop: '1px solid #21262D', marginTop: 12 }}>
+                    <span style={{ fontSize: 11, color: '#6B7280', fontWeight: 600 }}>{c.mode || 'Offline + Online'}</span>
+                    <div className="ap-list-actions">
+                      {adminData.hasPermission('courses', 'edit') && (
+                        <button
+                          className="ap-icon-btn"
+                          title="Edit Course"
+                          onClick={() => setEditingCourse({ ...c, _index: realIdx })}
+                        >
+                          <FiEdit2 />
+                        </button>
+                      )}
+                      {adminData.hasPermission('courses', 'delete') && (
+                        <button
+                          className="ap-icon-btn ap-icon-btn-danger"
+                          title="Delete Course"
+                          onClick={() => delCourse(realIdx)}
+                        >
+                          <FiTrash2 />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* SECTION 2: Engineering Student Achievers */}
+        <div style={{ marginBottom: 32 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
+            <div>
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: '#F3F4F6', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                🏆 Noble Engineering Student Achievers & Toppers ({engineeringResults.length})
+              </h3>
+              <p style={{ color: '#6B7280', fontSize: 12, margin: '2px 0 0' }}>
+                GTU rankers, DDCET top ranks & semester SPI toppers
+              </p>
+            </div>
+            {adminData.hasPermission('results', 'edit') && (
+              <button
+                className="ap-btn ap-btn-primary ap-btn-sm"
+                onClick={() => setEditingResult({
+                  name: '',
+                  score: 'Rank 12',
+                  exam: 'DDCET Entrance',
+                  branch: 'Computer / IT Engineering',
+                  status: 'Admitted in Top College',
+                  school: 'Noble Engineering Vadodara',
+                  image: ''
+                })}
+              >
+                <FiPlus /> Add Engineering Topper
+              </button>
+            )}
+          </div>
+
+          {engineeringResults.length === 0 ? (
+            <EmptyState icon={FiAward} message="No engineering rankers added yet. Click 'Add Engineering Topper' to showcase DDCET or GTU achievers." />
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+              {engineeringResults.map((r, i) => {
+                const realIdx = results.indexOf(r);
+                return (
+                  <div key={i} className="ap-card" style={{ display: 'flex', gap: 14, alignItems: 'center', borderLeft: '4px solid #10B981' }}>
+                    <div style={{ width: 56, height: 56, borderRadius: '50%', overflow: 'hidden', background: '#1E293B', flexShrink: 0, border: '2px solid #10B981' }}>
+                      <img
+                        src={getEmbedImageUrl(r.image || '/images/hero-engineering.png')}
+                        alt={r.name}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        onError={handleImageError}
+                      />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h4 style={{ color: '#fff', fontSize: 14, fontWeight: 700, margin: '0 0 2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</h4>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                        <span style={{ color: '#10B981', fontWeight: 800, fontSize: 13 }}>{r.score}</span>
+                        <span style={{ color: '#6B7280', fontSize: 11 }}>• {r.exam}</span>
+                      </div>
+                      <div style={{ color: '#9CA3AF', fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.branch}</div>
+                    </div>
+                    <div className="ap-list-actions" style={{ flexShrink: 0 }}>
+                      {adminData.hasPermission('results', 'edit') && (
+                        <button className="ap-icon-btn" title="Edit" onClick={() => setEditingResult({ ...r, _index: realIdx })}>
+                          <FiEdit2 size={13} />
+                        </button>
+                      )}
+                      {adminData.hasPermission('results', 'delete') && (
+                        <button className="ap-icon-btn ap-icon-btn-danger" title="Delete" onClick={() => delResult(realIdx)}>
+                          <FiTrash2 size={13} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* SECTION 3: Engineering Inquiries */}
+        <div style={{ marginBottom: 32 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
+            <div>
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: '#F3F4F6', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                📥 Noble Engineering Admission Inquiries ({engineeringInquiries.length})
+              </h3>
+              <p style={{ color: '#6B7280', fontSize: 12, margin: '2px 0 0' }}>
+                Students inquiring for Diploma, Degree, DDCET, or Industrial Internships
+              </p>
+            </div>
+            {engineeringInquiries.length > 0 && (
+              <button
+                className="ap-btn ap-btn-primary ap-btn-sm"
+                onClick={() => inquiryService.downloadExcel(engineeringInquiries)}
+              >
+                <FiDownload /> Export Engineering Inquiries CSV
+              </button>
+            )}
+          </div>
+
+          {engineeringInquiries.length === 0 ? (
+            <EmptyState icon={FiInbox} message="No engineering inquiries received yet. When students submit the form on the Noble Engineering page, they will show up here instantly." />
+          ) : (
+            <div className="ap-table-wrap">
+              <table className="ap-table">
+                <thead>
+                  <tr>
+                    <th>Timestamp</th>
+                    <th>Student Name</th>
+                    <th>Phone</th>
+                    <th>Target Program</th>
+                    <th>Query / Details</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {engineeringInquiries.map(q => {
+                    const cleanPhone = (q.phone || '').replace(/[^0-9]/g, '');
+                    return (
+                      <tr key={q.id}>
+                        <td style={{ color: '#9CA3AF', fontSize: 11, whiteSpace: 'nowrap' }}>{q.timestamp || '—'}</td>
+                        <td><strong style={{ color: '#F3F4F6' }}>{q.name || '—'}</strong></td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <a href={`tel:${q.phone}`} style={{ color: '#60A5FA', fontWeight: 700, fontSize: 12 }}>
+                              📞 {q.phone || '—'}
+                            </a>
+                            {cleanPhone && (
+                              <a
+                                href={`https://wa.me/91${cleanPhone.slice(-10)}?text=Hello%20${encodeURIComponent(q.name || 'Student')},%20we%20received%20your%20inquiry%20for%20Noble%20Engineering%20classes.`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ color: '#22C55E', fontSize: 14 }}
+                                title="Chat on WhatsApp"
+                              >
+                                💬
+                              </a>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          <span className="ap-badge" style={{ background: '#EC489922', color: '#F472B6', border: '1px solid #EC489944' }}>
+                            {q.program || 'Engineering Coaching'}
+                          </span>
+                        </td>
+                        <td style={{ maxWidth: 300, color: '#9CA3AF', fontSize: 12 }}>
+                          {q.message || '—'}
+                        </td>
+                        <td>
+                          {adminData.hasPermission('inquiries', 'delete') && (
+                            <button className="ap-icon-btn ap-icon-btn-danger" onClick={() => delInquiry(q.id)} title="Delete inquiry">
+                              <FiTrash2 />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* SECTION 4: Engineering Page Photos & Media */}
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
+            <div>
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: '#F3F4F6', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                🖼️ Page Photos & Media Showcase ({engineeringMedia.length})
+              </h3>
+              <p style={{ color: '#6B7280', fontSize: 12, margin: '2px 0 0' }}>
+                Photos and video lectures displayed specifically on the Noble Engineering page
+              </p>
+            </div>
+            {adminData.hasPermission('pagePhotos', 'edit') && (
+              <button
+                className="ap-btn ap-btn-primary ap-btn-sm"
+                onClick={() => {
+                  setActivePageTab('engineering');
+                  setActivePhotoSubTab('pagePhotos');
+                  setActiveSection('allPhotos');
+                  setTimeout(() => setEditingPagePhoto({ title: '', category: 'Engineering Labs', image: '', desc: '' }), 150);
+                }}
+              >
+                <FiPlus /> Add Photo / Video
+              </button>
+            )}
+          </div>
+
+          {engineeringMedia.length === 0 ? (
+            <div className="ap-card" style={{ textAlign: 'center', padding: '30px 20px', background: '#0F172A', border: '1px dashed #334155' }}>
+              <FiCamera size={36} style={{ color: '#64748B', marginBottom: 10 }} />
+              <p style={{ color: '#94A3B8', fontSize: 14, margin: '0 0 12px' }}>
+                No dedicated photos or videos uploaded for the Noble Engineering page yet.
+              </p>
+              <button
+                className="ap-btn ap-btn-secondary ap-btn-sm"
+                onClick={() => {
+                  setActivePageTab('engineering');
+                  setActivePhotoSubTab('pagePhotos');
+                  setActiveSection('allPhotos');
+                }}
+              >
+                Go to Page Photos Manager
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 14 }}>
+              {engineeringMedia.map((m, idx) => (
+                <div key={idx} className="ap-card" style={{ padding: 10, background: '#0F172A' }}>
+                  <div style={{ height: 130, borderRadius: 8, overflow: 'hidden', marginBottom: 8, background: '#1E293B', position: 'relative' }}>
+                    <img
+                      src={getEmbedImageUrl(m.image || m.url || '/images/hero-engineering.png')}
+                      alt={m.title}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      onError={handleImageError}
+                    />
+                    {(m.mediaType === 'video' || m.videoUrl) && (
+                      <span style={{ position: 'absolute', top: 6, right: 6, background: '#DC2626', color: '#fff', fontSize: 10, fontWeight: 800, padding: '2px 6px', borderRadius: 4 }}>
+                        VIDEO
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.title}</div>
+                  <div style={{ fontSize: 11, color: '#64748B' }}>{m.category || 'General'}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Modals when triggered from within Engineering tab */}
+        {editingCourse && (
+          <CourseModal
+            item={editingCourse}
+            existingCategories={['engineering', 'school', 'science', 'competitive', 'guidance']}
+            onSave={saveCourse}
+            onClose={() => setEditingCourse(null)}
+          />
+        )}
+
+        {editingResult && (
+          <ResultModal
+            item={editingResult}
+            onSave={saveResult}
+            onClose={() => setEditingResult(null)}
+          />
+        )}
+      </div>
+    );
+  };
+
   const renderSection = () => {
     if (activeSection !== 'dashboard' && activeSection !== 'settings' && !adminData.hasPermission(activeSection)) {
       return (
@@ -4104,6 +4632,7 @@ function AdminPanel({ onLogout }) {
     }
     switch (activeSection) {
       case 'dashboard':     return renderDashboard();
+      case 'engineering':   return renderEngineering();
       case 'allPhotos':     return renderAllPhotos();
       case 'heroBanners':   return renderHeroBanners();
       case 'partnerSchools':return renderPartnerSchools();
