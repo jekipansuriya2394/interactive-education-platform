@@ -118,7 +118,7 @@ export default function Navbar() {
     { name: 'About', href: '/about' },
     {
       name: 'Schools',
-      href: '/school',
+      href: '/schools',
       dropdownGroups: [
         {
           title: 'Partner Campuses',
@@ -131,9 +131,9 @@ export default function Navbar() {
         {
           title: 'Campus Life & Admissions',
           items: [
-            { name: 'All Partner Schools', href: '/school', desc: 'Compare integrated partner campuses', icon: FiMapPin },
+            { name: 'Schools Overview', href: '/schools', desc: 'Network overview & campus comparison', icon: FiMapPin },
             { name: 'School Toppers & Results', href: '/results', desc: 'Board percentile rankers from our schools', icon: FiTrendingUp },
-            { name: 'Direct School Inquiry', href: '/school#school-inquiry', desc: 'Admission guidance & batch details', icon: FiMessageSquare }
+            { name: 'Direct School Inquiry', href: '/schools#school-inquiry', desc: 'Admission guidance & batch details', icon: FiMessageSquare }
           ]
         }
       ]
@@ -257,7 +257,7 @@ export default function Navbar() {
             {/* Center: Desktop Menu (Clean, spacious, comfortable pill spacing) */}
             <div className="hidden lg:flex items-center justify-center flex-1 gap-1 xl:gap-2 2xl:gap-3 h-full">
               {navStructure.map((nav) => {
-                const isActive = currentPath === nav.href;
+                const isActive = currentPath === nav.href || (nav.href === '/schools' && (currentPath === '/schools' || currentPath.startsWith('/school')));
                 return (
                   <div
                     key={nav.name}

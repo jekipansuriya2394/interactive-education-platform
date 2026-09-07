@@ -842,7 +842,7 @@ export default function Home() {
 
           <div className="text-center mt-12">
             <button
-              onClick={() => navigate('/school')}
+              onClick={() => navigate('/schools')}
               className="inline-flex items-center gap-2 border-2 border-[#1C2E60] hover:bg-[#1C2E60] text-[#1C2E60] hover:text-white font-black px-8 py-3.5 rounded-2xl text-xs uppercase tracking-wider transition-all duration-300 cursor-pointer"
             >
               <span>View All Partner School Campuses</span>

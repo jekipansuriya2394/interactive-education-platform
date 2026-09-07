@@ -45,7 +45,7 @@ export default function Footer() {
     { name: 'Royal School (Ajwa Rd)', href: '/school?name=Royal%20School' },
     { name: 'Raghukul Vidyalay (VIP Rd)', href: '/school?name=Raghukul%20Vidyalay' },
     { name: 'New Heaven (Waghodia Rd)', href: '/school?name=New%20Heaven%20Vidyalaya' },
-    { name: 'All Partner Campuses', href: '/school' }
+    { name: 'All Partner Campuses', href: '/schools' }
   ];
 
   return (

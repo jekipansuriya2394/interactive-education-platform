@@ -14,6 +14,7 @@ import OnlineTest from './pages/OnlineTest';
 import Contact from './pages/Contact';
 
 import SchoolDetail from './pages/SchoolDetail';
+import SchoolsOverview from './pages/SchoolsOverview';
 
 import AdminPanel from './pages/AdminPanel';
 import BlogPage from './components/BlogPage';
@@ -85,7 +86,7 @@ export default function App() {
       
       if (window.location.hash && !window.location.hash.startsWith('#/')) {
         const id = window.location.hash.substring(1);
-        const knownRoutes = ['admin', 'about', 'courses', 'admission-guidance', 'results', 'gallery', 'student-corner', 'online-test', 'contact', 'blog', 'school'];
+        const knownRoutes = ['admin', 'about', 'courses', 'admission-guidance', 'results', 'gallery', 'student-corner', 'online-test', 'contact', 'blog', 'school', 'schools'];
         if (!knownRoutes.some(r => id === r || id.startsWith(r + '/'))) {
           setTimeout(() => {
             const element = document.getElementById(id);
@@ -112,6 +113,15 @@ export default function App() {
 
   // Simple path router mapping
   const renderView = () => {
+    // Dedicated Schools Overview Page
+    if (
+      currentPath === '/schools' || 
+      currentPath === '/schools/' || 
+      (currentPath === '/school' && !window.location.search && !window.location.pathname.replace('/school', '').replace('/', '').trim())
+    ) {
+      return <SchoolsOverview />;
+    }
+    // Specific Individual School Detail Page
     if (currentPath.startsWith('/school')) {
       return <SchoolDetail />;
     }

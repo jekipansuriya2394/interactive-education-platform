@@ -81,7 +81,7 @@ export default function SchoolDetail() {
         <h2 className="text-2xl font-black text-[#1C2E60] mb-3">Partner School Not Found</h2>
         <p className="text-slate-500 mb-6 text-sm">The requested school details could not be found.</p>
         <button
-          onClick={() => navigate('/about')}
+          onClick={() => navigate('/schools')}
           className="bg-[#DC2626] text-white px-6 py-3 rounded-2xl font-bold text-xs uppercase tracking-wider shadow-md hover:bg-red-700 transition-all cursor-pointer"
         >
           View All Partner Schools
@@ -155,7 +155,7 @@ export default function SchoolDetail() {
           <div className="flex items-center gap-2 text-xs font-semibold text-blue-200/80 mb-6">
             <span onClick={() => navigate('/')} className="hover:text-white cursor-pointer transition-colors">Home</span>
             <FiChevronRight className="text-xs" />
-            <span onClick={() => navigate('/about')} className="hover:text-white cursor-pointer transition-colors">Partner Schools</span>
+            <span onClick={() => navigate('/schools')} className="hover:text-white cursor-pointer transition-colors">Partner Schools</span>
             <FiChevronRight className="text-xs" />
             <span className="text-white font-extrabold">{selectedSchool.name}</span>
           </div>
