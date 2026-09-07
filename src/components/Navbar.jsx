@@ -160,16 +160,39 @@ export default function Navbar() {
         {
           title: 'Engineering Semesters',
           items: [
-            { name: 'Diploma Coaching', href: '/courses#diploma', desc: 'Semester syllabus target tutorials', icon: FiFileText },
-            { name: 'Degree Engineering', href: '/courses#degree', desc: 'Advanced semester exam guidelines', icon: FiAward },
-            { name: 'DDCET Special Entrance', href: '/courses#ddcet', desc: 'Lateral entry degree mock tests', icon: FiTrendingUp }
+            { name: 'Diploma Coaching', href: '/engineering#diploma', desc: 'GTU Sem 1 to 6 • All Branches', icon: FiFileText },
+            { name: 'Degree Engineering', href: '/engineering#degree', desc: 'Advanced semester exam guidelines', icon: FiAward },
+            { name: 'DDCET Special Entrance', href: '/engineering#ddcet', desc: 'Lateral entry degree mock tests', icon: FiTrendingUp },
+            { name: 'Industrial Internship', href: '/engineering#internship', desc: 'Live project training & certification', icon: FiCpu }
           ]
         },
         {
           title: 'Admissions & Career',
           items: [
-            { name: 'ACPC Option filling', href: '/courses#career-guidance', desc: 'Counseling choice list support', icon: FiMapPin },
-            { name: 'Student Corner Portal', href: '/courses#projects-training', desc: 'Access study notes & syllabus', icon: FiUsers }
+            { name: 'ACPC Option filling', href: '/admission-guidance#stream-selection', desc: 'Counseling choice list support', icon: FiMapPin },
+            { name: 'Student Corner Portal', href: '/student-corner', desc: 'Access study notes & syllabus', icon: FiUsers }
+          ]
+        }
+      ]
+    },
+    {
+      name: 'Engineering',
+      href: '/engineering',
+      dropdownGroups: [
+        {
+          title: 'Noble Engineering Programs',
+          items: [
+            { name: 'Diploma Coaching', href: '/engineering#diploma', desc: 'GTU Sem 1 to 6 • All Branches', icon: FiFileText },
+            { name: 'Degree Engineering', href: '/engineering#degree', desc: 'Maths 1-2-3 & Core Technical Subjects', icon: FiAward },
+            { name: 'DDCET Entrance Prep', href: '/engineering#ddcet', desc: 'Diploma to Degree Lateral Entry Mock Tests', icon: FiTrendingUp },
+            { name: 'Industrial Internship', href: '/engineering#internship', desc: 'Hands-on Software, CAD & Live Projects', icon: FiCpu }
+          ]
+        },
+        {
+          title: 'Admissions & Achievers',
+          items: [
+            { name: 'Engineering Admission Form', href: '/engineering#engineering-inquiry', desc: 'Book Demo Lecture & Batch Timetable', icon: FiMessageSquare },
+            { name: 'Engineering Achievers', href: '/engineering#achievers', desc: 'DDCET Rankers & GTU 10 SPI Toppers', icon: FiCheckCircle }
           ]
         }
       ]

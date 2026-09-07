@@ -23,22 +23,24 @@ export default function Footer() {
   const quickLinks = [
     { name: 'Home', href: '/' },
     { name: 'About Us', href: '/about' },
-    { name: 'Partner Schools', href: '/school' },
-    { name: 'Courses', href: '/courses' },
+    { name: 'Partner Schools', href: '/schools' },
+    { name: 'Noble Engineering', href: '/engineering' },
+    { name: 'Academic Courses', href: '/courses' },
     { name: 'Admission Guidance', href: '/admission-guidance' },
-    { name: 'Results', href: '/results' },
+    { name: 'Student Results', href: '/results' },
     { name: 'Gallery', href: '/gallery' },
     { name: 'Blog', href: '/blog' },
     { name: 'Contact Us', href: '/contact' }
   ];
 
   const courseLinks = [
-    { name: '8th to 10th Coaching', href: '/courses#school-8-10' },
-    { name: '11th & 12th Science', href: '/courses#science-11-12' },
-    { name: 'NEET / JEE Prep', href: '/courses#neet' },
-    { name: 'Diploma Engineering', href: '/courses#diploma' },
-    { name: 'DDCET Preparation', href: '/courses#ddcet' },
-    { name: 'Career Counseling', href: '/courses#career-guidance' }
+    { name: 'Noble Engineering Hub', href: '/engineering' },
+    { name: 'Diploma Engineering (GTU)', href: '/engineering#diploma' },
+    { name: 'Degree Engineering (B.E./B.Tech)', href: '/engineering#degree' },
+    { name: 'DDCET Entrance Coaching', href: '/engineering#ddcet' },
+    { name: 'Industrial Internship & Projects', href: '/engineering#internship' },
+    { name: '11th & 12th Science (NEET/JEE)', href: '/courses#science-11-12' },
+    { name: '8th to 10th Board Foundation', href: '/courses#school-8-10' }
   ];
 
   const schoolLinks = [

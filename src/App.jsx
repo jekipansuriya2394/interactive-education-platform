@@ -15,6 +15,7 @@ import Contact from './pages/Contact';
 
 import SchoolDetail from './pages/SchoolDetail';
 import SchoolsOverview from './pages/SchoolsOverview';
+import EngineeringPage from './pages/EngineeringPage';
 
 import AdminPanel from './pages/AdminPanel';
 import BlogPage from './components/BlogPage';
@@ -132,6 +133,11 @@ export default function App() {
         return <About />;
       case '/courses':
         return <Courses />;
+      case '/engineering':
+      case '/noble-engineering':
+      case '/diploma-engineering':
+      case '/ddcet-coaching':
+        return <EngineeringPage />;
       case '/admission-guidance':
         return <AdmissionGuidance />;
       case '/results':
