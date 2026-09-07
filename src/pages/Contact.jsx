@@ -107,15 +107,15 @@ export default function Contact() {
 
       {/* Hero Header */}
       <section
-        className="py-16 sm:py-20 text-white text-center relative overflow-hidden bg-cover bg-no-repeat"
+        className="py-20 text-white text-center relative overflow-hidden bg-cover bg-no-repeat"
         style={{ backgroundImage: `url('${getEmbedImageUrl('/images/bg-contact-hero.png')}')`, backgroundPosition: 'center 60%' }}
       >
-        <div className="absolute inset-0 bg-[#1C2E60]/85 w-full h-full" />
+        <div className="absolute inset-0 bg-[#1C2E60]/75 w-full h-full" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <span className="text-[#DC2626] font-extrabold tracking-widest text-xs uppercase bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20">
+          <span className="text-[#DC2626] font-extrabold tracking-widest text-xs uppercase bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20 inline-block">
             Get in Touch
           </span>
-          <h1 className="text-4xl sm:text-5xl font-black mt-4 mb-4 text-white leading-tight text-glow-blue">
+          <h1 className="text-4xl sm:text-5xl font-black mt-6 mb-6 text-white leading-tight text-glow-blue">
             Contact & Location
           </h1>
           <p className="text-zinc-300 text-sm sm:text-base font-light leading-relaxed max-w-2xl mx-auto">

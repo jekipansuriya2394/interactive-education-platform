@@ -136,41 +136,27 @@ export default function SchoolsOverview() {
   return (
     <div className="bg-[#F8FAFC] min-h-screen text-[#1C2E60]">
 
-      {/* 1. HERO HEADER SECTION (SHORT & COMPACT, MATCHING COURSES & RESULTS SIZING) */}
+      {/* 1. HERO HEADER SECTION (IDENTICAL SIZING, PADDING & STYLE TO ABOUT PAGE) */}
       <section
-        className="py-10 sm:py-12 text-white text-center relative overflow-hidden bg-cover bg-no-repeat bg-center"
-        style={{ backgroundImage: `url('${getEmbedImageUrl('/images/bg-courses-hero.png')}')` }}
+        className="py-20 text-white text-center relative overflow-hidden bg-cover bg-no-repeat"
+        style={{ backgroundImage: `url('${getEmbedImageUrl('/images/bg-about-hero.png')}')`, backgroundPosition: 'center 80%' }}
       >
-        <div className="absolute inset-0 bg-[#1C2E60]/85 w-full h-full" />
-        <div className="absolute top-0 right-0 w-80 h-80 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
-
+        <div className="absolute inset-0 bg-[#1C2E60]/75 w-full h-full" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          
-          {/* Breadcrumb Navigation */}
-          <div className="flex items-center justify-center gap-2 text-[11px] font-semibold text-blue-200/80 mb-2">
-            <span onClick={() => navigate('/')} className="hover:text-white cursor-pointer transition-colors">Home</span>
-            <FiChevronRight className="text-[10px]" />
-            <span className="text-white font-bold">Partner Schools Network</span>
-          </div>
-
-          <span className="text-[#DC2626] font-extrabold tracking-widest text-[10px] sm:text-xs uppercase bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20 inline-block mb-2">
-            🏫 Integrated Partner Schools
+          <span className="text-[#DC2626] font-extrabold tracking-widest text-xs uppercase bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20 inline-block">
+            Integrated Partner Schools
           </span>
-
-          <h1 className="text-2xl sm:text-4xl font-black mb-2 text-white leading-tight text-glow-blue">
+          <h1 className="text-4xl sm:text-5xl font-black mt-6 mb-6 text-white leading-tight text-glow-blue">
             Our Integrated Partner Campuses
           </h1>
-
-          <p className="text-zinc-300 text-xs sm:text-sm font-light leading-relaxed max-w-xl mx-auto">
-            100% board-synchronized coaching, NEET/JEE foundation, and personalized doubt resolution directly inside school premises.
+          <p className="text-zinc-300 text-sm sm:text-base font-light leading-relaxed max-w-2xl mx-auto">
+            Noble Education partners directly with premier schools across Vadodara to deliver 100% board-synchronized coaching and NEET/JEE preparation.
           </p>
-
         </div>
       </section>
 
       {/* 2. COMPACT ACTION & HIGHLIGHTS BAR */}
-      <section className="py-3 sm:py-3.5 border-b border-slate-200 bg-white shadow-xs">
+      <section className="py-3.5 border-b border-slate-200 bg-white shadow-xs sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap items-center justify-between gap-3">
           
           {/* Quick Action Links */}

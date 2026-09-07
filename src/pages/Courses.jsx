@@ -90,13 +90,13 @@ export default function Courses() {
       <section className="py-20 text-white text-center relative overflow-hidden bg-cover bg-no-repeat" style={{ backgroundImage: `url('${getEmbedImageUrl('/images/bg-courses-hero.png')}')`, backgroundPosition: 'center 60%' }}>
         <div className="absolute inset-0 bg-[#1C2E60]/75 w-full h-full" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <span className="text-xs font-black tracking-widest text-[#EF4444] uppercase bg-white/10 px-4 py-1.5 rounded-full border border-white/20 inline-block mb-4">
+          <span className="text-[#DC2626] font-extrabold tracking-widest text-xs uppercase bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20 inline-block">
             Curriculum & Batches
           </span>
-          <h1 className="text-4xl sm:text-5xl font-black mb-4">
+          <h1 className="text-4xl sm:text-5xl font-black mt-6 mb-6 text-white leading-tight text-glow-blue">
             Future-Ready Academic Programs
           </h1>
-          <p className="text-sm sm:text-base text-zinc-300 font-light max-w-2xl mx-auto">
+          <p className="text-zinc-300 text-sm sm:text-base font-light leading-relaxed max-w-2xl mx-auto">
             From 8th-10th school fundamentals to 11th-12th Science and competitive entrance mastery (NEET, JEE, GUJCET) to diploma & engineering subjects.
           </p>
         </div>
