@@ -294,7 +294,7 @@ const DEFAULTS = {
       medium: "English Medium",
       standards: "Standards 8th, 9th, 10th, 11th and 12th Science",
       address: "Kamla Nagar Lake Road, Ajwa Road, Vadodara",
-      mapUrl: "https://share.google/lE7QXdBiRMIpdJ15t",
+      mapUrl: "https://maps.app.goo.gl/zbwa45FgrFd8PBdE8",
       contact: "96382 56222",
       image: "https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=600&auto=format&fit=crop&q=80",
       description: "Premier integrated English Medium partner offering complete 8th to 12th Science preparation."
@@ -612,8 +612,8 @@ export const adminData = {
           return parsed.map((item, idx) => {
             const def = defaults[idx] || {};
             const isRoyal = (item?.name === 'Royal School' || def?.name === 'Royal School');
-            const mapUrl = (isRoyal && (!item?.mapUrl || item?.mapUrl.includes('Royal+School+Kamla+Nagar')))
-              ? 'https://share.google/lE7QXdBiRMIpdJ15t'
+            const mapUrl = (isRoyal && (!item?.mapUrl || item?.mapUrl.includes('Royal+School+Kamla+Nagar') || item?.mapUrl.includes('share.google')))
+              ? 'https://maps.app.goo.gl/zbwa45FgrFd8PBdE8'
               : (item?.mapUrl || def.mapUrl || '');
             return {
               ...def,
