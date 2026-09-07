@@ -796,7 +796,16 @@ export default function SchoolDetail() {
                     </div>
                     <div>
                       <span className="text-xs font-extrabold text-[#1C2E60] block">Campus Location</span>
-                      <span className="text-xs text-slate-500 font-light">{selectedSchool.address || 'Vadodara, Gujarat'}</span>
+                      <a
+                        href={googleMapsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-slate-600 hover:text-[#DC2626] font-light transition-colors inline-flex items-center gap-1.5 group"
+                        title="Open campus location on Google Maps"
+                      >
+                        <span>{selectedSchool.address || 'Vadodara, Gujarat'}</span>
+                        <span className="text-[10px] text-red-500 font-bold group-hover:underline">↗</span>
+                      </a>
                     </div>
                   </div>
 
