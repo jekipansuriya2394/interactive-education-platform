@@ -189,10 +189,12 @@ export default function Navbar() {
           ]
         },
         {
-          title: 'Admissions & Achievers',
+          title: 'Admissions & Guidance',
           items: [
+            { name: 'Engineering Overview', href: '/engineering', desc: 'Full Division Overview & Timetable', icon: FiCompass },
             { name: 'Engineering Admission Form', href: '/engineering#engineering-inquiry', desc: 'Book Demo Lecture & Batch Timetable', icon: FiMessageSquare },
-            { name: 'Engineering Achievers', href: '/engineering#achievers', desc: 'DDCET Rankers & GTU 10 SPI Toppers', icon: FiCheckCircle }
+            { name: 'Engineering Achievers', href: '/engineering#achievers', desc: 'DDCET Rankers & GTU 10 SPI Toppers', icon: FiCheckCircle },
+            { name: 'ACPC Choice Filling Help', href: '/engineering#faqs', desc: 'Seat Allotment & College Merit Counseling', icon: FiMapPin }
           ]
         }
       ]
@@ -317,9 +319,11 @@ export default function Navbar() {
                           ? 'left-[-80px] sm:left-[-140px] md:left-[-200px] lg:left-[-160px] xl:left-1/2 xl:-translate-x-1/2' 
                           : nav.name === 'Schools'
                             ? 'left-[-20px] sm:left-[-60px] lg:left-1/2 lg:-translate-x-1/2'
-                            : nav.name === 'Admission' 
-                              ? 'left-[-40px] sm:left-[-80px] lg:left-1/2 lg:-translate-x-1/2' 
-                              : 'right-0 lg:left-1/2 lg:-translate-x-1/2'
+                            : nav.name === 'Engineering'
+                              ? 'left-[-40px] sm:left-[-100px] lg:left-1/2 lg:-translate-x-1/2'
+                              : nav.name === 'Admission' 
+                                ? 'left-[-40px] sm:left-[-80px] lg:left-1/2 lg:-translate-x-1/2' 
+                                : 'right-0 lg:left-1/2 lg:-translate-x-1/2'
                       }`}
                       onMouseEnter={() => handleMouseEnter(nav.name)}
                       onMouseLeave={() => handleMouseLeave(nav.name)}
@@ -371,6 +375,20 @@ export default function Navbar() {
                             </div>
                           </div>
                         ))}
+                        {nav.name === 'Engineering' && (
+                          <div className="col-span-full pt-3 mt-1 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs">
+                            <span className="text-slate-500 font-medium flex items-center gap-1.5 text-[11px]">
+                              <span>📍</span> Waghodia Road Campus (Above Bank of India) • 📞 96382 56222
+                            </span>
+                            <a
+                              href="/engineering"
+                              onClick={(e) => handleNav(e, '/engineering')}
+                              className="text-[#DC2626] hover:text-red-700 font-extrabold flex items-center gap-1 text-[11px] uppercase tracking-wider"
+                            >
+                              Explore Noble Engineering Page →
+                            </a>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
