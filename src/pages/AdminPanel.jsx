@@ -160,8 +160,11 @@ function AdminPanel({ onLogout }) {
   const [courseSearch, setCourseSearch] = useState('');
   const [showCourseCatModal, setShowCourseCatModal] = useState(false);
 
-  // Popup Config (Multi-Image Slider Manager)
+  // Popup Config (Multi-Image / Video Slider Manager)
   const [newPopupUrl, setNewPopupUrl] = useState('');
+  const [newPopupVideoUrl, setNewPopupVideoUrl] = useState('');
+  const [newPopupMediaType, setNewPopupMediaType] = useState('image');
+  const [newPopupAspectRatio, setNewPopupAspectRatio] = useState('auto');
   const [newPopupTitle, setNewPopupTitle] = useState('');
   const [newPopupLink, setNewPopupLink] = useState('');
   const [newPopupSize, setNewPopupSize] = useState(100);
@@ -621,11 +624,18 @@ function AdminPanel({ onLogout }) {
     }
   };
 
-  const addPopupImage = async (url, title = '', link = '', sizePercent = 100) => {
-    if (!url || !url.trim()) return;
+  const addPopupImage = async (url = '', title = '', link = '', sizePercent = 100, mediaType = 'image', videoUrl = '', aspectRatio = 'auto') => {
+    if (!url?.trim() && !videoUrl?.trim()) {
+      showToast('Please upload or enter an image or video for the slide.', 'error');
+      return;
+    }
+    const finalMediaType = mediaType || (videoUrl ? 'video' : 'image');
     const newSlide = {
       id: Date.now().toString(),
-      url: url.trim(),
+      url: url?.trim() || '',
+      videoUrl: videoUrl?.trim() || '',
+      mediaType: finalMediaType,
+      aspectRatio: aspectRatio || 'auto',
       title: title.trim() || `Slide ${ (popupConfig.images?.length || 0) + 1 }`,
       link: link.trim() || popupConfig.link || '/contact',
       sizePercent: Number(sizePercent) || 100
@@ -637,6 +647,9 @@ function AdminPanel({ onLogout }) {
     setPopupConfig(updated);
     adminData.setData('popupConfig', updated);
     setNewPopupUrl('');
+    setNewPopupVideoUrl('');
+    setNewPopupMediaType('image');
+    setNewPopupAspectRatio('auto');
     setNewPopupTitle('');
     setNewPopupLink('');
     setNewPopupSize(100);
@@ -921,7 +934,8 @@ function AdminPanel({ onLogout }) {
       { label: 'Add Course', icon: FiBookOpen, action: () => { navigate('courses'); setTimeout(() => setEditingCourse({ name:'', category:'school', tagline:'', description:'', subjects:'', mode:'Offline + Online', features:[] }), 100); }, section: 'courses', actionType: 'edit' },
       { label: 'Add Hero Banner', icon: FiLayers, action: () => { navigate('heroBanners'); setTimeout(() => setEditingHeroBanner({ title:'', highlightWord:'', subtitle:'', desc:'', image:'', cardImage:'', buttonText:'Book Free Counselling', buttonLink:'#inquiry-form' }), 100); }, section: 'heroBanners', actionType: 'edit' },
       { label: 'Add Page Photo', icon: FiCamera, action: () => { navigate('pagePhotos'); setTimeout(() => setEditingPagePhoto({ title:'', category:'', image:'', desc:'' }), 100); }, section: 'pagePhotos', actionType: 'edit' },
-      { label: 'Add Gallery Photo', icon: FiCamera, action: () => { navigate('gallery'); setTimeout(() => setEditingGallery({ title:'', category:'Classrooms', image:'' }), 100); }, section: 'gallery', actionType: 'edit' },
+      { label: 'Add Gallery Photo', icon: FiCamera, action: () => { navigate('gallery'); setTimeout(() => setEditingGallery({ title:'', category:'Classrooms', image:'', mediaType:'image' }), 100); }, section: 'gallery', actionType: 'edit' },
+      { label: 'Upload Video', icon: FiVideo, action: () => { navigate('gallery'); setTimeout(() => setEditingGallery({ title:'', category:'Videos', image:'', mediaType:'video', videoUrl:'' }), 100); }, section: 'gallery', actionType: 'edit' },
       { label: 'Add Announcement', icon: FiVolume2, action: () => { navigate('announcements'); setTimeout(() => setEditingAnnouncement({ emoji:'📢', text:'' }), 100); }, section: 'announcements', actionType: 'edit' },
       { label: 'Add Result', icon: FiAward, action: () => { navigate('results'); setTimeout(() => setEditingResult({ name:'', score:'', exam:'', branch:'', status:'' }), 100); }, section: 'results', actionType: 'edit' },
       { label: 'View Inquiries', icon: FiInbox, action: () => navigate('inquiries'), section: 'inquiries', actionType: 'view' },
@@ -1091,7 +1105,16 @@ function AdminPanel({ onLogout }) {
         <SectionHeader
           title="Student Results Manager"
           subtitle="Add, edit, delete, and reorder student toppers. Top 4 results are featured live on the Homepage!"
-          action={adminData.hasPermission('results', 'edit') && <button className="ap-btn ap-btn-primary" onClick={() => setEditingResult({ name:'', score:'', exam:'', branch:'', school:'', status:'', image:'' })}><FiPlus /> Add Student Result</button>}
+          action={adminData.hasPermission('results', 'edit') && (
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button className="ap-btn ap-btn-primary" onClick={() => setEditingResult({ name:'', score:'', exam:'', branch:'', school:'', status:'', image:'', mediaType:'image' })}>
+                <FiPlus /> Add Student Result
+              </button>
+              <button className="ap-btn" style={{ background: '#DC2626', color: '#fff', border: 'none' }} onClick={() => setEditingResult({ name:'', score:'', exam:'', branch:'', school:'', status:'', image:'', mediaType:'video', videoUrl:'' })}>
+                <FiVideo /> Upload Video Interview
+              </button>
+            </div>
+          )}
         />
         <div className="ap-search-bar">
           <FiSearch />
@@ -1150,16 +1173,28 @@ function AdminPanel({ onLogout }) {
                       </td>
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div style={{ width: 42, height: 42, borderRadius: 10, overflow: 'hidden', background: '#21262D', border: '1px solid #30363D', flexShrink: 0 }}>
+                          <div style={{ position: 'relative', width: 42, height: 42, borderRadius: 10, overflow: 'hidden', background: '#21262D', border: '1px solid #30363D', flexShrink: 0 }}>
                             <img
                               src={getEmbedImageUrl(r.image || '/images/shital-result.png')}
                               alt={r.name}
                               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                               onError={e => { e.target.src = '/images/shital-result.png'; }}
                             />
+                            {Boolean(r.mediaType === 'video' || r.videoUrl) && (
+                              <div style={{ position: 'absolute', inset: 0, background: 'rgba(220,38,38,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <FiPlay size={14} color="#fff" style={{ marginLeft: 1 }} />
+                              </div>
+                            )}
                           </div>
                           <div>
-                            <strong style={{ color: '#F3F4F6', fontSize: 14 }}>{r.name}</strong>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <strong style={{ color: '#F3F4F6', fontSize: 14 }}>{r.name}</strong>
+                              {Boolean(r.mediaType === 'video' || r.videoUrl) && (
+                                <span className="ap-badge" style={{ background: 'rgba(239,68,68,0.2)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.3)', fontSize: 9, padding: '1px 5px' }}>
+                                  VIDEO
+                                </span>
+                              )}
+                            </div>
                             <p style={{ color: '#9CA3AF', fontSize: 11, margin: 0 }}>{r.branch || 'Board Ranker'}</p>
                           </div>
                         </div>
@@ -1340,7 +1375,16 @@ function AdminPanel({ onLogout }) {
         <SectionHeader
           title="Testimonials"
           subtitle="Student & parent reviews shown on the homepage"
-          action={adminData.hasPermission('testimonials', 'edit') && <button className="ap-btn ap-btn-primary" onClick={() => setEditingTestimonial({ name:'', program:'', stars:5, quote:'' })}><FiPlus /> Add Review</button>}
+          action={adminData.hasPermission('testimonials', 'edit') && (
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button className="ap-btn ap-btn-primary" onClick={() => setEditingTestimonial({ name:'', program:'', stars:5, quote:'', mediaType:'image' })}>
+                <FiPlus /> Add Review
+              </button>
+              <button className="ap-btn" style={{ background: '#DC2626', color: '#fff', border: 'none' }} onClick={() => setEditingTestimonial({ name:'', program:'', stars:5, quote:'', mediaType:'video', videoUrl:'' })}>
+                <FiVideo /> Upload Video Review
+              </button>
+            </div>
+          )}
         />
         <div className="ap-search-bar">
           <FiSearch />
@@ -1349,12 +1393,27 @@ function AdminPanel({ onLogout }) {
         <div className="ap-list">
           {filtered.map((t, i) => {
             const realIdx = testimonials.indexOf(t);
+            const isVid = t.mediaType === 'video' || t.videoUrl;
             return (
               <div className="ap-card ap-testimonial-card" key={i}>
                 <div className="ap-testimonial-top">
-                  <div className="ap-testimonial-avatar">{t.name?.charAt(0) || '?'}</div>
+                  <div className="ap-testimonial-avatar" style={{ position: 'relative' }}>
+                    {t.name?.charAt(0) || '?'}
+                    {isVid && (
+                      <span style={{ position: 'absolute', bottom: -2, right: -2, width: 14, height: 14, borderRadius: '50%', background: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <FiPlay size={8} color="#fff" style={{ marginLeft: 1 }} />
+                      </span>
+                    )}
+                  </div>
                   <div>
-                    <p style={{ fontWeight: 700, color: '#fff', margin: 0, fontSize: 15 }}>{t.name}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <p style={{ fontWeight: 700, color: '#fff', margin: 0, fontSize: 15 }}>{t.name}</p>
+                      {isVid && (
+                        <span className="ap-badge" style={{ background: 'rgba(239,68,68,0.2)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.3)', fontSize: 9, padding: '1px 5px' }}>
+                          VIDEO
+                        </span>
+                      )}
+                    </div>
                     <p style={{ color: '#9CA3AF', fontSize: 12, margin: '2px 0 0' }}>{t.program}</p>
                   </div>
                   <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
@@ -1443,10 +1502,30 @@ function AdminPanel({ onLogout }) {
                     subjects: '',
                     mode: 'Offline + Online',
                     image: '',
+                    videoUrl: '',
+                    mediaType: 'image',
                     features: []
                   })}
                 >
                   <FiPlus /> Add Course Program
+                </button>
+                <button
+                  className="ap-btn"
+                  style={{ background: '#DC2626', color: '#fff', border: 'none' }}
+                  onClick={() => setEditingCourse({
+                    name: '',
+                    category: courseCategoryFilter !== 'All' ? courseCategoryFilter : 'school',
+                    tagline: '',
+                    description: '',
+                    subjects: '',
+                    mode: 'Offline + Online',
+                    image: '',
+                    videoUrl: '',
+                    mediaType: 'video',
+                    features: []
+                  })}
+                >
+                  <FiVideo /> Upload Video Course
                 </button>
               </div>
             )
@@ -1560,14 +1639,26 @@ function AdminPanel({ onLogout }) {
                     </div>
                   </div>
 
-                  {c.image && (
-                    <div style={{ height: 120, marginBottom: 12, borderRadius: 10, overflow: 'hidden', background: '#0D1117', border: '1px solid #21262D' }}>
+                  {(c.image || c.videoUrl) && (
+                    <div style={{ position: 'relative', height: 120, marginBottom: 12, borderRadius: 10, overflow: 'hidden', background: '#0D1117', border: '1px solid #21262D' }}>
                       <img
-                        src={getEmbedImageUrl(c.image)}
+                        src={getEmbedImageUrl(c.image || '/images/hero-classroom.png')}
                         alt={c.name || c.title}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         onError={handleImageError}
                       />
+                      {Boolean(c.mediaType === 'video' || c.videoUrl) && (
+                        <>
+                          <span style={{ position: 'absolute', top: 6, right: 6, background: '#DC2626', color: '#fff', fontSize: 9, fontWeight: 800, padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <FiVideo size={10} /> VIDEO
+                          </span>
+                          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.35)', pointerEvents: 'none' }}>
+                            <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#DC2626', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 10px rgba(220,38,38,0.5)' }}>
+                              <FiPlay size={16} style={{ marginLeft: 2 }} />
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
 
@@ -2159,11 +2250,11 @@ function AdminPanel({ onLogout }) {
             <button className="ap-btn-primary" disabled={mediaUploading} onClick={() => mediaInputRef.current?.click()}>
               {mediaUploading ? <><FiRefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }}/> Uploading...</> : <><FiUpload size={14}/> Upload Files</>}
             </button>
-            <input ref={mediaInputRef} type="file" multiple accept="image/*,application/pdf" style={{ display: 'none' }} onChange={handleMediaUpload} />
+            <input ref={mediaInputRef} type="file" multiple accept="image/*,video/*,application/pdf" style={{ display: 'none' }} onChange={handleMediaUpload} />
           </div>
         </div>
         <p style={{ fontSize: 12, color: '#64748B', marginTop: 8 }}>
-          Supported: JPG, PNG, WebP, SVG, PDF. Images are committed to /public/images/{mediaFolder}/ in your repository and go live after the next GitHub Actions deploy.
+          Supported: JPG, PNG, WebP, SVG, MP4, WebM, PDF. Files are committed to /public/images/{mediaFolder}/ in your repository and go live after the next GitHub Actions deploy.
         </p>
       </div>
       {mediaFiles.length > 0 ? (
@@ -2172,6 +2263,11 @@ function AdminPanel({ onLogout }) {
             <div key={i} className="ap-card" style={{ padding: 10, textAlign: 'center' }}>
               {f.type?.startsWith('image/') ? (
                 <img src={f.path} alt={f.name} style={{ width: '100%', height: 80, objectFit: 'cover', borderRadius: 6, marginBottom: 6 }} />
+              ) : f.type?.startsWith('video/') ? (
+                <div style={{ height: 80, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#1E293B', borderRadius: 6, marginBottom: 6, position: 'relative' }}>
+                  <FiVideo size={32} color="#EF4444" />
+                  <span style={{ fontSize: 9, color: '#EF4444', fontWeight: 800, marginTop: 4 }}>VIDEO</span>
+                </div>
               ) : (
                 <div style={{ height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1E293B', borderRadius: 6, marginBottom: 6 }}>
                   <FiFileText size={32} color="#64748B" />
@@ -2868,20 +2964,22 @@ function AdminPanel({ onLogout }) {
 
           {/* Add New Slide Card */}
           <div className="ap-card">
-            <h4 className="ap-card-title">➕ Add New Popup Slide Image</h4>
+            <h4 className="ap-card-title">➕ Add New Popup Slide (Photo or Video)</h4>
             
-            {adminData.hasPermission('popup', 'edit') && (
-              <div style={{ marginBottom: 16 }}>
-                <input ref={popupFileRef} type="file" accept="image/*" onChange={handlePopupUpload} style={{ display: 'none' }} />
-                <button className="ap-btn" onClick={() => popupFileRef.current?.click()} style={{ background: '#1D4ED8', color: '#fff', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13, width: '100%', justifyContent: 'center' }}>
-                  <FiUpload size={16} /> Upload Image from Device
-                </button>
-                <p style={{ color: '#6B7280', fontSize: 11, marginTop: 6, textAlign: 'center' }}>Compressed automatically (JPG, PNG, WebP up to 5 MB).</p>
-              </div>
-            )}
-
-            <label className="ap-label">Or Add Image URL / Cloud Link</label>
-            <input className="ap-input" value={newPopupUrl} onChange={e => setNewPopupUrl(e.target.value)} placeholder="e.g. Google Drive link or /images/neet_repeater_banner.jpg" disabled={!adminData.hasPermission('popup', 'edit')} />
+            <div style={{ marginBottom: 14 }}>
+              <UniversalMediaInput
+                image={newPopupUrl}
+                videoUrl={newPopupVideoUrl}
+                mediaType={newPopupMediaType}
+                aspectRatio={newPopupAspectRatio}
+                onChange={({ image, videoUrl, mediaType, aspectRatio }) => {
+                  setNewPopupUrl(image || '');
+                  setNewPopupVideoUrl(videoUrl || '');
+                  setNewPopupMediaType(mediaType || 'image');
+                  setNewPopupAspectRatio(aspectRatio || 'auto');
+                }}
+              />
+            </div>
             
             <label className="ap-label" style={{ marginTop: 8 }}>Slide Title (Optional)</label>
             <input className="ap-input" value={newPopupTitle} onChange={e => setNewPopupTitle(e.target.value)} placeholder="e.g. NEET 2026 Batch Announcement" disabled={!adminData.hasPermission('popup', 'edit')} />
@@ -2892,7 +2990,7 @@ function AdminPanel({ onLogout }) {
             <div style={{ marginTop: 10, padding: '10px 12px', background: '#0D1117', border: '1px solid #30363D', borderRadius: 8 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                 <label style={{ fontSize: 11, color: '#F59E0B', fontWeight: 700, margin: 0 }}>
-                  📏 Photo Display Size (%):
+                  📏 Display Size (%):
                 </label>
                 <span style={{ fontSize: 11, fontWeight: 800, color: '#FBBF24', background: 'rgba(245,158,11,0.15)', padding: '1px 6px', borderRadius: 4 }}>
                   {newPopupSize}%
@@ -2945,8 +3043,16 @@ function AdminPanel({ onLogout }) {
             </div>
 
             {adminData.hasPermission('popup', 'edit') && (
-              <button type="button" className="ap-btn ap-btn-primary" onClick={(e) => { e.preventDefault(); addPopupImage(newPopupUrl, newPopupTitle, newPopupLink, newPopupSize); }} style={{ marginTop: 12, width: '100%', justifyContent: 'center' }}>
-                <FiPlus /> Add Slide Image
+              <button
+                type="button"
+                className="ap-btn ap-btn-primary"
+                onClick={(e) => {
+                  e.preventDefault();
+                  addPopupImage(newPopupUrl, newPopupTitle, newPopupLink, newPopupSize, newPopupMediaType, newPopupVideoUrl, newPopupAspectRatio);
+                }}
+                style={{ marginTop: 12, width: '100%', justifyContent: 'center' }}
+              >
+                <FiPlus /> Add Slide (Photo or Video)
               </button>
             )}
           </div>
@@ -2963,18 +3069,32 @@ function AdminPanel({ onLogout }) {
               else if (thumbSrc === '/images/jee_mains_pyq_banner.jpg') thumbSrc = jeePyqB64;
               else if (!thumbSrc.startsWith('data:')) thumbSrc = getEmbedImageUrl(thumbSrc);
 
+              const isVid = slide.mediaType === 'video' || !!slide.videoUrl || isVideoMedia(slide.url || slide.videoUrl);
+
               return (
                 <div key={slide.id || idx} style={{ background: '#0D1117', border: '1px solid #30363D', borderRadius: 12, overflow: 'hidden', padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <div style={{ height: 135, borderRadius: 8, overflow: 'hidden', background: '#161B22', position: 'relative' }}>
                     <img
-                      src={thumbSrc}
+                      src={thumbSrc || '/images/hero-classroom.png'}
                       alt={slide.title || 'Slide'}
                       style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                       onError={handleImageError}
                     />
+                    {isVid && (
+                      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.35)', pointerEvents: 'none' }}>
+                        <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#DC2626', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <FiPlay size={16} style={{ marginLeft: 2 }} />
+                        </div>
+                      </div>
+                    )}
                     <span style={{ position: 'absolute', top: 6, left: 6, background: 'rgba(0,0,0,0.8)', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 6 }}>
                       Slide #{idx + 1}
                     </span>
+                    {isVid && (
+                      <span style={{ position: 'absolute', bottom: 6, left: 6, background: '#DC2626', color: '#fff', fontSize: 9, fontWeight: 800, padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
+                        <FiVideo size={10} /> VIDEO
+                      </span>
+                    )}
                     <span style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(245,158,11,0.92)', color: '#000', fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 6, boxShadow: '0 2px 4px rgba(0,0,0,0.35)' }}>
                       {slide.sizePercent || 100}% Size
                     </span>
@@ -3085,15 +3205,20 @@ function AdminPanel({ onLogout }) {
           title="Video Lectures & YouTube Series"
           subtitle="Add and manage YouTube lecture links, video thumbnails & course categories"
           action={adminData.hasPermission('videos', 'edit') && (
-            <button type="button" className="ap-btn ap-btn-primary" onClick={() => setEditingVideoLecture({ title: '', youtubeUrl: '', category: 'Std 12 Biology', description: '' })}>
-              <FiPlus /> Add New Video Lecture
-            </button>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button type="button" className="ap-btn ap-btn-primary" onClick={() => setEditingVideoLecture({ title: '', youtubeUrl: '', category: 'Std 12 Biology', description: '', mediaType: 'video' })}>
+                <FiPlus /> Add Video Lecture
+              </button>
+              <button type="button" className="ap-btn" style={{ background: '#DC2626', color: '#fff', border: 'none' }} onClick={() => setEditingVideoLecture({ title: '', youtubeUrl: '', category: 'Std 12 Biology', description: '', mediaType: 'video' })}>
+                <FiVideo /> Upload Video File
+              </button>
+            </div>
           )}
         />
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
           {videoLectures.map((vid, i) => {
-            const thumb = getEmbedImageUrl(vid.youtubeUrl || vid.url || '');
+            const thumb = getEmbedImageUrl(vid.image || vid.youtubeUrl || vid.videoUrl || vid.url || '');
             return (
               <div key={vid.id || i} className="ap-card" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div style={{ position: 'relative', width: '100%', height: 170, borderRadius: 12, overflow: 'hidden', background: '#0f172a' }}>
@@ -3104,7 +3229,7 @@ function AdminPanel({ onLogout }) {
                     onError={handleImageError}
                   />
                   <a
-                    href={vid.youtubeUrl}
+                    href={vid.youtubeUrl || vid.videoUrl}
                     target="_blank"
                     rel="noreferrer"
                     style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 24, textDecoration: 'none' }}
@@ -3125,13 +3250,13 @@ function AdminPanel({ onLogout }) {
 
                 <div style={{ display: 'flex', gap: 10, marginTop: 'auto' }}>
                   <a
-                    href={vid.youtubeUrl}
+                    href={vid.youtubeUrl || vid.videoUrl}
                     target="_blank"
                     rel="noreferrer"
                     className="ap-btn"
                     style={{ flex: 1, background: '#1E293B', color: '#38BDF8', border: '1px solid rgba(56,189,248,0.3)', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12, fontWeight: 600, padding: '8px 12px', borderRadius: 8 }}
                   >
-                    <FiExternalLink size={14} /> Watch on YouTube
+                    <FiExternalLink size={14} /> Watch Video
                   </a>
 
                   {adminData.hasPermission('videos', 'edit') && (
@@ -3155,14 +3280,23 @@ function AdminPanel({ onLogout }) {
           <Modal title={editingVideoLecture._index !== undefined ? 'Edit Video Lecture' : 'Add New Video Lecture'} onClose={() => setEditingVideoLecture(null)}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <label className="ap-label">YouTube Video / Shorts Link *</label>
-                <input
-                  className="ap-input"
-                  value={editingVideoLecture.youtubeUrl || ''}
-                  onChange={e => setEditingVideoLecture(p => ({ ...p, youtubeUrl: e.target.value }))}
-                  placeholder="e.g. https://www.youtube.com/watch?v=VIDEO_ID or https://youtu.be/..."
+                <label className="ap-label">Video Source (Upload File or YouTube Link) *</label>
+                <UniversalMediaInput
+                  image={editingVideoLecture.image || ''}
+                  videoUrl={editingVideoLecture.youtubeUrl || editingVideoLecture.videoUrl || ''}
+                  mediaType="video"
+                  aspectRatio={editingVideoLecture.aspectRatio || '16:9'}
+                  onChange={({ image, videoUrl, aspectRatio }) => {
+                    setEditingVideoLecture(p => ({
+                      ...p,
+                      image,
+                      youtubeUrl: videoUrl,
+                      videoUrl,
+                      mediaType: 'video',
+                      aspectRatio
+                    }));
+                  }}
                 />
-                <p style={{ color: '#6B7280', fontSize: 11, marginTop: 4 }}>Paste YouTube video URL. Thumbnail will be extracted automatically.</p>
               </div>
 
               <div>
@@ -3223,25 +3357,25 @@ function AdminPanel({ onLogout }) {
     if (!form.title.trim()) { showToast('Title is required.', 'error'); return; }
     const curPages = adminData.getData('pageImages') || {};
     const list = [...(curPages[activePageTab] || [])];
+    const mediaType = form.mediaType || (form.videoUrl ? 'video' : 'image');
+
+    const photoObj = {
+      id: form.id || String(Date.now()),
+      title: form.title.trim(),
+      category: form.category?.trim() || (mediaType === 'video' ? 'Videos' : 'General'),
+      image: form.image || form.url || '',
+      videoUrl: form.videoUrl || '',
+      mediaType,
+      aspectRatio: form.aspectRatio || 'auto',
+      desc: form.desc?.trim() || ''
+    };
 
     if (form._index !== undefined) {
-      list[form._index] = {
-        id: form.id || String(Date.now()),
-        title: form.title.trim(),
-        category: form.category?.trim() || 'General',
-        image: form.image || form.url || '',
-        desc: form.desc?.trim() || ''
-      };
-      showToast('Page photo updated successfully!');
+      list[form._index] = photoObj;
+      showToast('Page media updated successfully!');
     } else {
-      list.push({
-        id: String(Date.now()),
-        title: form.title.trim(),
-        category: form.category?.trim() || 'General',
-        image: form.image || form.url || '',
-        desc: form.desc?.trim() || ''
-      });
-      showToast('New page photo added!');
+      list.push(photoObj);
+      showToast('New page media added!');
     }
 
     const updatedAllPages = { ...curPages, [activePageTab]: list };
@@ -3275,12 +3409,17 @@ function AdminPanel({ onLogout }) {
       <div>
         <SectionHeader
           title="Page Photos Manager"
-          subtitle="Manage content-relevant photos for each website page (About, Courses, Admission, Student Corner, Contact)."
+          subtitle="Manage content-relevant photos and videos for each website page (About, Courses, Admission, Student Corner, Contact)."
           action={
             adminData.hasPermission('pagePhotos', 'edit') && (
-              <button className="ap-btn ap-btn-primary" onClick={() => setEditingPagePhoto({ title: '', category: '', image: '', desc: '' })}>
-                <FiPlus /> Add Page Photo
-              </button>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button className="ap-btn ap-btn-primary" onClick={() => setEditingPagePhoto({ title: '', category: '', image: '', desc: '', mediaType: 'image' })}>
+                  <FiPlus /> Add Page Photo
+                </button>
+                <button className="ap-btn" style={{ background: '#DC2626', color: '#fff', border: 'none' }} onClick={() => setEditingPagePhoto({ title: '', category: 'Videos', image: '', desc: '', mediaType: 'video', videoUrl: '' })}>
+                  <FiVideo /> Upload Video
+                </button>
+              </div>
             )
           }
         />
@@ -3313,6 +3452,8 @@ function AdminPanel({ onLogout }) {
               const realIdx = currentList.indexOf(item);
               const imgUrl = getEmbedImageUrl(item.image || item.url);
 
+              const isVid = item.mediaType === 'video' || item.videoUrl || isVideoMedia(item);
+
               return (
                 <div key={item.id || idx} className="ap-gallery-card">
                   <div className="ap-gallery-thumb" style={{ position: 'relative', overflow: 'hidden' }}>
@@ -3325,13 +3466,25 @@ function AdminPanel({ onLogout }) {
                       />
                     ) : null}
                     <div style={{ display: (item.image || item.url) ? 'none' : 'flex', position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center', background: '#21262D', color: '#374151', flexDirection: 'column', gap: 8 }}>
-                      <FiImage size={32} />
-                      <span style={{ fontSize: 11, color: '#6B7280' }}>No image</span>
+                      {isVid ? <FiVideo size={32} style={{ color: '#EF4444' }} /> : <FiImage size={32} />}
+                      <span style={{ fontSize: 11, color: '#6B7280' }}>{isVid ? 'Video' : 'No image'}</span>
                     </div>
+                    {isVid && (
+                      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)', pointerEvents: 'none' }}>
+                        <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#DC2626', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 15px rgba(220,38,38,0.6)' }}>
+                          <FiPlay size={18} style={{ marginLeft: 2 }} />
+                        </div>
+                      </div>
+                    )}
+                    {isVid && (
+                      <span style={{ position: 'absolute', top: 8, right: 8, background: '#DC2626', color: '#fff', fontSize: 9, fontWeight: 800, padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
+                        <FiVideo size={10} /> VIDEO
+                      </span>
+                    )}
                     <div className="ap-gallery-thumb-overlay">
-                      {(item.image || item.url) && (
-                        <button className="ap-gallery-thumb-btn" onClick={() => window.open(imgUrl, '_blank')} title="View Full Photo">
-                          <FiEye />
+                      {(item.image || item.url || item.videoUrl) && (
+                        <button className="ap-gallery-thumb-btn" onClick={() => window.open(item.videoUrl || imgUrl, '_blank')} title={isVid ? "Play Video" : "View Full Photo"}>
+                          {isVid ? <FiPlay /> : <FiEye />}
                         </button>
                       )}
                     </div>
@@ -3340,7 +3493,10 @@ function AdminPanel({ onLogout }) {
                   <div className="ap-gallery-info">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 4 }}>
                       <h4 className="ap-gallery-title" style={{ flex: 1 }}>{item.title}</h4>
-                      {item.category && <span className="ap-badge ap-badge-purple" style={{ flexShrink: 0 }}>{item.category}</span>}
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        {item.category && <span className="ap-badge ap-badge-purple" style={{ flexShrink: 0 }}>{item.category}</span>}
+                        {isVid && <span className="ap-badge" style={{ background: 'rgba(239,68,68,0.2)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.3)', fontSize: 9, padding: '1px 5px' }}>VIDEO</span>}
+                      </div>
                     </div>
 
                     {item.desc && <p style={{ color: '#6B7280', fontSize: 12, margin: '4px 0 8px', lineHeight: 1.4 }}>{item.desc}</p>}
@@ -3380,6 +3536,7 @@ function AdminPanel({ onLogout }) {
   const saveHeroBanner = (form) => {
     if (!form.title.trim()) { showToast('Title is required.', 'error'); return; }
     const list = [...(heroBanners || [])];
+    const mediaType = form.mediaType || (form.videoUrl ? 'video' : 'image');
     const itemObj = {
       id: form.id || 'hb_' + Date.now(),
       title: form.title.trim(),
@@ -3388,7 +3545,10 @@ function AdminPanel({ onLogout }) {
       desc: form.desc?.trim() || '',
       image: form.image || '',
       cardImage: form.cardImage || '',
-      buttonText: form.buttonText?.trim() || 'Book Free Counselling',
+      videoUrl: form.videoUrl || '',
+      mediaType,
+      aspectRatio: form.aspectRatio || 'auto',
+      buttonText: form.buttonText?.trim() || (mediaType === 'video' ? 'Watch Video' : 'Book Free Counselling'),
       buttonLink: form.buttonLink?.trim() || '#inquiry-form'
     };
 
@@ -3441,9 +3601,14 @@ function AdminPanel({ onLogout }) {
           subtitle="Manage, reorder, add, and edit the main homepage hero banner carousel slides."
           action={
             adminData.hasPermission('heroBanners', 'edit') && (
-              <button className="ap-btn ap-btn-primary" onClick={() => setEditingHeroBanner({ title: '', highlightWord: '', subtitle: '', desc: '', image: '', cardImage: '', buttonText: 'Book Free Counselling', buttonLink: '#inquiry-form' })}>
-                <FiPlus /> Add Hero Banner
-              </button>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button className="ap-btn ap-btn-primary" onClick={() => setEditingHeroBanner({ title: '', highlightWord: '', subtitle: '', desc: '', image: '', cardImage: '', buttonText: 'Book Free Counselling', buttonLink: '#inquiry-form', mediaType: 'image' })}>
+                  <FiPlus /> Add Hero Banner
+                </button>
+                <button className="ap-btn" style={{ background: '#DC2626', color: '#fff', border: 'none' }} onClick={() => setEditingHeroBanner({ title: '', highlightWord: '', subtitle: '', desc: '', image: '', cardImage: '', buttonText: 'Watch Video', buttonLink: '#', mediaType: 'video', videoUrl: '' })}>
+                  <FiVideo /> Upload Video
+                </button>
+              </div>
             )
           }
         />
@@ -3460,6 +3625,7 @@ function AdminPanel({ onLogout }) {
             {filteredList.map((item, idx) => {
               const realIdx = list.indexOf(item);
               const imgUrl = getEmbedImageUrl(item.image);
+              const isVid = item.mediaType === 'video' || item.videoUrl || isVideoMedia(item);
 
               return (
                 <div key={item.id || idx} className="ap-list-card" style={{ display: 'grid', gridTemplateColumns: '120px 1fr auto', gap: 16, alignItems: 'center' }}>
@@ -3468,7 +3634,14 @@ function AdminPanel({ onLogout }) {
                       <img src={imgUrl} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { e.target.style.display = 'none'; }} />
                     ) : (
                       <div style={{ display: 'flex', width: '100%', height: '100%', alignItems: 'center', justifyCenter: 'center', color: '#6B7280' }}>
-                        <FiImage size={24} />
+                        {isVid ? <FiVideo size={24} style={{ color: '#EF4444' }} /> : <FiImage size={24} />}
+                      </div>
+                    )}
+                    {isVid && (
+                      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.35)', pointerEvents: 'none' }}>
+                        <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#DC2626', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <FiPlay size={14} style={{ marginLeft: 1 }} />
+                        </div>
                       </div>
                     )}
                     <span style={{ position: 'absolute', top: 4, left: 4, background: 'rgba(15,23,42,0.85)', color: '#38BDF8', fontSize: 9, fontWeight: 800, padding: '2px 6px', borderRadius: 4 }}>
@@ -3481,6 +3654,9 @@ function AdminPanel({ onLogout }) {
                       <h4 style={{ color: '#F0F6FC', fontWeight: 800, fontSize: 15, margin: 0 }}>{item.title}</h4>
                       {item.highlightWord && (
                         <span className="ap-badge ap-badge-red" style={{ fontSize: 10 }}>Highlight: "{item.highlightWord}"</span>
+                      )}
+                      {isVid && (
+                        <span className="ap-badge" style={{ background: 'rgba(239,68,68,0.2)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.3)', fontSize: 9, padding: '1px 5px' }}>VIDEO</span>
                       )}
                     </div>
                     {item.subtitle && <p style={{ color: '#E2E8F0', fontSize: 12, fontWeight: 700, margin: '2px 0 4px' }}>{item.subtitle}</p>}
@@ -3539,9 +3715,14 @@ function AdminPanel({ onLogout }) {
           subtitle="Manage campus partner schools, school building photos, medium, standards, location maps, and contact phone numbers."
           action={
             adminData.hasPermission('partnerSchools', 'edit') && (
-              <button className="ap-btn ap-btn-primary" onClick={() => setEditingPartnerSchool({ name: '', medium: 'English Medium', standards: '', address: '', mapUrl: '', contact: '', image: '', description: '' })}>
-                <FiPlus /> Add Partner School
-              </button>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button className="ap-btn ap-btn-primary" onClick={() => setEditingPartnerSchool({ name: '', medium: 'English Medium', standards: '', address: '', mapUrl: '', contact: '', image: '', description: '', mediaType: 'image' })}>
+                  <FiPlus /> Add Partner School
+                </button>
+                <button className="ap-btn" style={{ background: '#DC2626', color: '#fff', border: 'none' }} onClick={() => setEditingPartnerSchool({ name: '', medium: 'English Medium', standards: '', address: '', mapUrl: '', contact: '', image: '', description: '', mediaType: 'video', videoUrl: '' })}>
+                  <FiVideo /> Upload Video
+                </button>
+              </div>
             )
           }
         />
@@ -3568,6 +3749,7 @@ function AdminPanel({ onLogout }) {
                 {filteredList.map((s, i) => {
                   const realIdx = list.indexOf(s);
                   const imgUrl = getEmbedImageUrl(s.image);
+                  const isVid = s.mediaType === 'video' || s.videoUrl || isVideoMedia(s);
                   return (
                     <tr key={i}>
                       <td style={{ color: '#6B7280' }}>{i + 1}</td>
@@ -3578,11 +3760,25 @@ function AdminPanel({ onLogout }) {
                         </div>
                       </td>
                       <td>
-                        <div style={{ width: 56, height: 40, borderRadius: 8, overflow: 'hidden', background: '#21262D', border: '1px solid #30363D' }}>
+                        <div style={{ position: 'relative', width: 56, height: 40, borderRadius: 8, overflow: 'hidden', background: '#21262D', border: '1px solid #30363D' }}>
                           <img src={imgUrl || '/images/bg-about-hero.png'} alt={s.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { e.target.src = '/images/bg-about-hero.png'; }} />
+                          {isVid && (
+                            <div style={{ position: 'absolute', inset: 0, background: 'rgba(220,38,38,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <FiPlay size={12} color="#fff" style={{ marginLeft: 1 }} />
+                            </div>
+                          )}
                         </div>
                       </td>
-                      <td><strong style={{ color: '#F0F6FC' }}>🏫 {s.name}</strong></td>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <strong style={{ color: '#F0F6FC' }}>🏫 {s.name}</strong>
+                          {isVid && (
+                            <span className="ap-badge" style={{ background: 'rgba(239,68,68,0.2)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.3)', fontSize: 9, padding: '1px 5px' }}>
+                              VIDEO
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td>
                         <div>
                           <span className="ap-badge ap-badge-blue" style={{ fontSize: 10 }}>{s.medium || 'Partner School'}</span>
@@ -3623,35 +3819,33 @@ function AdminPanel({ onLogout }) {
 
   // ─── SCHOOL PHOTOS ──────────────────────────────────────────────────────
   const saveSchoolPhoto = (form) => {
-    if (!form.title.trim() || !form.image.trim()) {
-      showToast('Photo title and image are required.', 'error');
+    if (!form.title.trim() || (!form.image?.trim() && !form.videoUrl?.trim())) {
+      showToast('Photo title and media (image or video) are required.', 'error');
       return;
     }
     const currentList = adminData.getData('schoolPhotos') || [];
     let updatedList = [];
 
+    const mediaType = form.mediaType || (form.videoUrl ? 'video' : 'image');
+    const photoData = {
+      id: form.id || `sp_${Date.now()}`,
+      schoolName: form.schoolName || partnerSchools[0]?.name || 'Royal School',
+      title: form.title.trim(),
+      category: form.category?.trim() || (mediaType === 'video' ? 'Videos' : 'Classrooms'),
+      image: form.image || '',
+      videoUrl: form.videoUrl || '',
+      mediaType,
+      aspectRatio: form.aspectRatio || 'auto',
+      desc: form.desc?.trim() || ''
+    };
+
     if (form._index !== undefined) {
       updatedList = [...currentList];
-      updatedList[form._index] = {
-        id: form.id || `sp_${Date.now()}`,
-        schoolName: form.schoolName || partnerSchools[0]?.name || 'Royal School',
-        title: form.title.trim(),
-        category: form.category?.trim() || 'Classrooms',
-        image: form.image || '',
-        desc: form.desc?.trim() || ''
-      };
-      showToast('School photo updated successfully!');
+      updatedList[form._index] = photoData;
+      showToast('School media updated successfully!');
     } else {
-      const newPhoto = {
-        id: `sp_${Date.now()}`,
-        schoolName: form.schoolName || partnerSchools[0]?.name || 'Royal School',
-        title: form.title.trim(),
-        category: form.category?.trim() || 'Classrooms',
-        image: form.image || '',
-        desc: form.desc?.trim() || ''
-      };
-      updatedList = [newPhoto, ...currentList];
-      showToast('New school photo added successfully!');
+      updatedList = [photoData, ...currentList];
+      showToast('New school media added successfully!');
     }
 
     setSchoolPhotos(updatedList);
@@ -3687,12 +3881,21 @@ function AdminPanel({ onLogout }) {
           subtitle="Add, edit & delete photos for individual partner school pages (Royal School, Raghukul Vidyalay, New Heaven Vidyalaya)."
           action={
             adminData.hasPermission('schoolPhotos', 'edit') && (
-              <button
-                className="ap-btn ap-btn-primary"
-                onClick={() => setEditingSchoolPhoto({ schoolName: partnerSchools[0]?.name || 'Royal School', title: '', category: 'Classrooms', image: '', desc: '' })}
-              >
-                <FiPlus /> Add School Photo
-              </button>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button
+                  className="ap-btn ap-btn-primary"
+                  onClick={() => setEditingSchoolPhoto({ schoolName: partnerSchools[0]?.name || 'Royal School', title: '', category: 'Classrooms', image: '', desc: '', mediaType: 'image' })}
+                >
+                  <FiPlus /> Add School Photo
+                </button>
+                <button
+                  className="ap-btn"
+                  style={{ background: '#DC2626', color: '#fff', border: 'none' }}
+                  onClick={() => setEditingSchoolPhoto({ schoolName: partnerSchools[0]?.name || 'Royal School', title: '', category: 'Videos', image: '', videoUrl: '', mediaType: 'video', desc: '' })}
+                >
+                  <FiVideo /> Upload Video
+                </button>
+              </div>
             )
           }
         />
@@ -3724,20 +3927,28 @@ function AdminPanel({ onLogout }) {
 
         {/* Photo Grid Cards */}
         {filtered.length === 0 ? (
-          <EmptyState icon={FiCamera} message="No school photos found. Click 'Add School Photo' to upload one!" />
+          <EmptyState icon={FiCamera} message="No school photos found. Click 'Add School Photo' or 'Upload Video' to add one!" />
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
             {filtered.map((item) => {
               const realIdx = list.indexOf(item);
+              const isVid = item.mediaType === 'video' || item.videoUrl || isVideoMedia(item);
               return (
                 <div key={item.id || realIdx} className="ap-card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                   <div style={{ position: 'relative', height: 180, background: '#0F172A', overflow: 'hidden' }}>
                     <img
-                      src={getEmbedImageUrl(item.image)}
+                      src={getEmbedImageUrl(item.image || '/images/hero-classroom.png')}
                       alt={item.title}
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       onError={(e) => { e.target.src = '/images/hero-classroom.png'; }}
                     />
+                    {isVid && (
+                      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)', pointerEvents: 'none' }}>
+                        <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#DC2626', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 15px rgba(220,38,38,0.6)' }}>
+                          <FiPlay size={20} style={{ marginLeft: 2 }} />
+                        </div>
+                      </div>
+                    )}
                     <span style={{
                       position: 'absolute', top: 10, left: 10,
                       background: 'rgba(0,0,0,0.85)', color: '#60A5FA',
@@ -3746,12 +3957,22 @@ function AdminPanel({ onLogout }) {
                     }}>
                       🏫 {item.schoolName}
                     </span>
+                    {isVid && (
+                      <span style={{
+                        position: 'absolute', top: 10, right: 10,
+                        background: '#DC2626', color: '#fff',
+                        fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 6,
+                        display: 'flex', alignItems: 'center', gap: 4
+                      }}>
+                        <FiVideo size={11} /> VIDEO
+                      </span>
+                    )}
                     <span style={{
                       position: 'absolute', bottom: 10, right: 10,
-                      background: '#10B981', color: '#fff',
+                      background: isVid ? 'rgba(15,23,42,0.9)' : '#10B981', color: '#fff',
                       fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 6
                     }}>
-                      {item.category || 'Premises'}
+                      {item.category || (isVid ? 'Videos' : 'Premises')}
                     </span>
                   </div>
 

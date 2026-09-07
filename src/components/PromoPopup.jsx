@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { navigate } from '../utils/router';
 import { adminData } from '../utils/adminData';
-import { getEmbedImageUrl, handleImageError, FALLBACK_SLIDE_SVG } from '../utils/imageUrl';
+import { getEmbedImageUrl, handleImageError, FALLBACK_SLIDE_SVG, getYouTubeEmbedUrl, isVideoMedia } from '../utils/imageUrl';
 import { jagannathPosterB64 } from '../data/jagannathB64';
 import { neetRepeaterB64 } from '../data/neetRepeaterB64';
 import { jeePyqB64 } from '../data/jeePyqB64';
@@ -262,24 +262,62 @@ export default function PromoPopup({ isLoading, currentPath }) {
                   style={{ display: 'block', width: '100%', outline: 'none', textDecoration: 'none' }}
                 >
                   <div className="pp-img-wrap">
-                    <AnimatePresence mode="wait" custom={direction} initial={false}>
-                      <motion.img
-                        key={currentSlide.id || currentIndex}
-                        className="pp-img"
-                        src={currentSlide.displayUrl}
-                        alt={currentSlide.title || 'Noble Education Announcement'}
-                        style={{
-                          maxHeight: `${modalMaxHeight}vh`
-                        }}
-                        custom={direction}
-                        variants={slideVariants}
-                        initial="enter"
-                        animate="center"
-                        exit="exit"
-                        transition={{ x: { type: 'spring', stiffness: 350, damping: 32 }, opacity: { duration: 0.2 } }}
-                        onError={handleImageError}
-                      />
-                    </AnimatePresence>
+                    {(() => {
+                      const isVid = currentSlide?.mediaType === 'video' || !!currentSlide?.videoUrl || isVideoMedia(currentSlide?.url || currentSlide?.videoUrl);
+                      const ytEmbed = isVid ? getYouTubeEmbedUrl(currentSlide?.videoUrl || currentSlide?.url) : null;
+                      const videoSrc = currentSlide?.videoUrl || currentSlide?.url;
+
+                      if (isVid && ytEmbed) {
+                        return (
+                          <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9', maxHeight: `${modalMaxHeight}vh`, overflow: 'hidden', borderRadius: 16 }}>
+                            <iframe
+                              src={`${ytEmbed}?autoplay=1&mute=1`}
+                              title={currentSlide.title || "Promo Video"}
+                              style={{ width: '100%', height: '100%', border: 'none' }}
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                            />
+                          </div>
+                        );
+                      }
+
+                      if (isVid && videoSrc) {
+                        return (
+                          <div style={{ position: 'relative', width: '100%', maxHeight: `${modalMaxHeight}vh`, display: 'flex', justifyContent: 'center' }}>
+                            <video
+                              src={videoSrc}
+                              autoPlay
+                              muted
+                              loop
+                              controls
+                              playsInline
+                              style={{ maxWidth: '100%', maxHeight: `${modalMaxHeight}vh`, borderRadius: 16, objectFit: 'contain' }}
+                            />
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <AnimatePresence mode="wait" custom={direction} initial={false}>
+                          <motion.img
+                            key={currentSlide.id || currentIndex}
+                            className="pp-img"
+                            src={currentSlide.displayUrl}
+                            alt={currentSlide.title || 'Noble Education Announcement'}
+                            style={{
+                              maxHeight: `${modalMaxHeight}vh`
+                            }}
+                            custom={direction}
+                            variants={slideVariants}
+                            initial="enter"
+                            animate="center"
+                            exit="exit"
+                            transition={{ x: { type: 'spring', stiffness: 350, damping: 32 }, opacity: { duration: 0.2 } }}
+                            onError={handleImageError}
+                          />
+                        </AnimatePresence>
+                      );
+                    })()}
                   </div>
                 </a>
               </div>
