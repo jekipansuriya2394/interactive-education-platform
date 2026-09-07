@@ -314,10 +314,22 @@ iframe.skiptranslate,
   font-size: clamp(15px, 1vw + 12px, 18px) !important;
 }
 
-/* Keep Navbar layout compact to prevent overlap/wrapping on medium-sized displays */
+/* Keep Navbar layout clean, readable and spacious across displays */
 .desktop-nav-link, nav a.desktop-nav-link {
   font-size: 11px !important;
-  letter-spacing: 0.02em !important;
+  letter-spacing: 0.025em !important;
+}
+@media (min-width: 1280px) {
+  .desktop-nav-link, nav a.desktop-nav-link {
+    font-size: 11.5px !important;
+    letter-spacing: 0.03em !important;
+  }
+}
+@media (min-width: 1536px) {
+  .desktop-nav-link, nav a.desktop-nav-link {
+    font-size: 12px !important;
+    letter-spacing: 0.035em !important;
+  }
 }
 
 /* Keep ticker font size compact and normal */

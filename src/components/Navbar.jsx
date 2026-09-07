@@ -238,11 +238,11 @@ export default function Navbar() {
       <nav className={`w-full transition-all duration-300 ${
         shouldBeSolid ? 'bg-[#1C2E60] shadow-lg' : 'bg-transparent'
       }`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
+        <div className="max-w-[1536px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
+          <div className="flex items-center justify-between h-20 gap-3 xl:gap-6">
             
             {/* Left: Logo */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-shrink-0 mr-3 lg:mr-5 xl:mr-8">
               <a href="/" onClick={(e) => handleNav(e, '/')} className="flex items-center gap-3">
                 <img
                   src={siteLogo || logoWhite}
@@ -254,26 +254,37 @@ export default function Navbar() {
             </div>
 
 
-            {/* Center: Desktop Menu (Vertically aligned) */}
-            <div className="hidden lg:flex items-center space-x-5 xl:space-x-7 h-full">
-              {navStructure.map((nav) => (
-                <div
-                  key={nav.name}
-                  className="relative flex items-center h-full flex-shrink-0"
-                  onMouseEnter={() => nav.dropdownGroups && handleMouseEnter(nav.name)}
-                  onMouseLeave={() => nav.dropdownGroups && handleMouseLeave(nav.name)}
-                >
-                  <a
-                    href={nav.href}
-                    onClick={(e) => {
-                      handleNav(e, nav.href);
-                    }}
-                    className={`desktop-nav-link flex items-center gap-1 font-bold text-[11px] uppercase tracking-wider transition-colors py-2 whitespace-nowrap focus:outline-none ${
-                      shouldBeSolid ? 'text-slate-200 hover:text-[#DC2626]' : 'text-zinc-300 hover:text-[#DC2626]'
-                    }`}
+            {/* Center: Desktop Menu (Clean, spacious, comfortable pill spacing) */}
+            <div className="hidden lg:flex items-center justify-center flex-1 gap-1 xl:gap-2 2xl:gap-3 h-full">
+              {navStructure.map((nav) => {
+                const isActive = currentPath === nav.href;
+                return (
+                  <div
+                    key={nav.name}
+                    className="relative flex items-center h-full flex-shrink-0"
+                    onMouseEnter={() => nav.dropdownGroups && handleMouseEnter(nav.name)}
+                    onMouseLeave={() => nav.dropdownGroups && handleMouseLeave(nav.name)}
                   >
-                    {nav.name} {nav.dropdownGroups && <HiChevronDown className="text-xs transition-transform duration-200" />}
-                  </a>
+                    <a
+                      href={nav.href}
+                      onClick={(e) => {
+                        handleNav(e, nav.href);
+                      }}
+                      className={`desktop-nav-link group flex items-center gap-1 font-bold text-[11px] xl:text-[11.5px] 2xl:text-xs uppercase tracking-wide transition-all duration-200 px-2.5 xl:px-3 py-1.5 rounded-xl whitespace-nowrap focus:outline-none ${
+                        isActive
+                          ? 'text-white bg-white/15 shadow-sm font-extrabold'
+                          : shouldBeSolid 
+                            ? 'text-slate-200 hover:text-white hover:bg-white/10' 
+                            : 'text-zinc-200 hover:text-white hover:bg-white/10'
+                      }`}
+                    >
+                      <span>{nav.name}</span>
+                      {nav.dropdownGroups && (
+                        <HiChevronDown className={`text-xs transition-transform duration-200 opacity-70 group-hover:opacity-100 ${
+                          hoveredMenu === nav.name ? 'rotate-180 text-[#DC2626]' : ''
+                        }`} />
+                      )}
+                    </a>
 
                   {/* Smart Responsive Mega Dropdown Panel (100% VISIBLE, NO LEFT OR RIGHT CUTOFFS) */}
                   {nav.dropdownGroups && hoveredMenu === nav.name && (
@@ -341,11 +352,12 @@ export default function Navbar() {
                     </div>
                   )}
                 </div>
-              ))}
+              );
+            })}
             </div>
 
             {/* Right: Header CTA Combination */}
-            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 relative">
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 ml-3 lg:ml-5 xl:ml-8 relative">
               
               {/* Google Translate Hidden Element - active in DOM, hidden visually to let loader initialize it */}
               <div id="google_translate_element" style={{ opacity: 0, width: 0, height: 0, overflow: 'hidden', position: 'absolute', pointerEvents: 'none' }}></div>
