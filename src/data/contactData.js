@@ -1,8 +1,4 @@
 export const contactData = {
-  brandName: "NOBLE EDUCATION",
-  primaryPositioning: "Integrated Education for Academic Excellence & Competitive Success",
-  supportingLine: "8th to 12th • Foundation • JEE • NEET • GSEB • CBSE • Diploma • Degree • DDCET",
-  brandPromise: "Concepts First. Strong Foundations. Better Results.",
   phone1: "9104206999",
   phone2: "9104206888",
   whatsapp: "919104206999",

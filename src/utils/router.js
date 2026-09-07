@@ -73,12 +73,10 @@ export const normalizePathFromLocation = (pathname) => {
     }
 
     // Also support #admin, #about, #courses, #results, etc.
+    const cleanHash = rawHash.replace(/^#/, '');
     const knownRoutes = [
-      'admin', 'about', 'courses', 'academic', 'admissions', 'admission-guidance',
-      'foundation', 'jee', 'neet', 'integrated-jee-neet', 'engineering',
-      'integrated-schools', 'schools', 'school', 'results', 'scholarship',
-      'student-zone', 'student-corner', 'online-test', 'infrastructure',
-      'gallery', 'contact', 'blog'
+      'admin', 'about', 'courses', 'admission-guidance', 'results',
+      'gallery', 'student-corner', 'online-test', 'contact', 'blog', 'school'
     ];
     if (knownRoutes.some(r => cleanHash === r || cleanHash.startsWith(r + '/') || cleanHash.startsWith(r + '?'))) {
       return '/' + cleanHash;
