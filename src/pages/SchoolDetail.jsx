@@ -123,7 +123,13 @@ export default function SchoolDetail() {
   return (
     <div className="bg-[#F8FAFC] min-h-screen text-[#1C2E60]">
       {/* 1. BREADCRUMB & HERO HEADER (PERFECTLY CLEARS STICKY NAVBAR) */}
-      <section className="bg-gradient-to-r from-[#0A1E3D] via-[#1C2E60] to-[#0A1E3D] text-white pt-28 sm:pt-32 pb-20 relative overflow-hidden">
+      <section 
+        className="pt-28 sm:pt-32 pb-20 text-white relative overflow-hidden bg-cover bg-no-repeat"
+        style={{ backgroundImage: `url('${getEmbedImageUrl('/images/bg-about-hero.png')}')`, backgroundPosition: 'center 70%' }}
+      >
+        {/* Navy semi-transparent backdrop overlay */}
+        <div className="absolute inset-0 bg-[#1C2E60]/85 w-full h-full" />
+        
         {/* Ambient background glows */}
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
