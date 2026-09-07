@@ -23,6 +23,7 @@ export default function Footer() {
   const quickLinks = [
     { name: 'Home', href: '/' },
     { name: 'About Us', href: '/about' },
+    { name: 'Partner Schools', href: '/school' },
     { name: 'Courses', href: '/courses' },
     { name: 'Admission Guidance', href: '/admission-guidance' },
     { name: 'Results', href: '/results' },
@@ -40,13 +41,20 @@ export default function Footer() {
     { name: 'Career Counseling', href: '/courses#career-guidance' }
   ];
 
+  const schoolLinks = [
+    { name: 'Royal School (Ajwa Rd)', href: '/school?name=Royal%20School' },
+    { name: 'Raghukul Vidyalay (VIP Rd)', href: '/school?name=Raghukul%20Vidyalay' },
+    { name: 'New Heaven (Waghodia Rd)', href: '/school?name=New%20Heaven%20Vidyalaya' },
+    { name: 'All Partner Campuses', href: '/school' }
+  ];
+
   return (
     <footer className="bg-[#0F172A] relative pt-16 pb-8 border-t border-blue-600/20 overflow-hidden text-white">
       {/* Footer grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-12 mb-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-8 mb-12">
         
         {/* Col 1: Brand Info */}
-        <div className="lg:col-span-4">
+        <div className="lg:col-span-3">
           <div className="flex items-center mb-6">
             <img src={siteLogo} alt="Noble Education Logo" className="h-10 max-w-[200px] w-auto object-contain" />
 
@@ -72,12 +80,12 @@ export default function Footer() {
         {/* Col 2: Quick Links */}
         <div className="lg:col-span-2">
           <h4 className="text-white font-bold text-sm uppercase tracking-wider mb-6">Quick Links</h4>
-          <ul className="space-y-3.5">
+          <ul className="space-y-2.5">
             {quickLinks.map((link, idx) => (
               <li key={idx}>
                 <a 
                   href={link.href}
-                  className="text-zinc-400 hover:text-white text-sm transition-colors font-light"
+                  className="text-zinc-400 hover:text-white text-xs transition-colors font-light"
                 >
                   {link.name}
                 </a>
@@ -87,14 +95,14 @@ export default function Footer() {
         </div>
 
         {/* Col 3: Programs */}
-        <div className="lg:col-span-3">
-          <h4 className="text-white font-bold text-sm uppercase tracking-wider mb-6">Academic Programs</h4>
-          <ul className="space-y-3.5">
+        <div className="lg:col-span-2">
+          <h4 className="text-white font-bold text-sm uppercase tracking-wider mb-6">Programs</h4>
+          <ul className="space-y-2.5">
             {courseLinks.map((link, idx) => (
               <li key={idx}>
                 <a 
                   href={link.href}
-                  className="text-zinc-400 hover:text-white text-sm transition-colors font-light"
+                  className="text-zinc-400 hover:text-white text-xs transition-colors font-light"
                 >
                   {link.name}
                 </a>
@@ -103,7 +111,25 @@ export default function Footer() {
           </ul>
         </div>
 
-        {/* Col 4: Contact Details */}
+        {/* Col 4: Partner Schools */}
+        <div className="lg:col-span-2">
+          <h4 className="text-white font-bold text-sm uppercase tracking-wider mb-6">Partner Schools</h4>
+          <ul className="space-y-2.5">
+            {schoolLinks.map((link, idx) => (
+              <li key={idx}>
+                <a 
+                  href={link.href}
+                  className="text-zinc-400 hover:text-[#DC2626] text-xs transition-colors font-semibold flex items-center gap-1.5"
+                >
+                  <span>🏫</span>
+                  <span>{link.name}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Col 5: Contact Details */}
         <div className="lg:col-span-3">
           <h4 className="text-white font-bold text-sm uppercase tracking-wider mb-6">Contact Info</h4>
           <div className="space-y-4">
@@ -114,7 +140,7 @@ export default function Footer() {
                 href={contact.googleMapsUrl || `https://maps.google.com/?q=${encodeURIComponent(contact.address || 'Noble Education Waghodia Road Vadodara')}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-zinc-400 text-sm leading-relaxed font-light hover:text-white transition-colors cursor-pointer block"
+                className="text-zinc-400 text-xs leading-relaxed font-light hover:text-white transition-colors cursor-pointer block"
                 title="Click to Open Location on Google Maps"
               >
                 <span className="underline decoration-dotted underline-offset-4">{contact.address}</span>
@@ -123,7 +149,7 @@ export default function Footer() {
 
             <div className="flex gap-3 items-center">
               <FiPhone className="text-blue-500 flex-shrink-0" />
-              <div className="text-zinc-400 text-sm font-light">
+              <div className="text-zinc-400 text-xs font-light">
                 <p><a href={`tel:${contact.phone1}`} className="hover:text-white">{contact.phone1}</a></p>
                 <p><a href={`tel:${contact.phone2}`} className="hover:text-white">{contact.phone2}</a></p>
               </div>

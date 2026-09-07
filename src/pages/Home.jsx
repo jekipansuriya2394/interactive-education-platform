@@ -38,6 +38,7 @@ export default function Home() {
   const [results, setResults] = useState(() => adminData.getData('results') || []);
   const [banners, setBanners] = useState(() => adminData.getData('heroBanners') || []);
   const [courses, setCourses] = useState(() => adminData.getData('courses') || coursesData);
+  const [partnerSchools, setPartnerSchools] = useState(() => adminData.getData('partnerSchools') || []);
 
   useEffect(() => {
     const refreshData = () => {
@@ -48,6 +49,7 @@ export default function Home() {
       setVideoLectures(adminData.getData('videoLectures') || []);
       setResults(adminData.getData('results') || []);
       setCourses(adminData.getData('courses') || coursesData);
+      setPartnerSchools(adminData.getData('partnerSchools') || []);
       const pageImgs = adminData.getData('pageImages') || {};
       setPageImages(pageImgs);
       if (pageImgs.home && pageImgs.home.length > 0) {
@@ -728,6 +730,123 @@ export default function Home() {
             >
               <span>View All Student Results</span>
               <FiArrowRight className="text-lg" />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* 3.8 INTEGRATED PARTNER SCHOOLS SHOWCASE */}
+      <section className="py-24 bg-gradient-to-b from-[#F8FAFC] to-white border-t border-slate-200 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200/80 px-4 py-1.5 rounded-full text-[#1C2E60] font-black text-xs uppercase tracking-widest shadow-xs mb-3">
+              <span>🏫</span>
+              <span>CAMPUS PARTNERSHIPS</span>
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-black text-[#1C2E60] tracking-tight">
+              Our Integrated Partner Schools
+            </h2>
+            <p className="text-[#5A6472] font-light text-sm sm:text-base leading-relaxed mt-3 max-w-2xl mx-auto">
+              Noble Education delivers seamless concept coaching, board mastery, and entrance exam preparation directly inside premier partner school campuses in Vadodara.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {partnerSchools.map((sch, sIdx) => {
+              const schImg = sch.image ? getEmbedImageUrl(sch.image) : '/images/bg-about-hero.png';
+              const isEnglish = (sch.medium || '').toLowerCase().includes('english');
+              return (
+                <div
+                  key={sch.id || sIdx}
+                  className="bg-white border-2 border-slate-200/90 rounded-[32px] overflow-hidden shadow-lg hover:shadow-2xl hover:border-[#DC2626]/40 transition-all duration-300 flex flex-col justify-between group"
+                >
+                  <div
+                    onClick={() => navigate(`/school?name=${encodeURIComponent(sch.name)}`)}
+                    className="relative h-52 w-full overflow-hidden bg-slate-900 cursor-pointer"
+                  >
+                    <img
+                      src={schImg}
+                      alt={sch.name}
+                      className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500"
+                      onError={(e) => { e.target.src = '/images/bg-about-hero.png'; }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+                    <span className={`absolute top-4 left-4 text-xs font-black text-white px-4 py-1.5 rounded-full uppercase tracking-wider shadow-lg border border-white/20 backdrop-blur-md ${
+                      isEnglish ? 'bg-[#1C2E60]' : 'bg-[#DC2626]'
+                    }`}>
+                      {sch.medium || 'Partner School'}
+                    </span>
+                  </div>
+
+                  <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
+                    <div>
+                      <h3
+                        onClick={() => navigate(`/school?name=${encodeURIComponent(sch.name)}`)}
+                        className="text-xl font-black text-[#1C2E60] group-hover:text-[#DC2626] transition-colors leading-tight cursor-pointer"
+                      >
+                        {sch.name}
+                      </h3>
+                      <div className="mt-2.5 bg-blue-50/90 border border-blue-100/90 px-3.5 py-2 rounded-xl">
+                        <span className="text-[9px] font-black text-[#DC2626] uppercase tracking-widest block">
+                          🎓 STANDARDS COVERED
+                        </span>
+                        <p className="text-xs font-extrabold text-[#1C2E60] truncate mt-0.5">
+                          {sch.standards || 'Std 8th to 12th Science'}
+                        </p>
+                      </div>
+                      <p className="text-slate-500 text-xs font-light leading-relaxed mt-3 line-clamp-2">
+                        {sch.description || 'Integrated school coaching with syllabus synchronization and daily doubt counters.'}
+                      </p>
+                      {sch.address && (
+                        <p className="text-[11px] font-medium text-slate-400 mt-2 flex items-center gap-1">
+                          <span>📍</span>
+                          <span className="truncate">{sch.address}</span>
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="pt-2 flex flex-col gap-2.5 border-t border-slate-100">
+                      <button
+                        onClick={() => navigate(`/school?name=${encodeURIComponent(sch.name)}`)}
+                        className="w-full bg-[#1C2E60] hover:bg-[#DC2626] text-white font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <span>Explore Campus & Results</span>
+                        <FiArrowRight />
+                      </button>
+                      <div className="flex gap-2">
+                        {sch.mapUrl && (
+                          <a
+                            href={sch.mapUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[#1C2E60] text-[11px] font-bold py-2 rounded-xl text-center transition-colors truncate"
+                          >
+                            📍 Open Maps
+                          </a>
+                        )}
+                        {sch.contact && (
+                          <a
+                            href={`tel:${sch.contact.replace(/\s+/g, '')}`}
+                            className="flex-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-[11px] font-bold py-2 rounded-xl text-center transition-colors truncate"
+                          >
+                            📞 Call School
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="text-center mt-12">
+            <button
+              onClick={() => navigate('/school')}
+              className="inline-flex items-center gap-2 border-2 border-[#1C2E60] hover:bg-[#1C2E60] text-[#1C2E60] hover:text-white font-black px-8 py-3.5 rounded-2xl text-xs uppercase tracking-wider transition-all duration-300 cursor-pointer"
+            >
+              <span>View All Partner School Campuses</span>
+              <FiArrowRight />
             </button>
           </div>
         </div>

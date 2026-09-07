@@ -128,6 +128,29 @@ export default function SchoolDetail() {
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          {/* Top Campus Switcher Bar */}
+          <div className="mb-6 p-2 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 inline-flex flex-wrap items-center gap-2">
+            <span className="text-blue-200 text-xs font-bold px-3 py-1 uppercase tracking-wider hidden sm:inline-block">Select Campus:</span>
+            {partnerSchools.map(sch => {
+              const isCurrent = sch.id === selectedSchool.id || sch.name === selectedSchool.name;
+              return (
+                <button
+                  key={sch.id || sch.name}
+                  onClick={() => handleSchoolSelect(sch)}
+                  className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                    isCurrent
+                      ? 'bg-[#DC2626] text-white shadow-md'
+                      : 'bg-white/10 text-white hover:bg-white/20 hover:text-white'
+                  }`}
+                >
+                  <span>🏫</span>
+                  <span>{sch.name}</span>
+                  <span className="text-[10px] opacity-75 font-normal">({sch.medium ? (sch.medium.includes('Gujarati') ? 'Guj' : 'Eng') : 'Eng'})</span>
+                </button>
+              );
+            })}
+          </div>
+
           {/* Breadcrumb Navigation */}
           <div className="flex items-center gap-2 text-xs font-semibold text-blue-200/80 mb-6">
             <span onClick={() => navigate('/')} className="hover:text-white cursor-pointer transition-colors">Home</span>
@@ -192,10 +215,18 @@ export default function SchoolDetail() {
                   Apply / Inquire For This School
                 </a>
                 <a
-                  href={`tel:${selectedSchool.contact || '9104206999'}`}
-                  className="bg-white text-[#1C2E60] hover:bg-slate-100 font-extrabold px-7 py-3.5 rounded-2xl text-xs uppercase tracking-wider shadow-lg hover:scale-105 transition-all flex items-center gap-2"
+                  href={`tel:${selectedSchool.contact || '9638256222'}`}
+                  className="bg-white text-[#1C2E60] hover:bg-slate-100 font-extrabold px-6 py-3.5 rounded-2xl text-xs uppercase tracking-wider shadow-lg hover:scale-105 transition-all flex items-center gap-2"
                 >
                   <FiPhone /> Call School Desk
+                </a>
+                <a
+                  href={`https://wa.me/91${(selectedSchool.contact || '9638256222').replace(/\D/g, '')}?text=${encodeURIComponent(`Hello Noble Education, I want admission and coaching details for ${selectedSchool.name}.`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-[#25D366] hover:bg-[#1EBE5D] text-white font-extrabold px-6 py-3.5 rounded-2xl text-xs uppercase tracking-wider shadow-lg hover:scale-105 transition-all flex items-center gap-2"
+                >
+                  <FaWhatsapp className="text-base" /> WhatsApp Desk
                 </a>
               </div>
             </div>
@@ -214,6 +245,181 @@ export default function SchoolDetail() {
                   <h3 className="text-xl font-black text-white">{selectedSchool.name} Campus</h3>
                   <p className="text-slate-300 text-xs mt-1">Vadodara Partner School Premises</p>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 1.5 FAST FACTS & KEY HIGHLIGHTS MATRIX */}
+      <section className="py-8 bg-white border-b border-slate-200 shadow-sm relative z-20 -mt-6 mx-4 sm:mx-8 lg:mx-auto max-w-7xl rounded-3xl">
+        <div className="px-6 sm:px-10">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
+            <div className="pt-4 lg:pt-0 lg:px-4">
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">Medium of Instruction</span>
+              <div className="text-base sm:text-lg font-black text-[#1C2E60] mt-1 flex items-center gap-2">
+                <span>🌐</span> {selectedSchool.medium || 'English Medium'}
+              </div>
+              <p className="text-xs text-slate-500 mt-1 font-light">Complete concept clarity & textbook focus</p>
+            </div>
+            <div className="pt-4 lg:pt-0 lg:px-4">
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">Academic Standards</span>
+              <div className="text-base sm:text-lg font-black text-[#1C2E60] mt-1 flex items-center gap-2">
+                <span>🎓</span> {selectedSchool.standards || 'Std 8th to 12th'}
+              </div>
+              <p className="text-xs text-slate-500 mt-1 font-light">School Foundation & Science Batches</p>
+            </div>
+            <div className="pt-4 lg:pt-0 lg:px-4">
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">Campus Location</span>
+              <div className="text-base sm:text-lg font-black text-[#1C2E60] mt-1 flex items-center gap-2">
+                <span>📍</span> Vadodara
+              </div>
+              <p className="text-xs text-slate-500 mt-1 font-light truncate">{selectedSchool.address ? selectedSchool.address.split(',')[0] : 'Prime Vadodara Campus'}</p>
+            </div>
+            <div className="pt-4 lg:pt-0 lg:px-4">
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">Coaching Model</span>
+              <div className="text-base sm:text-lg font-black text-[#DC2626] mt-1 flex items-center gap-2">
+                <span>⚡</span> Integrated Coaching
+              </div>
+              <p className="text-xs text-slate-500 mt-1 font-light">Zero travel fatigue with direct school sync</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 1.8 ACADEMIC STANDARDS & CURRICULUM OFFERED AT THIS SCHOOL */}
+      <section className="py-16 bg-[#F8FAFC] border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <span className="text-[#DC2626] font-bold tracking-widest text-xs uppercase bg-red-50 px-3.5 py-1 rounded-full border border-red-100">
+              ACADEMIC OFFERINGS
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-black text-[#1C2E60] mt-3">
+              Curriculum & Programs at {selectedSchool.name}
+            </h2>
+            <p className="text-[#5A6472] font-light text-xs sm:text-sm mt-2">
+              Structured standard-wise coaching programs tailored for students of {selectedSchool.name} to maximize school exam results and board rankings.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Standard 8 to 10 Card */}
+            <div className="bg-white rounded-3xl p-8 border border-slate-200/90 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+              <div>
+                <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-2xl font-black mb-6">
+                  📘
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Junior High School</span>
+                <h3 className="text-xl font-black text-[#1C2E60] mt-1 group-hover:text-[#DC2626] transition-colors">
+                  Standards 8th, 9th & 10th
+                </h3>
+                <p className="text-xs text-slate-500 font-light mt-2 leading-relaxed">
+                  Strong conceptual foundation in Mathematics, Science, and English with rigorous board exam practice and weekly objective tests.
+                </p>
+                <ul className="mt-6 space-y-2.5 text-xs text-slate-600">
+                  <li className="flex items-center gap-2">
+                    <FiCheckCircle className="text-green-500 shrink-0" />
+                    <span>GSEB & CBSE Textbook Deep Dive</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <FiCheckCircle className="text-green-500 shrink-0" />
+                    <span>Weekly Chapter Tests & MCQ Drills</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <FiCheckCircle className="text-green-500 shrink-0" />
+                    <span>10th Board Prelim Simulated Series</span>
+                  </li>
+                </ul>
+              </div>
+              <div className="pt-8 mt-6 border-t border-slate-100 flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-400">Daily Doubt Support</span>
+                <button
+                  onClick={() => navigate('/courses')}
+                  className="text-xs font-black text-[#DC2626] hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  View Details ➜
+                </button>
+              </div>
+            </div>
+
+            {/* Standard 11 & 12 Science Card */}
+            <div className="bg-white rounded-3xl p-8 border-2 border-red-500/30 shadow-md hover:shadow-2xl transition-all duration-300 flex flex-col justify-between group relative">
+              <div className="absolute top-4 right-4 bg-[#DC2626] text-white text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
+                Flagship
+              </div>
+              <div>
+                <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center text-2xl font-black mb-6">
+                  🔬
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-[#DC2626]">Senior Secondary</span>
+                <h3 className="text-xl font-black text-[#1C2E60] mt-1 group-hover:text-[#DC2626] transition-colors">
+                  11th & 12th Science Stream
+                </h3>
+                <p className="text-xs text-slate-500 font-light mt-2 leading-relaxed">
+                  Comprehensive theory and numerical problem-solving for Group A (Maths) and Group B (Biology) with board perfection.
+                </p>
+                <ul className="mt-6 space-y-2.5 text-xs text-slate-600">
+                  <li className="flex items-center gap-2">
+                    <FiCheckCircle className="text-[#DC2626] shrink-0" />
+                    <span>Physics, Chemistry, Maths & Bio</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <FiCheckCircle className="text-[#DC2626] shrink-0" />
+                    <span>Daily Practice Problem (DPP) Sheets</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <FiCheckCircle className="text-[#DC2626] shrink-0" />
+                    <span>12th Board Target 95+ Percentile</span>
+                  </li>
+                </ul>
+              </div>
+              <div className="pt-8 mt-6 border-t border-slate-100 flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-400">Subject Experts</span>
+                <button
+                  onClick={() => navigate('/courses')}
+                  className="text-xs font-black text-[#DC2626] hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  View Details ➜
+                </button>
+              </div>
+            </div>
+
+            {/* Competitive Coaching Card */}
+            <div className="bg-white rounded-3xl p-8 border border-slate-200/90 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+              <div>
+                <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-2xl font-black mb-6">
+                  ⚡
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Entrance Prep</span>
+                <h3 className="text-xl font-black text-[#1C2E60] mt-1 group-hover:text-[#DC2626] transition-colors">
+                  NEET • JEE • GUJCET
+                </h3>
+                <p className="text-xs text-slate-500 font-light mt-2 leading-relaxed">
+                  Specialized coaching modules, timed mock tests, previous 10-year paper solutions, and national ranker mentoring.
+                </p>
+                <ul className="mt-6 space-y-2.5 text-xs text-slate-600">
+                  <li className="flex items-center gap-2">
+                    <FiCheckCircle className="text-green-500 shrink-0" />
+                    <span>NEET Speed Drills & Biology NCERT line-by-line</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <FiCheckCircle className="text-green-500 shrink-0" />
+                    <span>JEE Main Problem Solving Shortcuts</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <FiCheckCircle className="text-green-500 shrink-0" />
+                    <span>GUJCET Full Mock Test Series</span>
+                  </li>
+                </ul>
+              </div>
+              <div className="pt-8 mt-6 border-t border-slate-100 flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-400">Mock Tests Included</span>
+                <button
+                  onClick={() => navigate('/courses')}
+                  className="text-xs font-black text-[#DC2626] hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  View Details ➜
+                </button>
               </div>
             </div>
           </div>
@@ -538,6 +744,86 @@ export default function SchoolDetail() {
         </div>
       )}
 
+      {/* 3.8 CAMPUS VISITING & DIRECT HELPLINE CARD */}
+      <section className="py-16 bg-[#F4F7FA] border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-md p-8 sm:p-12">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+              <div className="lg:col-span-7 space-y-4">
+                <span className="text-[#DC2626] font-bold tracking-widest text-xs uppercase bg-red-50 px-3.5 py-1 rounded-full border border-red-100">
+                  CAMPUS DESK & VISITING HOURS
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-black text-[#1C2E60]">
+                  Visit {selectedSchool.name} Desk
+                </h3>
+                <p className="text-slate-600 text-xs sm:text-sm font-light leading-relaxed">
+                  Parents and students are welcome to visit our counseling desk for one-on-one academic guidance, curriculum walkthroughs, and admissions.
+                </p>
+
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-red-50 text-[#DC2626] flex items-center justify-center shrink-0 mt-0.5 font-bold">
+                      📍
+                    </div>
+                    <div>
+                      <span className="text-xs font-extrabold text-[#1C2E60] block">Campus Location</span>
+                      <span className="text-xs text-slate-500 font-light">{selectedSchool.address || 'Vadodara, Gujarat'}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5 font-bold">
+                      📞
+                    </div>
+                    <div>
+                      <span className="text-xs font-extrabold text-[#1C2E60] block">Direct Contact Number</span>
+                      <a href={`tel:${selectedSchool.contact || '9638256222'}`} className="text-xs text-blue-600 font-bold hover:underline">
+                        {selectedSchool.contact || '96382 56222'}
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 mt-0.5 font-bold">
+                      ⏰
+                    </div>
+                    <div>
+                      <span className="text-xs font-extrabold text-[#1C2E60] block">Visiting & Counseling Hours</span>
+                      <span className="text-xs text-slate-500 font-light">Monday to Saturday: 8:00 AM – 7:00 PM | Sunday: By Appointment</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="lg:col-span-5 flex flex-col gap-3">
+                <a
+                  href={googleMapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full bg-[#1C2E60] hover:bg-slate-800 text-white font-extrabold p-4 rounded-2xl text-xs uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 transition-all"
+                >
+                  <FiMapPin /> Get Google Maps Directions ↗
+                </a>
+                <a
+                  href={`https://wa.me/91${(selectedSchool.contact || '9638256222').replace(/\D/g, '')}?text=${encodeURIComponent(`Hello, I would like to schedule a visit to ${selectedSchool.name} campus.`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full bg-[#25D366] hover:bg-[#1EBE5D] text-white font-extrabold p-4 rounded-2xl text-xs uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 transition-all"
+                >
+                  <FaWhatsapp className="text-base" /> Chat on WhatsApp
+                </a>
+                <a
+                  href={`tel:${selectedSchool.contact || '9638256222'}`}
+                  className="w-full bg-slate-100 hover:bg-slate-200 text-[#1C2E60] font-extrabold p-4 rounded-2xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all"
+                >
+                  <FiPhone /> Call School Office
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* 4. SCHOOL INQUIRY & ADMISSION FORM */}
       <section id="school-inquiry" className="py-20 bg-white border-b border-slate-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -635,30 +921,84 @@ export default function SchoolDetail() {
         </div>
       </section>
 
-      {/* 5. SWITCH TO OTHER PARTNER SCHOOLS */}
-      <section className="py-16 bg-[#F8FAFC]">
+      {/* 5. EXPLORE ALL PARTNER CAMPUSES */}
+      <section className="py-20 bg-[#F8FAFC]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8">
-            <span className="text-[#DC2626] font-extrabold text-xs uppercase tracking-widest">EXPLORE OTHER CAMPUSES</span>
-            <h3 className="text-2xl font-black text-[#1C2E60] mt-1">Our Other Partner Schools</h3>
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <span className="text-[#DC2626] font-extrabold text-xs uppercase tracking-widest bg-red-50 px-3.5 py-1 rounded-full border border-red-100">
+              NETWORK OF EXCELLENCE
+            </span>
+            <h3 className="text-3xl font-black text-[#1C2E60] mt-3">Explore All Partner Campuses</h3>
+            <p className="text-slate-500 text-xs sm:text-sm mt-2">
+              Noble Education provides integrated classroom coaching across 3 leading school campuses in Vadodara.
+            </p>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {partnerSchools.map(sch => {
               const isActive = sch.id === selectedSchool.id || sch.name === selectedSchool.name;
+              const schImg = sch.image ? getEmbedImageUrl(sch.image) : '/images/hero-classroom.png';
+
               return (
-                <button
+                <div
                   key={sch.id || sch.name}
                   onClick={() => handleSchoolSelect(sch)}
-                  className={`px-6 py-3 rounded-2xl text-xs font-extrabold transition-all border cursor-pointer flex items-center gap-2 ${
+                  className={`bg-white rounded-3xl border overflow-hidden p-6 transition-all duration-300 flex flex-col justify-between cursor-pointer group hover:-translate-y-1.5 ${
                     isActive
-                      ? 'bg-[#1C2E60] text-white border-[#1C2E60] shadow-lg scale-105'
-                      : 'bg-white text-slate-700 border-slate-200 hover:border-red-300 hover:bg-red-50/50'
+                      ? 'border-2 border-[#1C2E60] shadow-xl ring-4 ring-blue-500/10'
+                      : 'border-slate-200/90 shadow-sm hover:shadow-xl hover:border-red-300'
                   }`}
                 >
-                  <span>🏫 {sch.name}</span>
-                  <span className="text-[10px] opacity-70">({sch.medium || 'English'})</span>
-                </button>
+                  <div>
+                    <div className="relative h-44 rounded-2xl overflow-hidden mb-5 bg-slate-900">
+                      <img
+                        src={schImg}
+                        alt={sch.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        onError={(e) => { e.target.src = '/images/hero-classroom.png'; }}
+                      />
+                      <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-md px-3 py-1 rounded-xl text-[10px] font-black text-[#1C2E60]">
+                        {sch.medium || 'English Medium'}
+                      </div>
+                      {isActive && (
+                        <div className="absolute top-3 right-3 bg-[#DC2626] text-white px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider">
+                          Current Campus
+                        </div>
+                      )}
+                    </div>
+
+                    <h4 className="text-lg font-black text-[#1C2E60] group-hover:text-[#DC2626] transition-colors">
+                      {sch.name}
+                    </h4>
+                    
+                    <div className="mt-2 space-y-1.5 text-xs text-slate-500 font-light">
+                      <div className="flex items-center gap-1.5">
+                        <FiBookOpen className="text-red-500 shrink-0" />
+                        <span className="font-semibold text-slate-700">{sch.standards || 'Standards 8th-12th'}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 truncate">
+                        <FiMapPin className="text-blue-500 shrink-0" />
+                        <span className="truncate">{sch.address || 'Vadodara'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-6 mt-6 border-t border-slate-100 flex items-center justify-between">
+                    <span className="text-[11px] font-extrabold text-slate-400">
+                      {sch.contact ? `📞 ${sch.contact}` : 'Coaching Partner'}
+                    </span>
+                    <button
+                      type="button"
+                      className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${
+                        isActive
+                          ? 'bg-[#1C2E60] text-white'
+                          : 'bg-red-50 text-[#DC2626] group-hover:bg-[#DC2626] group-hover:text-white'
+                      }`}
+                    >
+                      {isActive ? 'Viewing Now' : 'Switch Campus ➜'}
+                    </button>
+                  </div>
+                </div>
               );
             })}
           </div>

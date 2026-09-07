@@ -117,6 +117,28 @@ export default function Navbar() {
   const navStructure = [
     { name: 'About', href: '/about' },
     {
+      name: 'Schools',
+      href: '/school',
+      dropdownGroups: [
+        {
+          title: 'Partner Campuses',
+          items: [
+            { name: 'Royal School', href: '/school?name=Royal%20School', desc: 'English Medium • 8th to 12th Science (Ajwa Road)', icon: FiBookOpen },
+            { name: 'Raghukul Vidyalay', href: '/school?name=Raghukul%20Vidyalay', desc: 'Gujarati Medium • 8th to 10th Board (New VIP Road)', icon: FiCompass },
+            { name: 'New Heaven Vidyalaya', href: '/school?name=New%20Heaven%20Vidyalaya', desc: 'Gujarati Medium • 11th & 12th Science (Waghodia Road)', icon: FiAward }
+          ]
+        },
+        {
+          title: 'Campus Life & Admissions',
+          items: [
+            { name: 'All Partner Schools', href: '/school', desc: 'Compare integrated partner campuses', icon: FiMapPin },
+            { name: 'School Toppers & Results', href: '/results', desc: 'Board percentile rankers from our schools', icon: FiTrendingUp },
+            { name: 'Direct School Inquiry', href: '/school#school-inquiry', desc: 'Admission guidance & batch details', icon: FiMessageSquare }
+          ]
+        }
+      ]
+    },
+    {
       name: 'Courses',
       href: '/courses',
       dropdownGroups: [
@@ -220,13 +242,20 @@ export default function Navbar() {
           <div className="flex items-center justify-between h-20">
             
             {/* Left: Logo */}
-            <div className="flex-shrink-0 cursor-pointer flex items-center" onClick={(e) => handleNav(e, '/')}>
-              <img src={siteLogo} alt="Noble Education" className="h-[38px] md:h-[45px] max-w-[220px] w-auto object-contain" />
+            <div className="flex items-center gap-3">
+              <a href="/" onClick={(e) => handleNav(e, '/')} className="flex items-center gap-3">
+                <img
+                  src={siteLogo || logoWhite}
+                  alt="Noble Education"
+                  className="h-10 sm:h-12 w-auto object-contain transition-transform hover:scale-105"
+                  onError={() => { setSiteLogo(logoWhite); }}
+                />
+              </a>
             </div>
 
 
             {/* Center: Desktop Menu (Vertically aligned) */}
-            <div className="hidden lg:flex items-center gap-2 xl:gap-4.5 h-full flex-shrink-0">
+            <div className="hidden lg:flex items-center space-x-5 xl:space-x-7 h-full">
               {navStructure.map((nav) => (
                 <div
                   key={nav.name}
@@ -252,9 +281,11 @@ export default function Navbar() {
                       className={`absolute top-full pt-2 z-50 animate-fadeIn max-w-[calc(100vw-24px)] ${
                         nav.name === 'Courses' 
                           ? 'left-[-80px] sm:left-[-140px] md:left-[-200px] lg:left-[-160px] xl:left-1/2 xl:-translate-x-1/2' 
-                          : nav.name === 'Admission' 
-                            ? 'left-[-40px] sm:left-[-80px] lg:left-1/2 lg:-translate-x-1/2' 
-                            : 'right-0 lg:left-1/2 lg:-translate-x-1/2'
+                          : nav.name === 'Schools'
+                            ? 'left-[-20px] sm:left-[-60px] lg:left-1/2 lg:-translate-x-1/2'
+                            : nav.name === 'Admission' 
+                              ? 'left-[-40px] sm:left-[-80px] lg:left-1/2 lg:-translate-x-1/2' 
+                              : 'right-0 lg:left-1/2 lg:-translate-x-1/2'
                       }`}
                       onMouseEnter={() => handleMouseEnter(nav.name)}
                       onMouseLeave={() => handleMouseLeave(nav.name)}
