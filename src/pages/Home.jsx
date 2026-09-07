@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiArrowRight, FiPhone, FiBookOpen, FiActivity, FiCompass, FiUsers, FiAward, FiMessageCircle, FiTrendingUp, FiCheckCircle } from 'react-icons/fi';
+import { FiArrowRight, FiPhone, FiBookOpen, FiActivity, FiCompass, FiUsers, FiAward, FiMessageCircle, FiTrendingUp, FiCheckCircle, FiPlay, FiVideo } from 'react-icons/fi';
 import { navigate } from '../utils/router';
 import { coursesData } from '../data/coursesData';
 import { statsData } from '../data/statsData';
@@ -9,11 +9,13 @@ import { contactData } from '../data/contactData';
 
 import { inquiryService } from '../utils/inquiryService';
 import { adminData } from '../utils/adminData';
-import { getEmbedImageUrl } from '../utils/imageUrl';
+import { getEmbedImageUrl, isVideoMedia } from '../utils/imageUrl';
+import UniversalVideoModal from '../components/UniversalVideoModal';
 
 export default function Home() {
   const [activeBanner, setActiveBanner] = useState(0);
   const [activeCourseCategory, setActiveCourseCategory] = useState("All");
+  const [activeVideoModal, setActiveVideoModal] = useState(null);
   const [homeFormSent, setHomeFormSent] = useState(false);
   const [homeFormData, setHomeFormData] = useState({ name: '', phone: '', program: 'School Coaching (8th-10th)', message: '' });
   const [videoIndex, setVideoIndex] = useState(0);
@@ -281,6 +283,15 @@ export default function Home() {
                 >
                   {activeHero.buttonText || "Book Free Counselling"} <FiArrowRight />
                 </a>
+                {(activeHero.mediaType === 'video' || !!activeHero.videoUrl || isVideoMedia(activeHero)) && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveVideoModal(activeHero)}
+                    className="w-full sm:w-auto text-center bg-red-600 hover:bg-red-700 text-white font-bold px-8 py-4 rounded-xl text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+                  >
+                    <FiPlay className="text-sm ml-0.5" /> Watch Video
+                  </button>
+                )}
                 <button
                   onClick={() => navigate('/courses')}
                   className="w-full sm:w-auto text-center bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold px-8 py-4 rounded-xl text-xs transition-colors cursor-pointer"
@@ -636,6 +647,7 @@ export default function Home() {
               const isInvalidImg = !rawImg || rawImg.includes('student_') || rawImg.trim() === '';
               const studentPhoto = !isInvalidImg ? getEmbedImageUrl(rawImg) : fallbackPhotos[idx % fallbackPhotos.length];
 
+              const isVid = item.mediaType === 'video' || !!item.videoUrl || isVideoMedia(item);
               const isTopper = idx === 0;
               const rankBadge = idx === 0 ? "👑 #1 TOPPER" : idx === 1 ? "🥈 2ND RANK" : idx === 2 ? "🥉 3RD RANK" : "⭐ TOP RANK";
               const examLabel = (item.exam || 'BOARD 2025').replace('BOARD', '').trim();
@@ -643,7 +655,10 @@ export default function Home() {
               return (
                 <div 
                   key={idx}
-                  onClick={() => navigate('/results')}
+                  onClick={() => {
+                    if (isVid) setActiveVideoModal(item);
+                    else navigate('/results');
+                  }}
                   className={`bg-white rounded-[28px] overflow-hidden transition-all duration-300 flex flex-col justify-between h-[530px] group hover:-translate-y-2 cursor-pointer ${
                     isTopper 
                       ? 'border-2 border-[#DC2626] shadow-2xl shadow-red-900/15 ring-4 ring-red-500/10' 
@@ -657,19 +672,33 @@ export default function Home() {
                     <span className="text-xs font-black uppercase tracking-wider whitespace-nowrap">
                       {rankBadge}
                     </span>
-                    <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md uppercase tracking-wider whitespace-nowrap truncate max-w-[110px]">
-                      {examLabel}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {isVid && (
+                        <span className="text-[9px] font-black text-white bg-red-600 px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shadow">
+                          <FiVideo size={9} /> Video
+                        </span>
+                      )}
+                      <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md uppercase tracking-wider whitespace-nowrap truncate max-w-[110px]">
+                        {examLabel}
+                      </span>
+                    </div>
                   </div>
 
                   {/* 2. 100% CRISP UNTOUCHED STUDENT PHOTO */}
-                  <div className="relative h-60 w-full flex-shrink-0 overflow-hidden bg-slate-100">
+                  <div className="relative h-60 w-full flex-shrink-0 overflow-hidden bg-slate-900">
                     <img 
                       src={studentPhoto} 
                       alt={item.name} 
                       className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
                       onError={(e) => { e.target.src = fallbackPhotos[idx % fallbackPhotos.length]; }}
                     />
+                    {isVid && (
+                      <div className="absolute inset-0 bg-slate-950/40 group-hover:bg-slate-950/20 transition-all flex items-center justify-center">
+                        <div className="w-12 h-12 rounded-full bg-red-600 text-white flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
+                          <FiPlay className="text-xl ml-0.5" />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* 3. Card Details Body */}
@@ -753,7 +782,8 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {partnerSchools.map((sch, sIdx) => {
-              const schImg = sch.image ? getEmbedImageUrl(sch.image) : '/images/bg-about-hero.png';
+              const isVid = sch.mediaType === 'video' || !!sch.videoUrl || isVideoMedia(sch);
+              const schImg = (sch.image || sch.videoUrl) ? getEmbedImageUrl(sch.image || sch.videoUrl) : '/images/bg-about-hero.png';
               const isEnglish = (sch.medium || '').toLowerCase().includes('english');
               return (
                 <div
@@ -761,7 +791,10 @@ export default function Home() {
                   className="bg-white border-2 border-slate-200/90 rounded-[32px] overflow-hidden shadow-lg hover:shadow-2xl hover:border-[#DC2626]/40 transition-all duration-300 flex flex-col justify-between group"
                 >
                   <div
-                    onClick={() => navigate(`/school?name=${encodeURIComponent(sch.name)}`)}
+                    onClick={() => {
+                      if (isVid) setActiveVideoModal(sch);
+                      else navigate(`/school?name=${encodeURIComponent(sch.name)}`);
+                    }}
                     className="relative h-52 w-full overflow-hidden bg-slate-900 cursor-pointer"
                   >
                     <img
@@ -770,12 +803,24 @@ export default function Home() {
                       className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500"
                       onError={(e) => { e.target.src = '/images/bg-about-hero.png'; }}
                     />
+                    {isVid && (
+                      <div className="absolute inset-0 bg-slate-950/40 group-hover:bg-slate-950/20 transition-all flex items-center justify-center z-10">
+                        <div className="w-12 h-12 rounded-full bg-red-600 text-white flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
+                          <FiPlay className="text-xl ml-0.5" />
+                        </div>
+                      </div>
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
-                    <span className={`absolute top-4 left-4 text-xs font-black text-white px-4 py-1.5 rounded-full uppercase tracking-wider shadow-lg border border-white/20 backdrop-blur-md ${
+                    <span className={`absolute top-4 left-4 text-xs font-black text-white px-4 py-1.5 rounded-full uppercase tracking-wider shadow-lg border border-white/20 backdrop-blur-md z-10 ${
                       isEnglish ? 'bg-[#1C2E60]' : 'bg-[#DC2626]'
                     }`}>
                       {sch.medium || 'Partner School'}
                     </span>
+                    {isVid && (
+                      <span className="absolute top-4 right-4 text-xs font-black text-white bg-red-600 px-3 py-1 rounded-full uppercase tracking-wider shadow-lg flex items-center gap-1 z-10">
+                        <FiVideo size={11} /> Video
+                      </span>
+                    )}
                   </div>
 
                   <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
@@ -886,35 +931,55 @@ export default function Home() {
 
           {/* Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            {filteredCourses.map((course, cIdx) => (
-              <div 
-                key={course.id || cIdx}
-                onClick={() => navigate(`/courses#${course.id || ''}`)}
-                className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-[#DC2626]/30 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between overflow-hidden group"
-              >
-                <div>
-                  {course.image && (
-                    <div className="h-32 -mx-6 -mt-6 mb-4 overflow-hidden bg-slate-100">
-                      <img
-                        src={getEmbedImageUrl(course.image)}
-                        alt={course.name || course.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                      />
+            {filteredCourses.map((course, cIdx) => {
+              const isVid = course.mediaType === 'video' || !!course.videoUrl || isVideoMedia(course);
+              return (
+                <div 
+                  key={course.id || cIdx}
+                  onClick={() => {
+                    if (isVid) setActiveVideoModal(course);
+                    else navigate(`/courses#${course.id || ''}`);
+                  }}
+                  className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-[#DC2626]/30 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between overflow-hidden group"
+                >
+                  <div>
+                    {(course.image || course.videoUrl) && (
+                      <div className="h-32 -mx-6 -mt-6 mb-4 overflow-hidden relative bg-slate-900">
+                        <img
+                          src={getEmbedImageUrl(course.image || course.videoUrl)}
+                          alt={course.name || course.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                        {isVid && (
+                          <div className="absolute inset-0 bg-slate-950/40 group-hover:bg-slate-950/20 transition-all flex items-center justify-center">
+                            <div className="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                              <FiPlay className="text-lg ml-0.5" />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between gap-1 mb-3">
+                      <span className="text-[9px] font-bold text-[#1C2E60] bg-blue-50 px-2.5 py-1 rounded-full uppercase tracking-widest block w-fit">
+                        {formatHomeCatLabel(course.category)}
+                      </span>
+                      {isVid && (
+                        <span className="text-[9px] font-black text-white bg-red-600 px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shadow">
+                          <FiVideo size={9} /> Video
+                        </span>
+                      )}
                     </div>
-                  )}
-                  <span className="text-[9px] font-bold text-[#1C2E60] bg-blue-50 px-2.5 py-1 rounded-full uppercase tracking-widest block mb-4 w-fit">
-                    {formatHomeCatLabel(course.category)}
-                  </span>
-                  <h3 className="text-base font-extrabold text-[#1C2E60] mb-2">{course.name || course.title}</h3>
-                  <p className="text-zinc-400 text-xs font-light leading-relaxed line-clamp-3 mb-4">{course.description || course.details}</p>
+                    <h3 className="text-base font-extrabold text-[#1C2E60] mb-2">{course.name || course.title}</h3>
+                    <p className="text-zinc-400 text-xs font-light leading-relaxed line-clamp-3 mb-4">{course.description || course.details}</p>
+                  </div>
+                  <div className="flex justify-between items-center pt-3 border-t border-slate-100">
+                    <span className="text-[10px] text-[#1C2E60] font-bold uppercase tracking-wider">{isVid ? 'Watch Preview' : 'Explore Details'}</span>
+                    <FiTrendingUp className="text-[#DC2626] text-sm" />
+                  </div>
                 </div>
-                <div className="flex justify-between items-center pt-3 border-t border-slate-100">
-                  <span className="text-[10px] text-[#1C2E60] font-bold uppercase tracking-wider">Explore Details</span>
-                  <FiTrendingUp className="text-[#DC2626] text-sm" />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -1097,10 +1162,24 @@ export default function Home() {
             const p3 = list[2] || {};
             const p4 = list[3] || {};
 
+            const isP1Video = isVideoMedia(p1) || p1.mediaType === 'video' || !!p1.videoUrl;
+            const isP2Video = isVideoMedia(p2) || p2.mediaType === 'video' || !!p2.videoUrl;
+            const isP3Video = isVideoMedia(p3) || p3.mediaType === 'video' || !!p3.videoUrl;
+            const isP4Video = isVideoMedia(p4) || p4.mediaType === 'video' || !!p4.videoUrl;
+
             return (
               <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                 {/* BIG Hero Event Photo */}
-                <div className="md:col-span-8 relative h-80 sm:h-[420px] rounded-3xl overflow-hidden border border-slate-200 shadow-md hover:shadow-2xl transition-all duration-500 group cursor-pointer" onClick={() => navigate('/gallery')}>
+                <div 
+                  className="md:col-span-8 relative h-80 sm:h-[420px] rounded-3xl overflow-hidden border border-slate-200 shadow-md hover:shadow-2xl transition-all duration-500 group cursor-pointer" 
+                  onClick={() => {
+                    if (isP1Video) {
+                      setActiveVideoModal(p1);
+                    } else {
+                      navigate('/gallery');
+                    }
+                  }}
+                >
                   <img
                     src={getEmbedImageUrl(p1.image || p1.url)}
                     alt={p1.title || 'Toppers Event'}
@@ -1112,6 +1191,19 @@ export default function Home() {
                       ★ {p1.category}
                     </span>
                   )}
+                  {isP1Video && (
+                    <>
+                      <div className="absolute top-4 right-4 z-10 px-2.5 py-1 rounded-full bg-red-600/90 text-white text-[11px] font-bold flex items-center gap-1.5 shadow-lg backdrop-blur-sm">
+                        <FiVideo className="w-3 h-3" />
+                        <span>Video</span>
+                      </div>
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                        <div className="w-14 h-14 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:bg-red-600 transition-all duration-300">
+                          <FiPlay className="w-6 h-6 ml-0.5 fill-current" />
+                        </div>
+                      </div>
+                    </>
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0A1E3D]/95 via-slate-950/30 to-transparent flex flex-col justify-end p-6 sm:p-8">
                     <span className="text-red-400 font-extrabold text-[10px] uppercase tracking-widest mb-1">Featured Event Milestone</span>
                     <h3 className="text-xl sm:text-2xl font-black text-white leading-tight mb-1">{p1.title}</h3>
@@ -1120,7 +1212,16 @@ export default function Home() {
                 </div>
 
                 {/* MEDIUM Accent Event Photo */}
-                <div className="md:col-span-4 relative h-80 sm:h-[420px] rounded-3xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-500 group cursor-pointer" onClick={() => navigate('/gallery')}>
+                <div 
+                  className="md:col-span-4 relative h-80 sm:h-[420px] rounded-3xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-500 group cursor-pointer" 
+                  onClick={() => {
+                    if (isP2Video) {
+                      setActiveVideoModal(p2);
+                    } else {
+                      navigate('/gallery');
+                    }
+                  }}
+                >
                   <img
                     src={getEmbedImageUrl(p2.image || p2.url)}
                     alt={p2.title}
@@ -1132,6 +1233,19 @@ export default function Home() {
                       {p2.category}
                     </span>
                   )}
+                  {isP2Video && (
+                    <>
+                      <div className="absolute top-4 right-4 z-10 px-2 py-0.5 rounded-full bg-red-600/90 text-white text-[10px] font-bold flex items-center gap-1 shadow-md">
+                        <FiVideo className="w-2.5 h-2.5" />
+                        <span>Video</span>
+                      </div>
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                        <div className="w-12 h-12 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-xl group-hover:scale-110 group-hover:bg-red-600 transition-all duration-300">
+                          <FiPlay className="w-5 h-5 ml-0.5 fill-current" />
+                        </div>
+                      </div>
+                    </>
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0A1E3D]/95 via-slate-950/20 to-transparent flex flex-col justify-end p-6">
                     <h4 className="text-white font-extrabold text-base leading-snug">{p2.title}</h4>
                     {p2.desc && <p className="text-zinc-300 text-xs font-light mt-1 truncate">{p2.desc}</p>}
@@ -1140,7 +1254,16 @@ export default function Home() {
 
                 {/* SMALL Photo 3 */}
                 {p3.title && (
-                  <div className="md:col-span-6 relative h-48 sm:h-60 rounded-3xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-500 group cursor-pointer" onClick={() => navigate('/gallery')}>
+                  <div 
+                    className="md:col-span-6 relative h-48 sm:h-60 rounded-3xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-500 group cursor-pointer" 
+                    onClick={() => {
+                      if (isP3Video) {
+                        setActiveVideoModal(p3);
+                      } else {
+                        navigate('/gallery');
+                      }
+                    }}
+                  >
                     <img
                       src={getEmbedImageUrl(p3.image || p3.url)}
                       alt={p3.title}
@@ -1152,6 +1275,19 @@ export default function Home() {
                         {p3.category}
                       </span>
                     )}
+                    {isP3Video && (
+                      <>
+                        <div className="absolute top-3 right-3 z-10 px-2 py-0.5 rounded-full bg-red-600/90 text-white text-[10px] font-bold flex items-center gap-1 shadow-md">
+                          <FiVideo className="w-2.5 h-2.5" />
+                          <span>Video</span>
+                        </div>
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                          <div className="w-10 h-10 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:bg-red-600 transition-all duration-300">
+                            <FiPlay className="w-4 h-4 ml-0.5 fill-current" />
+                          </div>
+                        </div>
+                      </>
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent flex flex-col justify-end p-5">
                       <h4 className="text-white font-extrabold text-base leading-snug">{p3.title}</h4>
                       {p3.desc && <p className="text-zinc-300 text-xs font-light truncate">{p3.desc}</p>}
@@ -1161,7 +1297,16 @@ export default function Home() {
 
                 {/* SMALL Photo 4 */}
                 {p4.title && (
-                  <div className="md:col-span-6 relative h-48 sm:h-60 rounded-3xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-500 group cursor-pointer" onClick={() => navigate('/gallery')}>
+                  <div 
+                    className="md:col-span-6 relative h-48 sm:h-60 rounded-3xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-500 group cursor-pointer" 
+                    onClick={() => {
+                      if (isP4Video) {
+                        setActiveVideoModal(p4);
+                      } else {
+                        navigate('/gallery');
+                      }
+                    }}
+                  >
                     <img
                       src={getEmbedImageUrl(p4.image || p4.url)}
                       alt={p4.title}
@@ -1172,6 +1317,19 @@ export default function Home() {
                       <span className="absolute top-3 left-3 text-[10px] font-extrabold text-white bg-[#1C2E60]/90 backdrop-blur-md px-3 py-1 rounded-full uppercase tracking-wider shadow">
                         {p4.category}
                       </span>
+                    )}
+                    {isP4Video && (
+                      <>
+                        <div className="absolute top-3 right-3 z-10 px-2 py-0.5 rounded-full bg-red-600/90 text-white text-[10px] font-bold flex items-center gap-1 shadow-md">
+                          <FiVideo className="w-2.5 h-2.5" />
+                          <span>Video</span>
+                        </div>
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                          <div className="w-10 h-10 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:bg-red-600 transition-all duration-300">
+                            <FiPlay className="w-4 h-4 ml-0.5 fill-current" />
+                          </div>
+                        </div>
+                      </>
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent flex flex-col justify-end p-5">
                       <h4 className="text-white font-extrabold text-base leading-snug">{p4.title}</h4>
@@ -1280,6 +1438,24 @@ export default function Home() {
                         <span className="text-xs font-bold text-[#DC2626] bg-red-50 px-3 py-1 rounded-xl border border-red-100">
                           {currentItem.program || 'Noble Education Student'}
                         </span>
+                        {Boolean(currentItem.videoUrl || currentItem.mediaType === 'video') && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveVideoModal({
+                                title: `${currentItem.name} - Video Review`,
+                                videoUrl: currentItem.videoUrl,
+                                mediaType: 'video',
+                                aspectRatio: currentItem.aspectRatio || 'auto'
+                              });
+                            }}
+                            className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-extrabold shadow-md transition-all cursor-pointer group"
+                          >
+                            <FiPlay className="w-3.5 h-3.5 fill-current group-hover:scale-110 transition-transform" />
+                            <span>Watch Video Review</span>
+                          </button>
+                        )}
                       </div>
                     </motion.div>
                   </AnimatePresence>
@@ -1583,6 +1759,13 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Universal Video Modal */}
+      <UniversalVideoModal
+        item={activeVideoModal}
+        isOpen={!!activeVideoModal}
+        onClose={() => setActiveVideoModal(null)}
+      />
 
     </div>
   );

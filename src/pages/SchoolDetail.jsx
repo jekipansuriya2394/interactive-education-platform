@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { FiMapPin, FiPhone, FiBookOpen, FiAward, FiCheckCircle, FiArrowRight, FiMessageCircle, FiChevronRight, FiGrid, FiMaximize2 } from 'react-icons/fi';
+import { FiMapPin, FiPhone, FiBookOpen, FiAward, FiCheckCircle, FiArrowRight, FiMessageCircle, FiChevronRight, FiGrid, FiMaximize2, FiPlay, FiVideo } from 'react-icons/fi';
 import { HiX } from 'react-icons/hi';
 import { FaWhatsapp } from 'react-icons/fa';
 import { navigate } from '../utils/router';
 import { adminData } from '../utils/adminData';
-import { getEmbedImageUrl } from '../utils/imageUrl';
+import { getEmbedImageUrl, isVideoMedia } from '../utils/imageUrl';
 import { inquiryService } from '../utils/inquiryService';
+import UniversalVideoModal from '../components/UniversalVideoModal';
 
 export default function SchoolDetail() {
   const [partnerSchools, setPartnerSchools] = useState(() => adminData.getData('partnerSchools') || []);
@@ -644,7 +645,8 @@ export default function SchoolDetail() {
                       : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 max-w-7xl mx-auto'
               }`}>
                 {filtered.map((item, index) => {
-                  const imgUrl = getEmbedImageUrl(item.image);
+                  const isVid = item.mediaType === 'video' || !!item.videoUrl || isVideoMedia(item);
+                  const imgUrl = getEmbedImageUrl(item.image || item.videoUrl);
                   return (
                     <div
                       key={item.id || index}
@@ -659,14 +661,26 @@ export default function SchoolDetail() {
                           className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500"
                           onError={(e) => { e.target.src = '/images/hero-classroom.png'; }}
                         />
+                        {isVid && (
+                          <div className="absolute inset-0 bg-slate-950/40 group-hover:bg-slate-950/20 transition-all flex items-center justify-center">
+                            <div className="w-12 h-12 rounded-full bg-red-600 text-white flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
+                              <FiPlay className="text-xl ml-0.5" />
+                            </div>
+                          </div>
+                        )}
                         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                           <span className="bg-white/90 text-[#1C2E60] font-black text-xs px-4 py-2 rounded-2xl shadow-lg flex items-center gap-1.5 transform scale-90 group-hover:scale-100 transition-transform">
-                            <FiMaximize2 className="text-sm text-[#DC2626]" /> View Photo
+                            {isVid ? <><FiPlay className="text-sm text-[#DC2626]" /> Play Video</> : <><FiMaximize2 className="text-sm text-[#DC2626]" /> View Photo</>}
                           </span>
                         </div>
                         <span className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1 rounded-xl">
                           {item.category || 'Premises'}
                         </span>
+                        {isVid && (
+                          <span className="absolute top-3 right-3 bg-red-600 text-white text-[10px] font-black px-2.5 py-1 rounded-xl flex items-center gap-1 shadow">
+                            <FiVideo size={10} /> Video
+                          </span>
+                        )}
                       </div>
 
                       {/* Card Content Body */}
@@ -690,8 +704,17 @@ export default function SchoolDetail() {
         );
       })()}
 
+      {/* UNIVERSAL VIDEO MODAL */}
+      {selectedImageModal && (selectedImageModal.mediaType === 'video' || !!selectedImageModal.videoUrl || isVideoMedia(selectedImageModal)) && (
+        <UniversalVideoModal
+          item={selectedImageModal}
+          isOpen={true}
+          onClose={() => setSelectedImageModal(null)}
+        />
+      )}
+
       {/* FULLSCREEN LIGHTBOX PHOTO MODAL */}
-      {selectedImageModal && (
+      {selectedImageModal && !(selectedImageModal.mediaType === 'video' || !!selectedImageModal.videoUrl || isVideoMedia(selectedImageModal)) && (
         <div 
           className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-fadeIn"
           onClick={() => setSelectedImageModal(null)}

@@ -4187,46 +4187,18 @@ function PagePhotoModal({ item, onSave, onClose }) {
     title: item.title || '',
     category: item.category || '',
     image: item.image || item.url || '',
+    videoUrl: item.videoUrl || '',
+    mediaType: item.mediaType || (item.videoUrl ? 'video' : 'image'),
+    aspectRatio: item.aspectRatio || 'auto',
     desc: item.desc || '',
     _index: item._index
   });
-  const [uploadMode, setUploadMode] = useState('url');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const fileRef = useRef(null);
-
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0]; if (!file) return;
-    setIsProcessing(true);
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const img = new Image();
-      img.onload = () => {
-        try {
-          const canvas = document.createElement('canvas');
-          let w = img.width, h = img.height;
-          const MAX = 900;
-          if (w > h ? w > MAX : h > MAX) {
-            if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
-            else { w = Math.round(w * MAX / h); h = MAX; }
-          }
-          canvas.width = w; canvas.height = h;
-          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          const data = canvas.toDataURL('image/jpeg', 0.75);
-          setForm(p => ({ ...p, image: data }));
-          setIsProcessing(false);
-        } catch { setIsProcessing(false); }
-      };
-      img.onerror = () => setIsProcessing(false);
-      img.src = ev.target.result;
-    };
-    reader.readAsDataURL(file);
-  };
 
   return (
-    <Modal title={item._index !== undefined ? 'Edit Page Photo' : 'Add Page Photo'} onClose={onClose}>
+    <Modal title={item._index !== undefined ? 'Edit Page Media' : 'Add Page Media'} onClose={onClose}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div>
-          <label className="ap-label">Photo Title *</label>
+          <label className="ap-label">Title *</label>
           <input
             className="ap-input"
             value={form.title}
@@ -4252,43 +4224,35 @@ function PagePhotoModal({ item, onSave, onClose }) {
             className="ap-input"
             value={form.desc}
             onChange={e => setForm({ ...form, desc: e.target.value })}
-            placeholder="Brief explanation of this photo..."
+            placeholder="Brief explanation of this media..."
           />
         </div>
 
         <div>
-          <label className="ap-label">Photo Source</label>
-          <div className="ap-toggle-row">
-            <button type="button" className={`ap-toggle-btn ${uploadMode === 'url' ? 'active' : ''}`} onClick={() => setUploadMode('url')}>
-              <FiLink /> External URL / Link
-            </button>
-            <button type="button" className={`ap-toggle-btn ${uploadMode === 'file' ? 'active' : ''}`} onClick={() => setUploadMode('file')}>
-              <FiCamera /> Upload Device Photo
-            </button>
-          </div>
-
-          {uploadMode === 'url' ? (
-            <UrlImageInput value={form.image} onChange={url => setForm({ ...form, image: url })} />
-          ) : (
-            <div style={{ marginTop: 12 }}>
-              <input ref={fileRef} type="file" accept="image/*" onChange={handleFileUpload} style={{ display: 'none' }} />
-              <button type="button" className="ap-btn ap-btn-secondary" style={{ width: '100%' }} onClick={() => fileRef.current?.click()} disabled={isProcessing}>
-                <FiUpload /> {isProcessing ? 'Compressing...' : 'Choose Photo from Device'}
-              </button>
-            </div>
-          )}
-
-          {form.image && (
-            <div style={{ marginTop: 12, textAlign: 'center' }}>
-              <p style={{ color: '#6B7280', fontSize: 11, marginBottom: 6 }}>Photo Preview:</p>
-              <img src={getEmbedImageUrl(form.image)} alt="Preview" style={{ maxHeight: 160, maxWidth: '100%', borderRadius: 12, border: '1px solid #30363D', objectFit: 'contain' }} onError={handleImageError} />
-            </div>
-          )}
+          <label className="ap-label">Media (Photo or Video) *</label>
+          <UniversalMediaInput
+            image={form.image}
+            videoUrl={form.videoUrl}
+            mediaType={form.mediaType}
+            aspectRatio={form.aspectRatio}
+            onChange={({ image, videoUrl, mediaType, aspectRatio }) => {
+              setForm(p => ({ ...p, image, videoUrl, mediaType, aspectRatio }));
+            }}
+          />
         </div>
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 10 }}>
           <button type="button" className="ap-btn" onClick={onClose}>Cancel</button>
-          <button type="button" className="ap-btn ap-btn-primary" onClick={() => onSave(form)}><FiSave /> Save Photo</button>
+          <button
+            type="button"
+            className="ap-btn ap-btn-primary"
+            onClick={() => onSave({
+              ...form,
+              url: form.image
+            })}
+          >
+            <FiSave /> Save Media
+          </button>
         </div>
       </div>
     </Modal>
@@ -4317,6 +4281,9 @@ function ResultModal({ item, onSave, onClose }) {
     branch: item.branch || '',
     school: item.school || '',
     image: item.image || '',
+    videoUrl: item.videoUrl || '',
+    mediaType: item.mediaType || (item.videoUrl ? 'video' : 'image'),
+    aspectRatio: item.aspectRatio || 'auto',
     status: item.status || '',
     _index: item._index
   });
@@ -4357,10 +4324,15 @@ function ResultModal({ item, onSave, onClose }) {
         </div>
 
         <div>
-          <label className="ap-label">Student Photo (Upload or Paste Drive/Web URL)</label>
-          <UrlImageInput
-            value={form.image}
-            onChange={url => setForm({ ...form, image: url })}
+          <label className="ap-label">Student Photo or Video Interview / Reaction</label>
+          <UniversalMediaInput
+            image={form.image}
+            videoUrl={form.videoUrl}
+            mediaType={form.mediaType}
+            aspectRatio={form.aspectRatio}
+            onChange={({ image, videoUrl, mediaType, aspectRatio }) => {
+              setForm(p => ({ ...p, image, videoUrl, mediaType, aspectRatio }));
+            }}
           />
         </div>
 
@@ -4379,6 +4351,9 @@ function PartnerSchoolModal({ item, onSave, onClose }) {
     mapUrl: item.mapUrl || '',
     contact: item.contact || '',
     image: item.image || '',
+    videoUrl: item.videoUrl || '',
+    mediaType: item.mediaType || (item.videoUrl ? 'video' : 'image'),
+    aspectRatio: item.aspectRatio || 'auto',
     description: item.description || '',
     _index: item._index
   });
@@ -4408,10 +4383,15 @@ function PartnerSchoolModal({ item, onSave, onClose }) {
         </div>
 
         <div>
-          <label className="ap-label">School Building / Campus Photo (Upload or Paste Drive/Web Image URL)</label>
-          <UrlImageInput
-            value={form.image}
-            onChange={url => setForm({ ...form, image: url })}
+          <label className="ap-label">School Building / Campus Photo or Video Walkthrough</label>
+          <UniversalMediaInput
+            image={form.image}
+            videoUrl={form.videoUrl}
+            mediaType={form.mediaType}
+            aspectRatio={form.aspectRatio}
+            onChange={({ image, videoUrl, mediaType, aspectRatio }) => {
+              setForm(p => ({ ...p, image, videoUrl, mediaType, aspectRatio }));
+            }}
           />
         </div>
 
@@ -4498,6 +4478,492 @@ function UrlImageInput({ value, onChange }) {
         ✅ Supported: <strong style={{ color: '#9CA3AF' }}>Google Drive</strong>, Dropbox, OneDrive, Imgur, Imgbb, Cloudinary, PostImages, direct .jpg/.png links<br />
         ⚠️ Google Drive: file must be shared as <strong style={{ color: '#9CA3AF' }}>"Anyone with the link"</strong>
       </p>
+    </div>
+  );
+}
+
+// ─── Universal Media Input (Photo / Video - File or URL with Auto Thumbnails) ─
+function UniversalMediaInput({
+  image = '',
+  videoUrl = '',
+  mediaType = 'image',
+  aspectRatio = 'auto',
+  onChange,
+  allowVideo = true
+}) {
+  const isInitialVid = mediaType === 'video' || isVideoMedia({ videoUrl, image }) || !!videoUrl;
+  const [currentMediaType, setCurrentMediaType] = useState(isInitialVid ? 'video' : 'image');
+  const [photoUploadMode, setPhotoUploadMode] = useState(image && image.startsWith('data:') ? 'file' : 'url');
+  const [videoUploadMode, setVideoUploadMode] = useState(videoUrl && videoUrl.startsWith('data:') ? 'file' : 'url');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const photoFileRef = useRef(null);
+  const videoFileRef = useRef(null);
+
+  useEffect(() => {
+    if (mediaType === 'video' || (!mediaType && videoUrl)) {
+      setCurrentMediaType('video');
+    } else if (mediaType === 'image') {
+      setCurrentMediaType('image');
+    }
+  }, [mediaType, videoUrl]);
+
+  // Image Upload handler
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setIsProcessing(true);
+    setErrorMsg('');
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          let w = img.width, h = img.height;
+          const MAX = 900;
+          if (w > h ? w > MAX : h > MAX) {
+            if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+            else { w = Math.round(w * MAX / h); h = MAX; }
+          }
+          canvas.width = w;
+          canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          const data = canvas.toDataURL('image/jpeg', 0.75);
+          onChange?.({
+            image: data,
+            videoUrl: '',
+            mediaType: 'image',
+            aspectRatio: 'auto'
+          });
+          setIsProcessing(false);
+        } catch {
+          setErrorMsg('Failed to process image file.');
+          setIsProcessing(false);
+        }
+      };
+      img.onerror = () => {
+        setErrorMsg('Could not read image file.');
+        setIsProcessing(false);
+      };
+      img.src = ev.target.result;
+    };
+    reader.onerror = () => {
+      setErrorMsg('Could not read file.');
+      setIsProcessing(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Video Upload Handler
+  const handleVideoUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const sizeMb = file.size / (1024 * 1024);
+    if (sizeMb > 15) {
+      setErrorMsg(`Video file is ${sizeMb.toFixed(1)}MB. Direct device video uploads are limited to 15MB for rapid site loading. For larger HD videos, paste your YouTube or Vimeo link in the "Video Link" tab.`);
+      return;
+    }
+
+    setIsProcessing(true);
+    setErrorMsg('');
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const videoData = ev.target.result;
+      try {
+        const tempVideo = document.createElement('video');
+        tempVideo.preload = 'metadata';
+        tempVideo.src = videoData;
+        tempVideo.muted = true;
+        tempVideo.playsInline = true;
+
+        let captured = false;
+        const captureThumbnail = () => {
+          if (captured) return;
+          captured = true;
+          try {
+            const vw = tempVideo.videoWidth || 640;
+            const vh = tempVideo.videoHeight || 360;
+            const isPortrait = vh > vw;
+            const canvas = document.createElement('canvas');
+            const MAX = 640;
+            let w = vw, h = vh;
+            if (w > h ? w > MAX : h > MAX) {
+              if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+              else { w = Math.round(w * MAX / h); h = MAX; }
+            }
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(tempVideo, 0, 0, w, h);
+            const thumbData = canvas.toDataURL('image/jpeg', 0.70);
+
+            onChange?.({
+              image: thumbData,
+              videoUrl: videoData,
+              mediaType: 'video',
+              aspectRatio: isPortrait ? '9/16' : (aspectRatio || 'auto')
+            });
+          } catch {
+            onChange?.({
+              image: image || '',
+              videoUrl: videoData,
+              mediaType: 'video',
+              aspectRatio: aspectRatio || 'auto'
+            });
+          } finally {
+            setIsProcessing(false);
+          }
+        };
+
+        tempVideo.onseeked = captureThumbnail;
+        tempVideo.onloadeddata = () => {
+          try {
+            if (tempVideo.duration && tempVideo.duration > 0.5) {
+              tempVideo.currentTime = Math.min(1, tempVideo.duration / 2);
+            } else {
+              captureThumbnail();
+            }
+          } catch {
+            captureThumbnail();
+          }
+        };
+
+        tempVideo.onerror = () => {
+          onChange?.({
+            image: image || '',
+            videoUrl: videoData,
+            mediaType: 'video',
+            aspectRatio: aspectRatio || 'auto'
+          });
+          setIsProcessing(false);
+        };
+
+        setTimeout(() => {
+          if (!captured) captureThumbnail();
+        }, 1500);
+      } catch {
+        onChange?.({
+          image: image || '',
+          videoUrl: videoData,
+          mediaType: 'video',
+          aspectRatio: aspectRatio || 'auto'
+        });
+        setIsProcessing(false);
+      }
+    };
+    reader.onerror = () => {
+      setErrorMsg('Could not read video file.');
+      setIsProcessing(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Video URL Change Handler
+  const handleVideoUrlChange = (url) => {
+    const trimmed = (url || '').trim();
+    const isShorts = trimmed.includes('/shorts/');
+    const ytMatch = trimmed.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    let thumb = image;
+    if (ytMatch && ytMatch[1]) {
+      thumb = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
+    }
+    onChange?.({
+      image: thumb || image,
+      videoUrl: trimmed,
+      mediaType: 'video',
+      aspectRatio: isShorts ? '9/16' : (aspectRatio || 'auto')
+    });
+  };
+
+  // Photo URL Change Handler
+  const handlePhotoUrlChange = (url) => {
+    onChange?.({
+      image: convertToEmbedUrl(url),
+      videoUrl: '',
+      mediaType: 'image',
+      aspectRatio: 'auto'
+    });
+  };
+
+  return (
+    <div style={{ background: '#0D1117', border: '1px solid #30363D', borderRadius: 14, padding: 14, marginTop: 10 }}>
+      {/* Media Type Toggle: Image vs Video */}
+      {allowVideo && (
+        <div style={{ marginBottom: 12 }}>
+          <div className="ap-toggle-row">
+            <button
+              type="button"
+              className={`ap-toggle-btn ${currentMediaType === 'image' ? 'active' : ''}`}
+              onClick={() => {
+                setCurrentMediaType('image');
+                onChange?.({
+                  image: image,
+                  videoUrl: '',
+                  mediaType: 'image',
+                  aspectRatio: 'auto'
+                });
+              }}
+            >
+              <FiImage /> Photo / Image
+            </button>
+            <button
+              type="button"
+              className={`ap-toggle-btn ${currentMediaType === 'video' ? 'active' : ''}`}
+              style={currentMediaType === 'video' ? { background: '#DC2626', borderColor: '#DC2626', color: '#fff' } : {}}
+              onClick={() => {
+                setCurrentMediaType('video');
+                onChange?.({
+                  image: image,
+                  videoUrl: videoUrl,
+                  mediaType: 'video',
+                  aspectRatio: aspectRatio || 'auto'
+                });
+              }}
+            >
+              <FiVideo /> Video (File / YouTube)
+            </button>
+          </div>
+        </div>
+      )}
+
+      {errorMsg && (
+        <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #EF4444', color: '#FCA5A5', padding: '8px 12px', borderRadius: 10, fontSize: 12, marginBottom: 12 }}>
+          ⚠️ {errorMsg}
+        </div>
+      )}
+
+      {/* PHOTO SECTION */}
+      {currentMediaType === 'image' && (
+        <div>
+          <div className="ap-toggle-row" style={{ marginBottom: 10 }}>
+            <button
+              type="button"
+              className={`ap-toggle-btn ${photoUploadMode === 'file' ? 'active' : ''}`}
+              onClick={() => setPhotoUploadMode('file')}
+            >
+              <FiUpload /> Upload Device Photo
+            </button>
+            <button
+              type="button"
+              className={`ap-toggle-btn ${photoUploadMode === 'url' ? 'active' : ''}`}
+              onClick={() => setPhotoUploadMode('url')}
+            >
+              <FiLink /> Paste Image URL / Drive Link
+            </button>
+          </div>
+
+          {photoUploadMode === 'file' ? (
+            <div>
+              <input
+                ref={photoFileRef}
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoUpload}
+                style={{ display: 'none' }}
+              />
+              <button
+                type="button"
+                className="ap-btn ap-btn-secondary"
+                style={{ width: '100%', background: '#1E293B', border: '1px solid #334155' }}
+                onClick={() => photoFileRef.current?.click()}
+                disabled={isProcessing}
+              >
+                <FiCamera /> {isProcessing ? 'Compressing Image...' : 'Choose Image from Device (.jpg, .png, .webp)'}
+              </button>
+            </div>
+          ) : (
+            <UrlImageInput
+              value={image}
+              onChange={handlePhotoUrlChange}
+            />
+          )}
+
+          {/* Photo Live Preview */}
+          {image && (
+            <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 12, background: '#161B22', padding: 8, borderRadius: 10, border: '1px solid #30363D' }}>
+              <img
+                src={getEmbedImageUrl(image)}
+                alt="Preview"
+                style={{ height: 60, width: 90, borderRadius: 8, objectFit: 'cover' }}
+                onError={handleImageError}
+              />
+              <div style={{ flex: 1, overflow: 'hidden' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#F0F6FC' }}>Photo Attached</div>
+                <div style={{ fontSize: 11, color: '#9CA3AF', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', marginTop: 2 }}>
+                  {image.startsWith('data:') ? 'Custom uploaded device photo' : image}
+                </div>
+              </div>
+              <button
+                type="button"
+                className="ap-icon-btn ap-icon-btn-danger"
+                onClick={() => onChange?.({ image: '', videoUrl: '', mediaType: 'image', aspectRatio: 'auto' })}
+                title="Remove Photo"
+              >
+                <FiTrash2 size={14} />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* VIDEO SECTION */}
+      {currentMediaType === 'video' && (
+        <div>
+          <div className="ap-toggle-row" style={{ marginBottom: 10 }}>
+            <button
+              type="button"
+              className={`ap-toggle-btn ${videoUploadMode === 'file' ? 'active' : ''}`}
+              onClick={() => setVideoUploadMode('file')}
+            >
+              <FiUpload /> Upload Video File
+            </button>
+            <button
+              type="button"
+              className={`ap-toggle-btn ${videoUploadMode === 'url' ? 'active' : ''}`}
+              onClick={() => setVideoUploadMode('url')}
+            >
+              <FiLink /> YouTube / Video Link
+            </button>
+          </div>
+
+          {videoUploadMode === 'file' ? (
+            <div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button
+                  type="button"
+                  className="ap-btn ap-btn-secondary"
+                  style={{ flex: 1, background: '#1E293B', border: '1px solid #334155' }}
+                  onClick={() => videoFileRef.current?.click()}
+                  disabled={isProcessing}
+                >
+                  <FiVideo /> {isProcessing ? 'Extracting Video Frame...' : 'Choose Video from Device (.mp4, .mov, .webm)'}
+                </button>
+                {videoUrl && (
+                  <button
+                    type="button"
+                    className="ap-btn ap-btn-danger"
+                    onClick={() => onChange?.({ image: '', videoUrl: '', mediaType: 'video', aspectRatio: 'auto' })}
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <input
+                ref={videoFileRef}
+                type="file"
+                accept="video/mp4,video/webm,video/ogg,video/quicktime"
+                onChange={handleVideoUpload}
+                style={{ display: 'none' }}
+              />
+              <p style={{ color: '#6B7280', fontSize: 11, marginTop: 6 }}>
+                🎥 Video is loaded from your device and an automatic thumbnail poster frame is captured.
+              </p>
+            </div>
+          ) : (
+            <div>
+              <label className="ap-label" style={{ fontSize: 11 }}>Paste Video Link (YouTube, Shorts, Vimeo, or Direct MP4)</label>
+              <input
+                type="text"
+                className="ap-input"
+                value={videoUrl}
+                onChange={e => handleVideoUrlChange(e.target.value)}
+                placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/... or .mp4 link"
+              />
+              <p style={{ color: '#6B7280', fontSize: 11, marginTop: 4 }}>
+                💡 YouTube links automatically fetch high-definition video thumbnails!
+              </p>
+            </div>
+          )}
+
+          {/* Video Frame Format / Aspect Ratio Selector */}
+          <div style={{ marginTop: 12 }}>
+            <label className="ap-label" style={{ fontSize: 11 }}>Video Frame Format</label>
+            <div className="ap-toggle-row" style={{ marginTop: 4 }}>
+              <button
+                type="button"
+                className={`ap-toggle-btn ${(!aspectRatio || aspectRatio === 'auto') ? 'active' : ''}`}
+                onClick={() => onChange?.({ image, videoUrl, mediaType: 'video', aspectRatio: 'auto' })}
+              >
+                🔄 Auto Frame
+              </button>
+              <button
+                type="button"
+                className={`ap-toggle-btn ${aspectRatio === '16/9' ? 'active' : ''}`}
+                onClick={() => onChange?.({ image, videoUrl, mediaType: 'video', aspectRatio: '16/9' })}
+              >
+                🖥️ Landscape (16:9)
+              </button>
+              <button
+                type="button"
+                className={`ap-toggle-btn ${aspectRatio === '9/16' ? 'active' : ''}`}
+                onClick={() => onChange?.({ image, videoUrl, mediaType: 'video', aspectRatio: '9/16' })}
+              >
+                📱 Vertical (9:16 Shorts)
+              </button>
+              <button
+                type="button"
+                className={`ap-toggle-btn ${aspectRatio === '1/1' ? 'active' : ''}`}
+                onClick={() => onChange?.({ image, videoUrl, mediaType: 'video', aspectRatio: '1/1' })}
+              >
+                ⏹️ Square (1:1)
+              </button>
+            </div>
+          </div>
+
+          {/* Live Video Preview Box */}
+          {videoUrl && (
+            <div style={{ marginTop: 14, background: '#090D13', borderRadius: 12, padding: 12, border: '1px solid #1E293B', textAlign: 'center' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <span style={{ color: '#EF4444', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <FiPlay /> Live Video Preview
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onChange?.({ image: '', videoUrl: '', mediaType: 'video', aspectRatio: 'auto' })}
+                  style={{ background: 'none', border: 'none', color: '#9CA3AF', fontSize: 11, cursor: 'pointer' }}
+                >
+                  Remove Video
+                </button>
+              </div>
+
+              {getYouTubeEmbedUrl(videoUrl) ? (
+                <div style={{
+                  maxWidth: aspectRatio === '9/16' ? 220 : (aspectRatio === '1/1' ? 260 : '100%'),
+                  aspectRatio: aspectRatio === '9/16' ? '9/16' : (aspectRatio === '1/1' ? '1/1' : '16/9'),
+                  margin: '0 auto',
+                  borderRadius: 8,
+                  overflow: 'hidden'
+                }}>
+                  <iframe
+                    src={getYouTubeEmbedUrl(videoUrl)}
+                    title="YouTube Preview"
+                    style={{ width: '100%', height: '100%', border: 'none' }}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              ) : (
+                <video
+                  controls
+                  src={videoUrl}
+                  poster={image}
+                  style={{
+                    maxWidth: aspectRatio === '9/16' ? 220 : (aspectRatio === '1/1' ? 260 : '100%'),
+                    maxHeight: 220,
+                    borderRadius: 8,
+                    background: '#000',
+                    margin: '0 auto',
+                    display: 'block'
+                  }}
+                />
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -4922,22 +5388,27 @@ function GalleryModal({ item, onSave, onClose }) {
 }
 
 function SchoolPhotoModal({ item, schools, onSave, onClose }) {
-  const [form, setForm] = useState(item || {
-    schoolName: schools[0]?.name || 'Royal School',
-    title: '',
-    category: 'Classrooms',
-    image: '',
-    desc: ''
+  const [form, setForm] = useState({
+    schoolName: item?.schoolName || schools[0]?.name || 'Royal School',
+    title: item?.title || '',
+    category: item?.category || 'Classrooms',
+    image: item?.image || '',
+    videoUrl: item?.videoUrl || '',
+    mediaType: item?.mediaType || (item?.videoUrl ? 'video' : 'image'),
+    aspectRatio: item?.aspectRatio || 'auto',
+    desc: item?.desc || '',
+    id: item?.id
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!form.title.trim() || !form.image.trim()) return;
+    if (!form.title.trim()) return;
+    if (!form.image.trim() && !form.videoUrl?.trim()) return;
     onSave(form);
   };
 
   return (
-    <Modal title={item.id ? "Edit School Photo" : "Add New School Photo"} onClose={onClose}>
+    <Modal title={item?.id ? "Edit Campus Media" : "Add Campus Media (Photo / Video)"} onClose={onClose}>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div>
           <label className="ap-label">Select Target School *</label>
@@ -4954,7 +5425,7 @@ function SchoolPhotoModal({ item, schools, onSave, onClose }) {
         </div>
 
         <div>
-          <label className="ap-label">Photo Title / Caption *</label>
+          <label className="ap-label">Title / Caption *</label>
           <input
             className="ap-input"
             required
@@ -4975,14 +5446,20 @@ function SchoolPhotoModal({ item, schools, onSave, onClose }) {
             <option value="Classrooms">Classrooms & Labs</option>
             <option value="Seminars">Seminars & Workshops</option>
             <option value="Events">Events & Celebrations</option>
+            <option value="Videos">Videos & Tour</option>
           </select>
         </div>
 
         <div>
-          <label className="ap-label">Image (Upload File or Drive/Web URL) *</label>
-          <UrlImageInput
-            value={form.image}
-            onChange={url => setForm({ ...form, image: url })}
+          <label className="ap-label">Campus Media (Photo or Video) *</label>
+          <UniversalMediaInput
+            image={form.image}
+            videoUrl={form.videoUrl}
+            mediaType={form.mediaType}
+            aspectRatio={form.aspectRatio}
+            onChange={({ image, videoUrl, mediaType, aspectRatio }) => {
+              setForm(p => ({ ...p, image, videoUrl, mediaType, aspectRatio }));
+            }}
           />
         </div>
 
@@ -4999,7 +5476,7 @@ function SchoolPhotoModal({ item, schools, onSave, onClose }) {
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 10 }}>
           <button type="button" className="ap-btn" onClick={onClose}>Cancel</button>
-          <button type="submit" className="ap-btn ap-btn-primary"><FiSave /> Save School Photo</button>
+          <button type="submit" className="ap-btn ap-btn-primary"><FiSave /> Save Campus Media</button>
         </div>
       </form>
     </Modal>
@@ -5014,6 +5491,9 @@ function HeroBannerModal({ item, onSave, onClose }) {
     subtitle: item.subtitle || '',
     desc: item.desc || '',
     image: item.image || '',
+    videoUrl: item.videoUrl || '',
+    mediaType: item.mediaType || (item.videoUrl ? 'video' : 'image'),
+    aspectRatio: item.aspectRatio || 'auto',
     cardImage: item.cardImage || '',
     buttonText: item.buttonText || 'Book Free Counselling',
     buttonLink: item.buttonLink || '#inquiry-form',
@@ -5067,10 +5547,15 @@ function HeroBannerModal({ item, onSave, onClose }) {
         </div>
 
         <div>
-          <label className="ap-label">Background Banner Image (Upload or Drive/Web URL)</label>
-          <UrlImageInput
-            value={form.image}
-            onChange={url => setForm({ ...form, image: url })}
+          <label className="ap-label">Background Banner Media (Photo or Video)</label>
+          <UniversalMediaInput
+            image={form.image}
+            videoUrl={form.videoUrl}
+            mediaType={form.mediaType}
+            aspectRatio={form.aspectRatio}
+            onChange={({ image, videoUrl, mediaType, aspectRatio }) => {
+              setForm(p => ({ ...p, image, videoUrl, mediaType, aspectRatio }));
+            }}
           />
         </div>
 
@@ -5112,7 +5597,17 @@ function HeroBannerModal({ item, onSave, onClose }) {
 }
 
 function TestimonialModal({ item, onSave, onClose }) {
-  const [form, setForm] = useState({ name: item.name || '', program: item.program || '', stars: item.stars || 5, quote: item.quote || '', _index: item._index });
+  const [form, setForm] = useState({
+    name: item.name || '',
+    program: item.program || '',
+    stars: item.stars || 5,
+    quote: item.quote || '',
+    image: item.image || '',
+    videoUrl: item.videoUrl || '',
+    mediaType: item.mediaType || (item.videoUrl ? 'video' : 'image'),
+    aspectRatio: item.aspectRatio || 'auto',
+    _index: item._index
+  });
   return (
     <Modal title={item._index !== undefined ? 'Edit Testimonial' : 'Add Testimonial'} onClose={onClose}>
       <label className="ap-label">Student / Parent Name</label>
@@ -5129,7 +5624,19 @@ function TestimonialModal({ item, onSave, onClose }) {
         <span style={{ color: '#9CA3AF', fontSize: 13, alignSelf: 'center', marginLeft: 4 }}>{form.stars} star{form.stars !== 1 ? 's' : ''}</span>
       </div>
       <label className="ap-label">Review Quote</label>
-      <textarea className="ap-textarea" value={form.quote} onChange={e => setForm({ ...form, quote: e.target.value })} rows={4} placeholder="What the student/parent said..." />
+      <textarea className="ap-textarea" value={form.quote} onChange={e => setForm({ ...form, quote: e.target.value })} rows={3} placeholder="What the student/parent said..." />
+      <div style={{ marginTop: 12 }}>
+        <label className="ap-label">Attach Photo or Video Review (Optional)</label>
+        <UniversalMediaInput
+          image={form.image}
+          videoUrl={form.videoUrl}
+          mediaType={form.mediaType}
+          aspectRatio={form.aspectRatio}
+          onChange={({ image, videoUrl, mediaType, aspectRatio }) => {
+            setForm(p => ({ ...p, image, videoUrl, mediaType, aspectRatio }));
+          }}
+        />
+      </div>
       <button className="ap-btn ap-btn-primary ap-btn-block" onClick={() => onSave(form)} style={{ marginTop: 20 }}><FiSave /> Save Review</button>
     </Modal>
   );
@@ -5168,6 +5675,9 @@ function CourseModal({ item, existingCategories = [], onSave, onClose }) {
     subjects: item.subjects || item.subtitle || '',
     mode: item.mode || 'Offline + Online',
     image: item.image || '',
+    videoUrl: item.videoUrl || '',
+    mediaType: item.mediaType || (item.videoUrl ? 'video' : 'image'),
+    aspectRatio: item.aspectRatio || 'auto',
     features: Array.isArray(item.features)
       ? item.features.join('\n')
       : (Array.isArray(item.highlights)
@@ -5175,38 +5685,6 @@ function CourseModal({ item, existingCategories = [], onSave, onClose }) {
         : (typeof item.features === 'string' ? item.features : '')),
     _index: item._index
   });
-
-  const [uploadMode, setUploadMode] = useState(item.image?.startsWith('data:') ? 'file' : 'url');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const fileRef = useRef(null);
-
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0]; if (!file) return;
-    setIsProcessing(true);
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const img = new Image();
-      img.onload = () => {
-        try {
-          const canvas = document.createElement('canvas');
-          let w = img.width, h = img.height;
-          const MAX = 900;
-          if (w > h ? w > MAX : h > MAX) {
-            if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
-            else { w = Math.round(w * MAX / h); h = MAX; }
-          }
-          canvas.width = w; canvas.height = h;
-          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          const data = canvas.toDataURL('image/jpeg', 0.75);
-          setForm(p => ({ ...p, image: data }));
-          setIsProcessing(false);
-        } catch { setIsProcessing(false); }
-      };
-      img.onerror = () => setIsProcessing(false);
-      img.src = ev.target.result;
-    };
-    reader.readAsDataURL(file);
-  };
 
   const DEFAULT_CAT_OPTIONS = [
     { value: 'school', label: 'School Foundation (8th - 10th)' },
@@ -5405,47 +5883,21 @@ function CourseModal({ item, existingCategories = [], onSave, onClose }) {
         />
       </div>
 
-      {/* Image Attachment Section */}
+      {/* Media Attachment Section (Photo or Video) */}
       <div style={{ marginTop: 14, background: '#0D1117', padding: '14px 16px', borderRadius: 12, border: '1px solid #21262D' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <label className="ap-label" style={{ margin: 0 }}>Attach Course Banner / Thumbnail Image (Optional)</label>
-          <span style={{ fontSize: 11, color: '#9CA3AF' }}>PNG, JPG or WebP</span>
+          <label className="ap-label" style={{ margin: 0 }}>Attach Course Media (Photo or Video)</label>
+          <span style={{ fontSize: 11, color: '#9CA3AF' }}>Image or Video (Device file / YouTube)</span>
         </div>
-
-        <div className="ap-toggle-row" style={{ marginBottom: 12 }}>
-          <button type="button" className={`ap-toggle-btn ${uploadMode === 'url' ? 'active' : ''}`} onClick={() => setUploadMode('url')}>
-            <FiLink /> Image Link / URL
-          </button>
-          <button type="button" className={`ap-toggle-btn ${uploadMode === 'file' ? 'active' : ''}`} onClick={() => setUploadMode('file')}>
-            <FiCamera /> Upload Device Photo
-          </button>
-        </div>
-
-        {uploadMode === 'url' ? (
-          <UrlImageInput value={form.image} onChange={url => setForm({ ...form, image: url })} />
-        ) : (
-          <div>
-            <input ref={fileRef} type="file" accept="image/*" onChange={handleFileUpload} style={{ display: 'none' }} />
-            <button type="button" className="ap-btn ap-btn-secondary" style={{ width: '100%' }} onClick={() => fileRef.current?.click()} disabled={isProcessing}>
-              <FiUpload /> {isProcessing ? 'Compressing Image...' : 'Choose Course Photo from Device'}
-            </button>
-          </div>
-        )}
-
-        {form.image && (
-          <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 12, background: '#161B22', padding: 8, borderRadius: 10, border: '1px solid #30363D' }}>
-            <img src={getEmbedImageUrl(form.image)} alt="Course preview" style={{ height: 64, width: 90, borderRadius: 8, objectFit: 'cover' }} onError={handleImageError} />
-            <div style={{ flex: 1, overflow: 'hidden' }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#F0F6FC' }}>Attached Image Preview</div>
-              <div style={{ fontSize: 11, color: '#9CA3AF', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', marginTop: 2 }}>
-                {form.image.startsWith('data:') ? 'Custom uploaded device photo' : form.image}
-              </div>
-            </div>
-            <button type="button" className="ap-icon-btn ap-icon-btn-danger" onClick={() => setForm({ ...form, image: '' })} title="Remove Image">
-              <FiTrash2 size={14} />
-            </button>
-          </div>
-        )}
+        <UniversalMediaInput
+          image={form.image}
+          videoUrl={form.videoUrl}
+          mediaType={form.mediaType}
+          aspectRatio={form.aspectRatio}
+          onChange={({ image, videoUrl, mediaType, aspectRatio }) => {
+            setForm(p => ({ ...p, image, videoUrl, mediaType, aspectRatio }));
+          }}
+        />
       </div>
 
       <div style={{ marginTop: 14 }}>

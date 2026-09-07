@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiMonitor, FiCheckCircle } from 'react-icons/fi';
+import { FiMonitor, FiCheckCircle, FiPlay, FiVideo } from 'react-icons/fi';
 import { coursesData } from '../data/coursesData';
 import { adminData } from '../utils/adminData';
 import { navigate } from '../utils/router';
-import { getEmbedImageUrl } from '../utils/imageUrl';
+import { getEmbedImageUrl, isVideoMedia } from '../utils/imageUrl';
+import UniversalVideoModal from '../components/UniversalVideoModal';
 
 export default function Courses() {
   const [activeCategory, setActiveCategory] = useState("All");
+  const [activeVideoModal, setActiveVideoModal] = useState(null);
   const [allCourses, setAllCourses] = useState(() => adminData.getData('courses') || coursesData);
   const [coursePhotos, setCoursePhotos] = useState(() => {
     const all = adminData.getData('pageImages') || {};
@@ -65,6 +67,9 @@ export default function Courses() {
     subjects: c.subjects || c.subtitle || 'Core Subjects, Test Series & Doubt Solving',
     mode: c.mode || 'Offline + Online',
     image: c.image || '',
+    videoUrl: c.videoUrl || '',
+    mediaType: c.mediaType || (c.videoUrl ? 'video' : 'image'),
+    aspectRatio: c.aspectRatio || 'auto',
     features: Array.isArray(c.features) ? c.features : (Array.isArray(c.highlights) ? c.highlights : ['Expert Faculty Mentor', 'Chapter Mocks & Revision', 'Doubt Solving Sessions'])
   }));
 
@@ -73,56 +78,68 @@ export default function Courses() {
       .map(c => (c.category || '').trim())
       .filter(Boolean)
   ));
-  const categories = ['All', ...(uniqueCategories.length > 0 ? uniqueCategories : ['school', 'science', 'competitive', 'engineering', 'guidance'])];
 
-  const filteredCourses = activeCategory.toLowerCase() === "all"
+  const filteredCourses = activeCategory === "All"
     ? normalizedCourses
     : normalizedCourses.filter(c => (c.category || '').toLowerCase() === activeCategory.toLowerCase());
 
   return (
-    <div className="pt-24 pb-20 bg-[#F4F6F9] bg-dots-pattern text-[#5A6472]">
+    <div className="min-h-screen bg-slate-50">
       
       {/* Hero Header */}
       <section className="py-20 text-white text-center relative overflow-hidden bg-cover bg-no-repeat" style={{ backgroundImage: `url('${getEmbedImageUrl('/images/bg-courses-hero.png')}')`, backgroundPosition: 'center 60%' }}>
         <div className="absolute inset-0 bg-[#1C2E60]/75 w-full h-full" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <span className="text-[#DC2626] font-extrabold tracking-widest text-xs uppercase bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20">
-            Programs Offered
+          <span className="text-xs font-black tracking-widest text-[#EF4444] uppercase bg-white/10 px-4 py-1.5 rounded-full border border-white/20 inline-block mb-4">
+            Curriculum & Batches
           </span>
-          <h1 className="text-4xl sm:text-5xl font-black mt-6 mb-6 text-white leading-tight text-glow-blue">
-            Our Academic Programs
+          <h1 className="text-4xl sm:text-5xl font-black mb-4">
+            Future-Ready Academic Programs
           </h1>
-          <p className="text-zinc-300 text-sm sm:text-base font-light leading-relaxed max-w-2xl mx-auto">
-            From 8th Standard Foundation to GTU Degree Engineering & Entrance Exams, explore our curated coaching batches.
+          <p className="text-sm sm:text-base text-zinc-300 font-light max-w-2xl mx-auto">
+            From 8th-10th school fundamentals to 11th-12th Science and competitive entrance mastery (NEET, JEE, GUJCET) to diploma & engineering subjects.
           </p>
         </div>
       </section>
 
-      {/* Filter Tabs */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex justify-center gap-3 flex-wrap">
-        {categories.map((cat, idx) => {
-          const isActive = activeCategory.toLowerCase() === cat.toLowerCase();
-          return (
+      {/* Category Tabs */}
+      <section className="py-6 border-b border-slate-200 bg-white sticky top-0 z-30 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
             <button
-              key={idx}
-              onClick={() => setActiveCategory(cat)}
-              className={`px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all border ${
-                isActive
-                  ? 'bg-[#1C2E60] text-white border-[#1C2E60] shadow-md'
-                  : 'bg-white text-zinc-500 border-slate-200 hover:text-[#0F172A] hover:border-slate-300'
+              onClick={() => setActiveCategory("All")}
+              className={`px-5 py-2.5 rounded-xl font-bold text-xs whitespace-nowrap transition-all ${
+                activeCategory === "All"
+                  ? "bg-[#1C2E60] text-white shadow-md"
+                  : "bg-slate-100 text-zinc-600 hover:bg-slate-200"
               }`}
             >
-              {formatCatLabel(cat)}
+              All Programs ({normalizedCourses.length})
             </button>
-          );
-        })}
-      </div>
+            {uniqueCategories.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`px-5 py-2.5 rounded-xl font-bold text-xs whitespace-nowrap transition-all ${
+                  activeCategory === cat
+                    ? "bg-[#1C2E60] text-white shadow-md"
+                    : "bg-slate-100 text-zinc-600 hover:bg-slate-200"
+                }`}
+              >
+                {formatCatLabel(cat)}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
 
-      {/* Grid */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <AnimatePresence>
-            {filteredCourses.map((course, idx) => (
+      {/* Courses Grid */}
+      <section className="py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredCourses.map((course, idx) => {
+              const isVid = course.mediaType === 'video' || !!course.videoUrl || isVideoMedia(course);
+              return (
               <motion.div
                 key={course.id || idx}
                 layout
@@ -133,14 +150,31 @@ export default function Courses() {
                 className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden group"
               >
                 <div>
-                  {course.image && (
-                    <div className="h-44 -mx-6 -mt-6 mb-5 overflow-hidden relative bg-slate-100">
+                  {(course.image || course.videoUrl) && (
+                    <div
+                      className={`h-48 -mx-6 -mt-6 mb-5 overflow-hidden relative bg-slate-900 ${isVid ? 'cursor-pointer group/vid' : ''}`}
+                      onClick={() => {
+                        if (isVid) setActiveVideoModal(course);
+                      }}
+                    >
                       <img
-                        src={getEmbedImageUrl(course.image)}
+                        src={getEmbedImageUrl(course.image || course.videoUrl)}
                         alt={course.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         onError={(e) => { e.currentTarget.style.display = 'none'; }}
                       />
+                      {isVid && (
+                        <>
+                          <div className="absolute inset-0 bg-slate-950/40 group-hover/vid:bg-slate-950/20 transition-all flex items-center justify-center">
+                            <div className="w-12 h-12 rounded-full bg-red-600 text-white flex items-center justify-center shadow-xl group-hover/vid:scale-110 transition-transform">
+                              <FiPlay className="text-xl ml-0.5" />
+                            </div>
+                          </div>
+                          <span className="absolute top-3 right-3 bg-red-600 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow flex items-center gap-1 uppercase tracking-wider">
+                            <FiVideo size={11} /> Video
+                          </span>
+                        </>
+                      )}
                     </div>
                   )}
                   <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
@@ -190,10 +224,11 @@ export default function Courses() {
                   </button>
                 </div>
               </motion.div>
-            ))}
-          </AnimatePresence>
-        </motion.div>
-      </section>
+            );
+          })}
+        </div>
+      </div>
+    </section>
 
       {/* Dynamic Page Content Photos: Classroom & Learning Environment */}
       {coursePhotos && coursePhotos.length > 0 && (
@@ -212,30 +247,56 @@ export default function Courses() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {coursePhotos.map((item, idx) => (
-                <div key={idx} className="bg-[#F4F6F9] border border-slate-200 rounded-3xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 group">
-                  <div className="h-44 overflow-hidden relative">
-                    <img
-                      src={getEmbedImageUrl(item.image || item.url)}
-                      alt={item.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    {item.category && (
-                      <span className="absolute top-3 left-3 text-[9px] font-extrabold text-white bg-[#1C2E60]/90 backdrop-blur-md px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow">
-                        {item.category}
-                      </span>
-                    )}
+              {coursePhotos.map((item, idx) => {
+                const isVid = item.mediaType === 'video' || !!item.videoUrl || isVideoMedia(item);
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => { if (isVid) setActiveVideoModal(item); }}
+                    className={`bg-[#F4F6F9] border border-slate-200 rounded-3xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 group ${isVid ? 'cursor-pointer' : ''}`}
+                  >
+                    <div className="h-44 overflow-hidden relative bg-slate-900">
+                      <img
+                        src={getEmbedImageUrl(item.image || item.url || item.videoUrl)}
+                        alt={item.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      {isVid && (
+                        <div className="absolute inset-0 bg-slate-950/40 group-hover:bg-slate-950/20 transition-all flex items-center justify-center">
+                          <div className="w-11 h-11 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                            <FiPlay className="text-lg ml-0.5" />
+                          </div>
+                        </div>
+                      )}
+                      {item.category && (
+                        <span className="absolute top-3 left-3 text-[9px] font-extrabold text-white bg-[#1C2E60]/90 backdrop-blur-md px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow">
+                          {item.category}
+                        </span>
+                      )}
+                      {isVid && (
+                        <span className="absolute top-3 right-3 text-[9px] font-black text-white bg-red-600 px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow flex items-center gap-1">
+                          <FiVideo size={10} /> Video
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-5">
+                      <h3 className="font-extrabold text-[#1C2E60] text-sm mb-1">{item.title}</h3>
+                      {item.desc && <p className="text-zinc-500 text-[11px] font-light leading-relaxed">{item.desc}</p>}
+                    </div>
                   </div>
-                  <div className="p-5">
-                    <h3 className="font-extrabold text-[#1C2E60] text-sm mb-1">{item.title}</h3>
-                    {item.desc && <p className="text-zinc-500 text-[11px] font-light leading-relaxed">{item.desc}</p>}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>
       )}
+
+      {/* Universal Modal Video Player */}
+      <UniversalVideoModal
+        isOpen={!!activeVideoModal}
+        item={activeVideoModal}
+        onClose={() => setActiveVideoModal(null)}
+      />
 
     </div>
   );

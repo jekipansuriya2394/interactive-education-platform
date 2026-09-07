@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { FiAward, FiBookOpen, FiTrendingUp, FiUsers, FiCheckCircle, FiSearch, FiFilter } from 'react-icons/fi';
+import { FiAward, FiBookOpen, FiTrendingUp, FiUsers, FiCheckCircle, FiSearch, FiFilter, FiPlay, FiVideo } from 'react-icons/fi';
 import { navigate } from '../utils/router';
 import { adminData } from '../utils/adminData';
-import { getEmbedImageUrl } from '../utils/imageUrl';
+import { getEmbedImageUrl, isVideoMedia } from '../utils/imageUrl';
+import UniversalVideoModal from '../components/UniversalVideoModal';
 
 export default function Results() {
   const [achievements, setAchievements] = useState(() => adminData.getData('results') || []);
+  const [activeVideoModal, setActiveVideoModal] = useState(null);
   const [selectedSchool, setSelectedSchool] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -190,10 +192,15 @@ export default function Results() {
                   {/* School Student Ranker Cards Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {students.map((item, idx) => {
-                      const photoUrl = item.image ? getEmbedImageUrl(item.image) : null;
+                      const isVid = item.mediaType === 'video' || !!item.videoUrl || isVideoMedia(item);
+                      const photoUrl = (item.image || item.videoUrl) ? getEmbedImageUrl(item.image || item.videoUrl) : null;
 
                       return (
-                        <div key={idx} className="bg-white rounded-[32px] border border-slate-200/90 overflow-hidden shadow-sm hover:shadow-[0_20px_50px_rgba(10,30,61,0.12)] hover:border-[#DC2626]/40 transition-all duration-500 flex flex-col justify-between group">
+                        <div 
+                          key={idx} 
+                          onClick={() => { if (isVid) setActiveVideoModal(item); }}
+                          className={`bg-white rounded-[32px] border border-slate-200/90 overflow-hidden shadow-sm hover:shadow-[0_20px_50px_rgba(10,30,61,0.12)] hover:border-[#DC2626]/40 transition-all duration-500 flex flex-col justify-between group ${isVid ? 'cursor-pointer' : ''}`}
+                        >
                           <div>
                             {/* 1. TOP HEADER BAR ABOVE PHOTO */}
                             <div className="px-5 py-3.5 bg-gradient-to-r from-slate-900 via-[#0A1E3D] to-slate-900 border-b border-slate-800 flex items-center justify-between">
@@ -201,13 +208,20 @@ export default function Results() {
                                 <span className="w-2 h-2 rounded-full bg-[#DC2626] animate-pulse" />
                                 {item.exam}
                               </span>
-                              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#DC2626] to-[#EF4444] text-white flex items-center justify-center shadow-[0_0_15px_rgba(220,38,38,0.4)] border border-white/20">
-                                <FiAward className="text-lg" />
+                              <div className="flex items-center gap-2">
+                                {isVid && (
+                                  <span className="text-[10px] font-black text-white bg-red-600 px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 shadow">
+                                    <FiVideo size={10} /> Video
+                                  </span>
+                                )}
+                                <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#DC2626] to-[#EF4444] text-white flex items-center justify-center shadow-[0_0_15px_rgba(220,38,38,0.4)] border border-white/20">
+                                  <FiAward className="text-lg" />
+                                </div>
                               </div>
                             </div>
 
                             {/* 2. PURE 100% UNTOUCHED PHOTO CONTAINER */}
-                            <div className="relative h-72 sm:h-80 w-full overflow-hidden bg-slate-100 border-b border-slate-100">
+                            <div className="relative h-72 sm:h-80 w-full overflow-hidden bg-slate-900 border-b border-slate-100">
                               {photoUrl ? (
                                 <img
                                   src={photoUrl}
@@ -222,6 +236,14 @@ export default function Results() {
                               >
                                 {(item.name || 'S').slice(0, 2).toUpperCase()}
                               </div>
+
+                              {isVid && (
+                                <div className="absolute inset-0 bg-slate-950/40 group-hover:bg-slate-950/20 transition-all flex items-center justify-center">
+                                  <div className="w-14 h-14 rounded-full bg-red-600 text-white flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
+                                    <FiPlay className="text-2xl ml-1" />
+                                  </div>
+                                </div>
+                              )}
                             </div>
 
                             {/* 3. CLEAR CARD CONTENT BODY */}
@@ -338,6 +360,13 @@ export default function Results() {
 
         </div>
       </section>
+
+      {/* Universal Video Modal Player */}
+      <UniversalVideoModal
+        isOpen={!!activeVideoModal}
+        item={activeVideoModal}
+        onClose={() => setActiveVideoModal(null)}
+      />
 
     </div>
   );
