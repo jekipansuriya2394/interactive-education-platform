@@ -15,6 +15,7 @@ import homeData        from '../../content/home.json';
 import aboutData       from '../../content/about.json';
 import coursesData     from '../../content/courses.json';
 import galleryData     from '../../content/gallery.json';
+import galleryEventsData from '../../content/galleryEvents.json';
 import facultyData     from '../../content/faculty.json';
 import testimonialsData from '../../content/testimonials.json';
 import faqData         from '../../content/faq.json';
@@ -34,6 +35,7 @@ const CONTENT_MAP = {
   about:        aboutData,
   courses:      coursesData,
   gallery:      galleryData,
+  galleryEvents: galleryEventsData,
   faculty:      facultyData,
   testimonials: testimonialsData,
   faq:          faqData,

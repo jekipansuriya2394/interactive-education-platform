@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
-import { FiImage, FiAlertTriangle, FiX, FiChevronLeft, FiChevronRight, FiLoader, FiPlay, FiVideo } from 'react-icons/fi';
+import {
+  FiImage, FiAlertTriangle, FiX, FiChevronLeft, FiChevronRight,
+  FiLoader, FiPlay, FiVideo, FiFolder, FiCalendar, FiArrowLeft,
+  FiGrid, FiLayers, FiMaximize2
+} from 'react-icons/fi';
 import { adminData } from '../utils/adminData';
 import { getEmbedImageUrl, getYouTubeEmbedUrl, isVideoMedia, isActualImage, getEmbedMediaUrl } from '../utils/imageUrl';
 
@@ -50,7 +54,6 @@ function GalleryMediaThumb({ item, isVid }) {
   const isSquare = item?.aspectRatio === '1/1' || item?.aspectRatio === 'square';
   const isLandscape = item?.aspectRatio === '16/9';
 
-  // Dynamic aspect ratio styling for grid card: Auto by default, or specific when tagged
   let frameStyle = {};
   if (isShorts) {
     frameStyle = { aspectRatio: '9/16', maxHeight: '520px' };
@@ -60,7 +63,7 @@ function GalleryMediaThumb({ item, isVid }) {
     frameStyle = { aspectRatio: '16/9' };
   }
 
-  // 1. YouTube link -> official high-res YouTube thumbnail (auto formatted)
+  // 1. YouTube link -> official high-res YouTube thumbnail
   if (ytMatch && ytMatch[1]) {
     const ytThumb = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
     return (
@@ -86,7 +89,7 @@ function GalleryMediaThumb({ item, isVid }) {
     );
   }
 
-  // 2. Video with custom image poster (if not default hero background)
+  // 2. Video with custom image poster
   if (isVid && item.image && isActualImage(item.image) && !item.image.includes('bg-gallery-hero')) {
     return (
       <div className="relative overflow-hidden" style={frameStyle}>
@@ -103,36 +106,19 @@ function GalleryMediaThumb({ item, isVid }) {
     );
   }
 
-  // 3. Direct local video (MP4 / WebM / data URI / server path) -> Render native hardware <video> preview with hover play
-  if (isVid && videoSrc) {
-    const resolvedVideo = getEmbedMediaUrl(videoSrc);
+  // 3. Native MP4 Video without custom thumbnail
+  if (isVid && videoSrc && !videoSrc.startsWith('http')) {
     return (
-      <div
-        className="relative overflow-hidden rounded-3xl bg-slate-900 group/vid"
-        style={frameStyle}
-        onMouseEnter={(e) => {
-          try {
-            const v = e.currentTarget.querySelector('video');
-            if (v) v.play().catch(() => {});
-          } catch {}
-        }}
-        onMouseLeave={(e) => {
-          try {
-            const v = e.currentTarget.querySelector('video');
-            if (v) { v.pause(); v.currentTime = 0; }
-          } catch {}
-        }}
-      >
+      <div className="relative overflow-hidden rounded-3xl bg-slate-900 group" style={frameStyle}>
         <video
-          src={resolvedVideo}
+          src={getEmbedMediaUrl(videoSrc)}
           muted
           playsInline
-          loop
           preload="metadata"
-          className="w-full h-auto rounded-3xl group-hover:scale-[1.02] transition-transform duration-300 pointer-events-none"
-          style={{ display: 'block', maxHeight: isShorts ? '520px' : 'none', ...(isShorts || isSquare || isLandscape ? { height: '100%', objectFit: 'cover' } : {}) }}
+          className="w-full h-auto object-cover rounded-3xl block group-hover:scale-[1.02] transition-transform duration-300 pointer-events-none"
+          style={isShorts || isSquare || isLandscape ? { height: '100%', objectFit: 'cover' } : {}}
         />
-        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/35 transition-colors flex items-center justify-center">
           <div className="w-14 h-14 rounded-full bg-red-600 text-white flex items-center justify-center shadow-xl shadow-red-600/60 group-hover:scale-110 transition-transform">
             <FiPlay size={24} style={{ marginLeft: 2 }} />
           </div>
@@ -144,7 +130,7 @@ function GalleryMediaThumb({ item, isVid }) {
     );
   }
 
-  // 4. Default standard photo (natural aspect ratio)
+  // 4. Default Photo card
   return (
     <div className="relative overflow-hidden">
       <GalleryImg src={item.image || item.url || item.src} alt={item.title} />
@@ -152,31 +138,45 @@ function GalleryMediaThumb({ item, isVid }) {
   );
 }
 
-
 export default function Gallery() {
   const [activeFilter, setActiveFilter] = useState('All');
   const [items, setItems] = useState(() => adminData.getData('gallery') || []);
+  const [events, setEvents] = useState(() => adminData.getData('galleryEvents') || []);
+  const [selectedEvent, setSelectedEvent] = useState(null);
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [lightboxLoading, setLightboxLoading] = useState(true);
   const [lightboxError, setLightboxError] = useState(false);
 
   useEffect(() => {
-    // 1. Targeted subscription: only updates when gallery items actually change
-    const cleanup = adminData.subscribe('gallery', (freshGallery) => {
+    // 1. Subscribe to gallery changes
+    const cleanupGallery = adminData.subscribe('gallery', (freshGallery) => {
       if (Array.isArray(freshGallery) && freshGallery.length > 0) {
         setItems(freshGallery);
       }
     });
 
-    // 2. Fetch freshest gallery items from cloud on mount once
+    // 2. Subscribe to event album changes
+    const cleanupEvents = adminData.subscribe('galleryEvents', (freshEvents) => {
+      if (Array.isArray(freshEvents)) {
+        setEvents(freshEvents);
+      }
+    });
+
+    // 3. Fetch fresh data from server
     adminData.fetchKeyFromServer('gallery').then(fresh => {
       if (fresh && Array.isArray(fresh) && fresh.length > 0) {
         setItems(fresh);
       }
     });
+    adminData.fetchKeyFromServer('galleryEvents').then(fresh => {
+      if (fresh && Array.isArray(fresh) && fresh.length > 0) {
+        setEvents(fresh);
+      }
+    });
 
     return () => {
-      if (typeof cleanup === 'function') cleanup();
+      if (typeof cleanupGallery === 'function') cleanupGallery();
+      if (typeof cleanupEvents === 'function') cleanupEvents();
     };
   }, []);
 
@@ -186,15 +186,22 @@ export default function Gallery() {
     setLightboxError(false);
   }, [selectedIndex]);
 
-  const categories = ['All', 'Videos', 'Classrooms', 'Seminars', 'Activities', 'Events'];
+  const categories = ['All', 'Event Albums', 'Videos', 'Classrooms', 'Seminars', 'Activities', 'Events'];
 
-  const filteredItems = activeFilter === 'All'
-    ? items
-    : activeFilter === 'Videos'
-    ? items.filter(i => i.category === 'Videos' || i.mediaType === 'video' || isVideoMedia(i))
-    : items.filter(i => i.category === activeFilter);
+  // Current active media list for lightbox (either photos in selected event, or filtered gallery items)
+  const currentMediaList = selectedEvent
+    ? (selectedEvent.photos || [])
+    : (
+      activeFilter === 'All'
+        ? items
+        : activeFilter === 'Videos'
+        ? items.filter(i => i.category === 'Videos' || i.mediaType === 'video' || isVideoMedia(i))
+        : activeFilter === 'Event Albums'
+        ? []
+        : items.filter(i => i.category === activeFilter)
+    );
 
-  const selectedItem = selectedIndex !== null && filteredItems[selectedIndex] ? filteredItems[selectedIndex] : null;
+  const selectedItem = selectedIndex !== null && currentMediaList[selectedIndex] ? currentMediaList[selectedIndex] : null;
 
   // Lock body scroll when full screen image lightbox is open
   useEffect(() => {
@@ -216,21 +223,21 @@ export default function Gallery() {
     if (!selectedItem) return;
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') setSelectedIndex(null);
-      if (e.key === 'ArrowLeft') setSelectedIndex(prev => (prev > 0 ? prev - 1 : filteredItems.length - 1));
-      if (e.key === 'ArrowRight') setSelectedIndex(prev => (prev < filteredItems.length - 1 ? prev + 1 : 0));
+      if (e.key === 'ArrowLeft') setSelectedIndex(prev => (prev > 0 ? prev - 1 : currentMediaList.length - 1));
+      if (e.key === 'ArrowRight') setSelectedIndex(prev => (prev < currentMediaList.length - 1 ? prev + 1 : 0));
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedItem, filteredItems.length]);
+  }, [selectedItem, currentMediaList.length]);
 
   const handlePrev = (e) => {
     e.stopPropagation();
-    setSelectedIndex(prev => (prev > 0 ? prev - 1 : filteredItems.length - 1));
+    setSelectedIndex(prev => (prev > 0 ? prev - 1 : currentMediaList.length - 1));
   };
 
   const handleNext = (e) => {
     e.stopPropagation();
-    setSelectedIndex(prev => (prev < filteredItems.length - 1 ? prev + 1 : 0));
+    setSelectedIndex(prev => (prev < currentMediaList.length - 1 ? prev + 1 : 0));
   };
 
   const getRawSrc = (item) => {
@@ -258,7 +265,7 @@ export default function Gallery() {
   ) : false;
   const isSquare = selectedItem ? (selectedItem.aspectRatio === '1/1' || selectedItem.aspectRatio === 'square') : false;
 
-  // Lightbox Modal JSX (Rendered directly at document.body via Portal to cover Navbar & full page)
+  // Lightbox Modal JSX
   const lightboxModal = selectedItem ? (
     <div
       style={{
@@ -268,7 +275,6 @@ export default function Gallery() {
         right: 0,
         bottom: 0,
         width: '100vw',
-        height: '100vh',
         height: '100dvh',
         zIndex: 2147483647,
         backgroundColor: 'rgba(0, 0, 0, 0.96)',
@@ -284,7 +290,7 @@ export default function Gallery() {
       }}
       onClick={() => setSelectedIndex(null)}
     >
-      {/* Prominent Red Close Button (Always visible at top right) */}
+      {/* Prominent Red Close Button */}
       <button
         onClick={() => setSelectedIndex(null)}
         style={{
@@ -311,8 +317,28 @@ export default function Gallery() {
         <span>CLOSE</span>
       </button>
 
+      {/* Counter Tag */}
+      <div
+        style={{
+          position: 'fixed',
+          top: '28px',
+          left: '24px',
+          zIndex: 2147483647,
+          background: 'rgba(28, 46, 96, 0.85)',
+          color: '#ffffff',
+          padding: '6px 14px',
+          borderRadius: '20px',
+          fontSize: '13px',
+          fontWeight: 700,
+          border: '1px solid rgba(255, 255, 255, 0.2)'
+        }}
+      >
+        {selectedEvent ? `${selectedEvent.name} • ` : ''}
+        {selectedIndex + 1} / {currentMediaList.length}
+      </div>
+
       {/* Previous Arrow */}
-      {filteredItems.length > 1 && (
+      {currentMediaList.length > 1 && (
         <button
           onClick={handlePrev}
           style={{
@@ -341,7 +367,7 @@ export default function Gallery() {
       )}
 
       {/* Next Arrow */}
-      {filteredItems.length > 1 && (
+      {currentMediaList.length > 1 && (
         <button
           onClick={handleNext}
           style={{
@@ -388,7 +414,7 @@ export default function Gallery() {
         {lightboxLoading && !lightboxError && (
           <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', color: '#ffffff' }}>
             <FiLoader size={40} className="animate-spin text-blue-400" />
-            <p style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: '#94a3b8' }}>Loading Photo...</p>
+            <p style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: '#94a3b8' }}>Loading Media...</p>
           </div>
         )}
 
@@ -513,9 +539,11 @@ export default function Gallery() {
         )}
 
         {/* Photo Title Caption */}
-        {!lightboxLoading && !lightboxError && selectedItem.title && (
-          <div style={{ marginTop: '16px', textAlign: 'center', maxWidth: '600px', background: 'rgba(0, 0, 0, 0.5)', backdropFilter: 'blur(8px)', padding: '10px 24px', borderRadius: '40px', border: '1px solid rgba(255, 255, 255, 0.15)' }}>
-            <h3 style={{ color: '#ffffff', fontSize: '15px', fontWeight: 700, margin: 0 }}>{selectedItem.title}</h3>
+        {!lightboxLoading && !lightboxError && (selectedItem.title || selectedItem.caption) && (
+          <div style={{ marginTop: '16px', textAlign: 'center', maxWidth: '640px', background: 'rgba(0, 0, 0, 0.65)', backdropFilter: 'blur(8px)', padding: '10px 24px', borderRadius: '40px', border: '1px solid rgba(255, 255, 255, 0.15)' }}>
+            <h3 style={{ color: '#ffffff', fontSize: '15px', fontWeight: 700, margin: 0 }}>
+              {selectedItem.title || selectedItem.caption}
+            </h3>
             {selectedItem.category && (
               <span style={{ fontSize: '10px', fontWeight: 800, color: '#93c5fd', background: 'rgba(30, 58, 138, 0.8)', border: '1px solid rgba(96, 165, 250, 0.4)', padding: '2px 10px', borderRadius: '20px', marginTop: '6px', display: 'inline-block', textTransform: 'uppercase', letterSpacing: '1px' }}>
                 {selectedItem.category}
@@ -527,6 +555,113 @@ export default function Gallery() {
     </div>
   ) : null;
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // RENDER: Selected Event Photo Album View
+  // ─────────────────────────────────────────────────────────────────────────────
+  if (selectedEvent) {
+    const eventPhotos = selectedEvent.photos || [];
+    return (
+      <div className="pt-24 pb-20 bg-[#F4F6F9] bg-dots-pattern text-[#5A6472] min-h-screen">
+        {/* Event Header Banner */}
+        <section
+          className="py-16 text-white text-center relative overflow-hidden bg-cover bg-no-repeat"
+          style={{
+            backgroundImage: `url('${getEmbedImageUrl(selectedEvent.coverImage || eventPhotos[0]?.image || '/images/bg-gallery-hero.png')}')`,
+            backgroundPosition: 'center 60%'
+          }}
+        >
+          <div className="absolute inset-0 bg-[#1C2E60]/85 w-full h-full backdrop-blur-[2px]" />
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            {/* Back to Albums button */}
+            <div className="flex justify-start mb-6">
+              <button
+                onClick={() => { setSelectedEvent(null); setSelectedIndex(null); }}
+                className="inline-flex items-center gap-2 bg-white/15 hover:bg-white/25 text-white px-4 py-2 rounded-full font-bold text-xs uppercase tracking-wider backdrop-blur-md transition-all shadow-md border border-white/20 cursor-pointer"
+              >
+                <FiArrowLeft size={16} /> Back to Gallery
+              </button>
+            </div>
+
+            <div className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-widest bg-red-500/20 text-red-300 px-3.5 py-1.5 rounded-full border border-red-500/30 mb-4">
+              <FiFolder size={13} /> {selectedEvent.category || 'Event Album'} • {eventPhotos.length} Photos
+            </div>
+
+            <h1 className="text-3xl sm:text-5xl font-black text-white leading-tight mb-4">
+              {selectedEvent.name}
+            </h1>
+
+            {selectedEvent.date && (
+              <p className="inline-flex items-center gap-1.5 text-zinc-300 text-sm font-medium mb-3">
+                <FiCalendar size={14} className="text-amber-400" /> {selectedEvent.date}
+              </p>
+            )}
+
+            {selectedEvent.description && (
+              <p className="text-zinc-200 text-sm sm:text-base font-light leading-relaxed max-w-2xl mx-auto mt-2">
+                {selectedEvent.description}
+              </p>
+            )}
+          </div>
+        </section>
+
+        {/* Event Photos Masonry Grid */}
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="flex items-center justify-between mb-8 pb-4 border-b border-slate-200">
+            <div>
+              <h2 className="text-2xl font-black text-[#1C2E60] flex items-center gap-2.5">
+                <FiLayers className="text-[#DC2626]" /> Photos in this Event
+              </h2>
+              <p className="text-xs text-slate-500 mt-1">Click on any photo to open full-screen lightbox preview</p>
+            </div>
+            <span className="text-xs font-bold text-slate-500 bg-white border border-slate-200 px-3 py-1.5 rounded-full shadow-sm">
+              {eventPhotos.length} Photo{eventPhotos.length === 1 ? '' : 's'}
+            </span>
+          </div>
+
+          {eventPhotos.length === 0 ? (
+            <div className="text-center py-20 bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
+              <FiImage size={48} className="mx-auto text-zinc-300 mb-3" />
+              <p className="text-slate-600 font-bold">No photos added to this event yet.</p>
+              <p className="text-slate-400 text-xs mt-1">Photos can be added to this event from the Admin Panel.</p>
+            </div>
+          ) : (
+            <div className="columns-1 sm:columns-2 lg:columns-3 gap-6">
+              {eventPhotos.map((photo, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => setSelectedIndex(idx)}
+                  className="break-inside-avoid mb-6 bg-white border border-slate-200/70 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group cursor-pointer relative"
+                  title="Click to view full photo"
+                >
+                  <div className="relative overflow-hidden">
+                    <GalleryImg src={photo.image || photo.url} alt={photo.title} />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                      <div className="w-11 h-11 rounded-full bg-white text-[#1C2E60] flex items-center justify-center shadow-lg transform scale-75 group-hover:scale-100 transition-transform">
+                        <FiMaximize2 size={18} />
+                      </div>
+                    </div>
+                  </div>
+                  {photo.title && (
+                    <div className="px-5 py-3.5 bg-white border-t border-slate-100">
+                      <p className="font-bold text-[#0f172a] text-sm">{photo.title}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {typeof document !== 'undefined' && lightboxModal ? ReactDOM.createPortal(lightboxModal, document.body) : null}
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // RENDER: Main Gallery View (Event Albums + Photos & Videos)
+  // ─────────────────────────────────────────────────────────────────────────────
+  const isViewingEventsOnly = activeFilter === 'Event Albums';
+
   return (
     <div className="pt-24 pb-20 bg-[#F4F6F9] bg-dots-pattern text-[#5A6472]">
 
@@ -535,17 +670,29 @@ export default function Gallery() {
         className="py-20 text-white text-center relative overflow-hidden bg-cover bg-no-repeat"
         style={{ backgroundImage: `url('${getEmbedImageUrl('/images/bg-gallery-hero.png')}')`, backgroundPosition: 'center 60%' }}
       >
-        <div className="absolute inset-0 bg-[#1C2E60]/75 w-full h-full" />
+        <div className="absolute inset-0 bg-[#1C2E60]/80 w-full h-full" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <span className="text-[#DC2626] font-extrabold tracking-widest text-xs uppercase bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20">
             Life at Academy
           </span>
           <h1 className="text-4xl sm:text-5xl font-black mt-6 mb-6 text-white leading-tight text-glow-blue">
-            Our Campus Gallery
+            Our Campus Gallery & Event Albums
           </h1>
           <p className="text-zinc-300 text-sm sm:text-base font-light leading-relaxed max-w-2xl mx-auto">
-            Take a look at our classrooms, interactive board setups, counseling seminars, and mock practice halls.
+            Explore our event photo groups, felicitation ceremonies, interactive classrooms, and campus moments.
           </p>
+
+          {/* Quick Stats Banner */}
+          <div className="mt-8 flex justify-center gap-6 flex-wrap">
+            <div className="bg-white/10 backdrop-blur-md border border-white/15 px-5 py-2.5 rounded-2xl flex items-center gap-2 text-xs font-bold text-white shadow-md">
+              <FiFolder className="text-amber-400" size={16} />
+              <span>{events.length} Event Albums</span>
+            </div>
+            <div className="bg-white/10 backdrop-blur-md border border-white/15 px-5 py-2.5 rounded-2xl flex items-center gap-2 text-xs font-bold text-white shadow-md">
+              <FiImage className="text-blue-400" size={16} />
+              <span>{items.length} Campus Photos & Videos</span>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -555,62 +702,169 @@ export default function Gallery() {
           <button
             key={idx}
             onClick={() => { setActiveFilter(cat); setSelectedIndex(null); }}
-            className={`px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all border ${
+            className={`px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all border cursor-pointer ${
               activeFilter === cat
-                ? 'bg-[#1C2E60] text-white border-[#1C2E60] shadow-md'
+                ? 'bg-[#1C2E60] text-white border-[#1C2E60] shadow-md scale-105'
                 : 'bg-white text-zinc-500 border-slate-200 hover:text-[#0F172A] hover:border-slate-300'
             }`}
           >
-            {cat}
+            {cat === 'Event Albums' ? `🏆 ${cat} (${events.length})` : cat}
           </button>
         ))}
       </div>
 
-      {/* Grid */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        {filteredItems.length === 0 ? (
-          <div className="text-center py-24">
-            <FiImage size={48} className="mx-auto text-zinc-300 mb-4" />
-            <p className="text-zinc-400 font-semibold">No photos in this category yet.</p>
-            <p className="text-zinc-400 text-xs mt-1">Photos can be added from the Admin Panel.</p>
+      {/* ─────────────────────────────────────────────────────────────────────────────
+          SECTION 1: Event Albums (Photo Groups)
+          Show in 'All' or when 'Event Albums' / 'Events' filter is active
+         ───────────────────────────────────────────────────────────────────────────── */}
+      {(activeFilter === 'All' || activeFilter === 'Event Albums' || activeFilter === 'Events') && events.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 mb-10">
+          <div className="flex items-center justify-between mb-6 pb-3 border-b border-slate-200">
+            <div>
+              <h2 className="text-2xl font-black text-[#1C2E60] flex items-center gap-2.5">
+                <FiFolder className="text-[#DC2626]" /> Event Photo Albums
+              </h2>
+              <p className="text-xs text-slate-500 mt-1">Click any event album below to view all its photos</p>
+            </div>
+            {activeFilter !== 'Event Albums' && (
+              <button
+                onClick={() => setActiveFilter('Event Albums')}
+                className="text-xs font-bold text-blue-700 hover:text-blue-900 flex items-center gap-1 cursor-pointer"
+              >
+                View all ({events.length}) albums →
+              </button>
+            )}
           </div>
-        ) : (
-          <div className="columns-1 sm:columns-2 lg:columns-3 gap-6">
-            {filteredItems.map((item, idx) => {
-              const isVid = item.mediaType === 'video' || item.category === 'Videos' || isVideoMedia(item);
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
+            {events.map((evt) => {
+              const photoCount = evt.photos ? evt.photos.length : 0;
+              const cover = evt.coverImage || (evt.photos && evt.photos[0]?.image) || '/images/bg-gallery-hero.png';
               return (
                 <div
-                  key={idx}
-                  onClick={() => setSelectedIndex(idx)}
-                  className="break-inside-avoid mb-6 bg-white border border-slate-200/60 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group cursor-pointer relative"
-                  title={isVid ? "Click to play video" : "Click to view full screen photo"}
+                  key={evt.id}
+                  onClick={() => setSelectedEvent(evt)}
+                  className="group relative bg-white border border-slate-200/80 rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 cursor-pointer flex flex-col justify-between"
+                  style={{ transformStyle: 'preserve-3d' }}
                 >
-                  <GalleryMediaThumb item={item} isVid={isVid} />
-                  {item.title && (
-                    <div className="px-5 py-4">
-                      <p className="font-bold text-[#0f172a] text-sm">{item.title}</p>
-                      <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        {item.category && (
-                          <span className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full inline-block uppercase tracking-wider">
-                            {item.category}
-                          </span>
-                        )}
-                        {isVid && (
-                          <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-100 px-2 py-0.5 rounded-full inline-block uppercase tracking-wider">
-                            Video
-                          </span>
-                        )}
-                      </div>
+                  {/* Visual Stack Effect (giving an authentic physical photo album depth) */}
+                  <div className="relative h-60 overflow-hidden bg-slate-900">
+                    <img
+                      src={getEmbedImageUrl(cover)}
+                      alt={evt.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 block"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+                    {/* Photo count pill badge */}
+                    <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md text-white px-3 py-1.5 rounded-full text-xs font-black tracking-wide border border-white/20 flex items-center gap-1.5 shadow-lg">
+                      <FiImage size={13} className="text-amber-400" />
+                      <span>{photoCount} Photo{photoCount === 1 ? '' : 's'}</span>
                     </div>
-                  )}
+
+                    {/* Category tag */}
+                    <span className="absolute top-4 left-4 bg-blue-600/90 backdrop-blur-md text-white text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-md">
+                      {evt.category || 'Event'}
+                    </span>
+
+                    {/* Date at bottom of image */}
+                    {evt.date && (
+                      <div className="absolute bottom-3 left-4 text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
+                        <FiCalendar size={13} className="text-amber-400" /> {evt.date}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Album Info */}
+                  <div className="p-6 flex-1 flex flex-col justify-between">
+                    <div>
+                      <h3 className="font-extrabold text-lg text-[#1C2E60] group-hover:text-[#DC2626] transition-colors leading-snug line-clamp-2">
+                        {evt.name}
+                      </h3>
+                      {evt.description && (
+                        <p className="text-slate-500 text-xs mt-2 line-clamp-2 leading-relaxed">
+                          {evt.description}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Bottom Action */}
+                    <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-blue-700 group-hover:text-[#DC2626] transition-colors">
+                      <span className="flex items-center gap-1.5">
+                        <FiFolder size={14} /> Open Album Group
+                      </span>
+                      <span>View {photoCount} Photos →</span>
+                    </div>
+                  </div>
                 </div>
               );
             })}
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
-      {/* React Portal: Render Lightbox Modal directly at document.body to cover Navbar & entire viewport */}
+      {/* ─────────────────────────────────────────────────────────────────────────────
+          SECTION 2: All Individual Photos & Videos Grid
+          (Hidden if user strictly clicks 'Event Albums')
+         ───────────────────────────────────────────────────────────────────────────── */}
+      {!isViewingEventsOnly && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between mb-6 pb-3 border-b border-slate-200">
+            <div>
+              <h2 className="text-2xl font-black text-[#1C2E60] flex items-center gap-2.5">
+                <FiGrid className="text-[#DC2626]" /> {activeFilter === 'All' ? 'Campus Photos & Videos' : `${activeFilter} Photos`}
+              </h2>
+              <p className="text-xs text-slate-500 mt-1">Click on any photo or video to view full screen</p>
+            </div>
+            <span className="text-xs font-bold text-slate-500 bg-white border border-slate-200 px-3 py-1.5 rounded-full shadow-sm">
+              {currentMediaList.length} Item{currentMediaList.length === 1 ? '' : 's'}
+            </span>
+          </div>
+
+          {currentMediaList.length === 0 ? (
+            <div className="text-center py-20 bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
+              <FiImage size={48} className="mx-auto text-zinc-300 mb-4" />
+              <p className="text-zinc-600 font-bold">No photos in this category yet.</p>
+              <p className="text-zinc-400 text-xs mt-1">Photos can be added from the Admin Panel.</p>
+            </div>
+          ) : (
+            <div className="columns-1 sm:columns-2 lg:columns-3 gap-6">
+              {currentMediaList.map((item, idx) => {
+                const isVid = item.mediaType === 'video' || item.category === 'Videos' || isVideoMedia(item);
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => setSelectedIndex(idx)}
+                    className="break-inside-avoid mb-6 bg-white border border-slate-200/60 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group cursor-pointer relative"
+                    title={isVid ? "Click to play video" : "Click to view full screen photo"}
+                  >
+                    <GalleryMediaThumb item={item} isVid={isVid} />
+                    {item.title && (
+                      <div className="px-5 py-4">
+                        <p className="font-bold text-[#0f172a] text-sm">{item.title}</p>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          {item.category && (
+                            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full inline-block uppercase tracking-wider">
+                              {item.category}
+                            </span>
+                          )}
+                          {isVid && (
+                            <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-100 px-2 py-0.5 rounded-full inline-block uppercase tracking-wider">
+                              Video
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* React Portal Lightbox Modal */}
       {typeof document !== 'undefined' && lightboxModal ? ReactDOM.createPortal(lightboxModal, document.body) : null}
     </div>
   );

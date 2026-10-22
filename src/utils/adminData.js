@@ -14,17 +14,67 @@ const DEFAULTS = {
     {
       author: "Noble Education",
       authorAvatar: "",
+      category: "Events",
+      content: `<p>Noble Education recently hosted our grand Annual Student Felicitation & Academic Excellence Celebration in Vadodara. We are immensely proud to recognize the stellar achievements of our students across 10th & 12th Board examinations, GUJCET, and DDCET entrance exams.</p>
+
+<div class="blog-video-wrap">
+  <iframe src="https://www.youtube.com/embed/2Vv-BfVoq4g" title="Annual Felicitation Celebrations" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
+<p class="text-sm text-center text-slate-500 italic mt-2">Watch the highlights of our Annual Felicitation & Award Ceremony</p>
+
+<h2>Celebrating Academic Champions</h2>
+<p>Our top rankers were awarded mementos, certificates of merit, and scholarship grants by our distinguished guests and faculty. The dedication shown by our students throughout the rigorous academic year is an inspiration to all upcoming batches.</p>
+
+<figure class="blog-figure blog-figure-center">
+  <img src="/images/gallery-event-students.jpg" alt="Noble Education Toppers Group Photo" />
+  <figcaption>Noble Education academic achievers celebrating their results with teachers</figcaption>
+</figure>
+
+<h2>Moments from the Event</h2>
+<p>From the auspicious inaugural lamp-lighting ceremony to inspiring speeches delivered by student representatives and dignitaries, the day was filled with energy, pride, and motivation.</p>
+
+<div class="blog-gallery-grid blog-gallery-grid-3">
+  <figure class="blog-figure">
+    <img src="/images/gallery-event-lamp.jpg" alt="Inaugural Lamp Lighting" />
+    <figcaption>Traditional Lamp Lighting</figcaption>
+  </figure>
+  <figure class="blog-figure">
+    <img src="/images/gallery-event-speech.jpg" alt="Student Podium Speech" />
+    <figcaption>Student Speech at Podium</figcaption>
+  </figure>
+  <figure class="blog-figure">
+    <img src="/images/gallery-event-dance.jpg" alt="Cultural Performance" />
+    <figcaption>Cultural Stage Performances</figcaption>
+  </figure>
+</div>
+
+<div class="blog-callout blog-callout-tip">
+  <strong>Admissions Open:</strong> Enrollments for 10th, 11th/12th Science, and DDCET engineering batches are now open. Visit our Waghodia Road campus (Above Bank of India) or call 9104206999 to book your seat!
+</div>`,
+      excerpt: "Relive the inspiring moments, topper awards, and celebrations from Noble Education's Annual Student Felicitation Ceremony.",
+      featuredImage: "/images/gallery-event-students.jpg",
+      publishedAt: "2026-09-04T09:03:32.542Z",
+      readTimeMinutes: 4,
+      seo: { metaDescription: "Annual Student Felicitation Ceremony & Toppers Celebration at Noble Education Vadodara", metaTitle: "Annual Student Felicitation & Award Ceremony - Noble Education" },
+      slug: "annual-student-felicitation-ceremony",
+      status: "published",
+      title: "Annual Student Felicitation & Excellence Celebration",
+      updatedAt: "2026-09-04T09:03:32.542Z"
+    },
+    {
+      author: "Noble Education",
+      authorAvatar: "",
       category: "Education Tips",
-      content: "Welcome to the official Noble Education blog. Stay tuned for expert academic coaching tips, board examination guides, DDCET and NEET/JEE preparation strategies, and career counseling updates for Vadodara students.",
+      content: "<p>Welcome to the official Noble Education blog. Stay tuned for expert academic coaching tips, board examination guides, DDCET and NEET/JEE preparation strategies, and career counseling updates for Vadodara students.</p>",
       excerpt: "Expert academic guidance, exam tips, and career counseling updates from Noble Education Vadodara.",
       featuredImage: "/images/bg-gallery-hero.png",
-      publishedAt: "2026-09-04T09:03:32.542Z",
+      publishedAt: "2026-09-01T09:03:32.542Z",
       readTimeMinutes: 3,
       seo: { metaDescription: "Noble Education Blog - Guidance, Tips and Updates", metaTitle: "Noble Education Blog" },
       slug: "welcome-to-noble-education-blog",
       status: "published",
       title: "Welcome to Noble Education Blog",
-      updatedAt: "2026-09-04T09:03:32.542Z"
+      updatedAt: "2026-09-01T09:03:32.542Z"
     }
   ],
   siteLogo: null,
@@ -93,6 +143,46 @@ const DEFAULTS = {
     { title: "Student Podium Speech", category: "Events", image: "/images/gallery-event-speech.jpg" },
     { title: "Students Stage Dance Performance", category: "Events", image: "/images/gallery-event-dance.jpg" },
     { title: "Topper Felicitation (Dress)", category: "Events", image: "/images/gallery-event-felicitation-girl2.jpg" }
+  ],
+  galleryEvents: [
+    {
+      id: "evt-felicitation-2026",
+      name: "Annual Student Felicitation & Award Ceremony",
+      date: "2026-08-15",
+      category: "Events",
+      coverImage: "/images/gallery-event-students.jpg",
+      description: "Grand annual celebration honoring SSC, HSC, GUJCET & DDCET top academic rankers and award winners.",
+      photos: [
+        { id: "ge1", title: "Event Welcome Reception Desk", image: "/images/gallery-event-welcome.jpg" },
+        { id: "ge2", title: "Inaugural Lamp Lighting Ceremony", image: "/images/gallery-event-lamp.jpg" },
+        { id: "ge3", title: "VIP Dignitaries & Guests on Stage", image: "/images/gallery-event-vips.jpg" },
+        { id: "ge4", title: "Parent & Student Audience Hall", image: "/images/gallery-event-audience.jpg" },
+        { id: "ge5", title: "Student Felicitation Ceremony", image: "/images/gallery-event-student1.jpg" },
+        { id: "ge6", title: "Class Toppers Celebration Group", image: "/images/gallery-event-students.jpg" },
+        { id: "ge7", title: "Academic Achiever Portrait", image: "/images/gallery-event-student2.jpg" },
+        { id: "ge8", title: "Felicitation Group Photo (Boys)", image: "/images/gallery-event-boys.jpg" },
+        { id: "ge9", title: "Felicitation Group Photo (Girls)", image: "/images/gallery-event-girls.jpg" },
+        { id: "ge10", title: "VIP Felicitation & Award Stage", image: "/images/gallery-event-felicitation.jpg" },
+        { id: "ge11", title: "Staff Coordinator Recognition", image: "/images/gallery-event-felicitation-staff.jpg" },
+        { id: "ge12", title: "Topper Felicitation (Saree)", image: "/images/gallery-event-felicitation-girl1.jpg" },
+        { id: "ge13", title: "Student Podium Speech", image: "/images/gallery-event-speech.jpg" },
+        { id: "ge14", title: "Students Stage Dance Performance", image: "/images/gallery-event-dance.jpg" },
+        { id: "ge15", title: "Topper Felicitation (Dress)", image: "/images/gallery-event-felicitation-girl2.jpg" }
+      ]
+    },
+    {
+      id: "evt-orientation-2026",
+      name: "DDCET & Degree Engineering Orientation Seminar",
+      date: "2026-07-10",
+      category: "Seminars",
+      coverImage: "/images/bg-contact-hero.png",
+      description: "Comprehensive guidance on Gujarat engineering admissions, syllabus breakdown, and entrance strategy.",
+      photos: [
+        { id: "ge16", title: "Parent Counseling Career Seminar", image: "/images/bg-about-hero.png" },
+        { id: "ge17", title: "DDCET Preparation Class Orientation", image: "/images/bg-contact-hero.png" },
+        { id: "ge18", title: "ACPC Online Choice Filling Workshop", image: "/images/bg-admission-hero.png" }
+      ]
+    }
   ],
   testimonials: [
     {
@@ -649,7 +739,7 @@ export const adminData = {
           'siteLogo', 'announcements', 'results', 'gallery', 'testimonials',
           'stats', 'features', 'contactInfo', 'courses', 'users', 'popupConfig',
           'videoLectures', 'pageImages', 'heroBanners', 'partnerSchools', 'schoolPhotos',
-          'blogPosts', 'seoConfig'
+          'blogPosts', 'seoConfig', 'galleryEvents'
         ];
         allKeys.forEach(k => {
           const localVal = typeof localStorage !== 'undefined' ? localStorage.getItem(PREFIX + k) : null;
@@ -830,7 +920,7 @@ export const adminData = {
         'siteLogo', 'announcements', 'results', 'gallery', 'testimonials',
         'stats', 'features', 'contactInfo', 'courses', 'users', 'popupConfig',
         'videoLectures', 'pageImages', 'heroBanners', 'partnerSchools', 'schoolPhotos',
-        'blogPosts', 'seoConfig'
+        'blogPosts', 'seoConfig', 'galleryEvents'
       ]));
 
       const payload = {};
@@ -906,7 +996,7 @@ export const adminData = {
         'siteLogo', 'announcements', 'results', 'gallery', 'testimonials',
         'stats', 'features', 'contactInfo', 'courses', 'users', 'popupConfig',
         'videoLectures', 'pageImages', 'heroBanners', 'partnerSchools', 'schoolPhotos',
-        'blogPosts', 'seoConfig'
+        'blogPosts', 'seoConfig', 'galleryEvents'
       ]));
 
       if (!this._lastKnownHashes) this._lastKnownHashes = {};

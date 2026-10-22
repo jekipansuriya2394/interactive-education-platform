@@ -39,10 +39,10 @@ const categories = ['All', 'Education Tips', 'Exam Guides', 'Results', 'Events',
 
 const BlogPage = () => {
   const [posts, setPosts] = useState(() => adminData.getData('blogPosts') || []);
-  const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [selectedPost, setSelectedPost] = useState(null);
+  const [lightboxImage, setLightboxImage] = useState(null);
 
   // Fetch posts and sync with live database
   useEffect(() => {
@@ -144,9 +144,73 @@ const BlogPage = () => {
         <div className="max-w-4xl mx-auto px-6 py-12">
           <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 p-8 md:p-12 -mt-20 relative z-10">
             <div 
-              className="prose prose-slate prose-lg md:prose-xl max-w-none prose-headings:text-[#0E2146] prose-a:text-amber-600 hover:prose-a:text-amber-700"
+              className="blog-post-content prose prose-slate prose-lg md:prose-xl max-w-none prose-headings:text-[#0E2146] prose-a:text-amber-600 hover:prose-a:text-amber-700"
               dangerouslySetInnerHTML={{ __html: selectedPost.content }}
+              onClick={(e) => {
+                if (e.target.tagName === 'IMG' && e.target.src) {
+                  setLightboxImage({ src: e.target.src, alt: e.target.alt || selectedPost.title });
+                }
+              }}
             />
+
+            {/* In-Post Image Lightbox Zoom */}
+            {lightboxImage && (
+              <div
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  zIndex: 9999999,
+                  backgroundColor: 'rgba(0, 0, 0, 0.95)',
+                  backdropFilter: 'blur(8px)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '24px'
+                }}
+                onClick={() => setLightboxImage(null)}
+              >
+                <button
+                  onClick={() => setLightboxImage(null)}
+                  style={{
+                    position: 'fixed',
+                    top: '24px',
+                    right: '24px',
+                    background: '#DC2626',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '50px',
+                    padding: '8px 20px',
+                    fontSize: '13px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 15px rgba(220, 38, 38, 0.5)'
+                  }}
+                >
+                  ✕ CLOSE
+                </button>
+                <img
+                  src={lightboxImage.src}
+                  alt={lightboxImage.alt}
+                  style={{
+                    maxWidth: '92vw',
+                    maxHeight: '82vh',
+                    borderRadius: '16px',
+                    boxShadow: '0 25px 60px rgba(0,0,0,0.8)',
+                    objectFit: 'contain'
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+                {lightboxImage.alt && (
+                  <p style={{ color: '#fff', marginTop: '16px', fontSize: '14px', fontStyle: 'italic', maxWidth: '600px', textAlign: 'center' }}>
+                    {lightboxImage.alt}
+                  </p>
+                )}
+              </div>
+            )}
             
             {/* Tags */}
             {selectedPost.tags && selectedPost.tags.length > 0 && (

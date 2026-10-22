@@ -215,6 +215,9 @@ export const saveCoursesContent = (data) => commitContent('content/courses.json'
 /** Save gallery images list */
 export const saveGalleryContent = (data) => commitContent('content/gallery.json', data);
 
+/** Save gallery event albums */
+export const saveGalleryEventsContent = (data) => commitContent('content/galleryEvents.json', data);
+
 /** Save faculty profiles */
 export const saveFacultyContent = (data) => commitContent('content/faculty.json', data);
 

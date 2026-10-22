@@ -6,7 +6,7 @@ import {
   FiStar, FiUsers, FiCompass, FiCpu, FiFileText, FiSave, FiEye, FiEyeOff,
   FiLock, FiRefreshCw, FiAlertTriangle, FiChevronRight, FiSearch,
   FiExternalLink, FiCamera, FiLink, FiArrowLeft, FiVideo, FiPlay, FiLayers,
-  FiArrowUp, FiArrowDown, FiTag
+  FiArrowUp, FiArrowDown, FiTag, FiFolder, FiCalendar
 } from 'react-icons/fi';
 import { adminData } from '../utils/adminData';
 import { getFirebaseUrl, setFirebaseUrl, testFirebaseConnection } from '../utils/firebaseConfig';
@@ -128,6 +128,10 @@ function AdminPanel({ onLogout }) {
   const [partnerSchools, setPartnerSchools] = useState(() => adminData.getData('partnerSchools') || []);
   const [schoolPhotos, setSchoolPhotos] = useState(() => adminData.getData('schoolPhotos') || []);
   const [blogPosts, setBlogPosts] = useState(() => adminData.getData('blogPosts') || []);
+  const [galleryEvents, setGalleryEvents] = useState(() => adminData.getData('galleryEvents') || []);
+  const [editingEvent, setEditingEvent] = useState(null);
+  const [managingEventPhotos, setManagingEventPhotos] = useState(null);
+  const [gallerySubTab, setGallerySubTab] = useState('events');
   const [deploymentRuns, setDeploymentRuns] = useState([]);
   const [commitLog, setCommitLog] = useState([]);
   const [workerHealth, setWorkerHealth] = useState({ ok: null, latencyMs: 0 });
@@ -274,6 +278,7 @@ function AdminPanel({ onLogout }) {
     setPartnerSchools(adminData.getData('partnerSchools') || []);
     setSchoolPhotos(adminData.getData('schoolPhotos') || []);
     setBlogPosts(adminData.getData('blogPosts') || []);
+    setGalleryEvents(adminData.getData('galleryEvents') || []);
     setSiteLogo(getLogoUrl(true));
     // Load audit log from localStorage
     try {
@@ -429,6 +434,48 @@ function AdminPanel({ onLogout }) {
     showToast('Updating live website...', 'info');
     await adminData.setDataAsync('gallery', u);
     showToast('Deleted from gallery.', 'error');
+  };
+
+  // Gallery Events (Photo Groups)
+  const saveGalleryEvent = async (item) => {
+    const { _index, ...rest } = item;
+    const exists = galleryEvents.some((g, i) => (i === _index || g.id === rest.id));
+    const u = exists
+      ? galleryEvents.map((g, i) => (i === _index || g.id === rest.id) ? { ...g, ...rest } : g)
+      : [...galleryEvents, rest];
+    setGalleryEvents(u);
+    setEditingEvent(null);
+    showToast('Saving event album...', 'info');
+    await adminData.setDataAsync('galleryEvents', u);
+    showToast('✅ Event album saved!');
+  };
+
+  const delGalleryEvent = async (idOrIndex) => {
+    if (!window.confirm('Delete this event album and its photos?')) return;
+    const u = galleryEvents.filter((g, i) => i !== idOrIndex && g.id !== idOrIndex);
+    setGalleryEvents(u);
+    if (managingEventPhotos && (managingEventPhotos.id === idOrIndex)) {
+      setManagingEventPhotos(null);
+    }
+    showToast('Updating live website...', 'info');
+    await adminData.setDataAsync('galleryEvents', u);
+    showToast('Deleted event album.', 'error');
+  };
+
+  const saveEventPhotos = async (eventId, photos, explicitCover) => {
+    const u = galleryEvents.map(evt => {
+      if (evt.id === eventId) {
+        const cover = explicitCover || evt.coverImage || (photos[0]?.image || '');
+        return { ...evt, coverImage: cover, photos };
+      }
+      return evt;
+    });
+    setGalleryEvents(u);
+    const updated = u.find(e => e.id === eventId);
+    if (updated) setManagingEventPhotos(updated);
+    showToast('Saving event photos...', 'info');
+    await adminData.setDataAsync('galleryEvents', u);
+    showToast('✅ Event photos saved!');
   };
 
   // Partner Schools
@@ -1248,121 +1295,266 @@ function AdminPanel({ onLogout }) {
   // ─── GALLERY ────────────────────────────────────────────────────────────
   const renderGallery = () => {
     const cats = ['All', ...GALLERY_CATEGORIES];
-    const filtered = gallery.filter(g => {
+    const filteredItems = gallery.filter(g => {
       const matchCat = galleryFilter === 'All' ||
         (galleryFilter === 'Videos' ? (g.category === 'Videos' || g.mediaType === 'video' || isVideoMedia(g)) : g.category === galleryFilter);
       const matchSearch = (g.title || '').toLowerCase().includes(search.toLowerCase());
       return matchCat && matchSearch;
     });
+
+    const filteredEvents = galleryEvents.filter(e => {
+      return (e.name || '').toLowerCase().includes(search.toLowerCase()) ||
+        (e.description || '').toLowerCase().includes(search.toLowerCase());
+    });
+
     return (
       <div>
-        <SectionHeader
-          title="Gallery"
-          subtitle="Upload & manage campus photos and videos shown on the Gallery page"
-          action={adminData.hasPermission('gallery', 'edit') && (
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button className="ap-btn ap-btn-primary" onClick={() => setEditingGallery({ title:'', category:'Classrooms', image:'', mediaType:'image' })}>
-                <FiPlus /> Add Photo
-              </button>
-              <button className="ap-btn" style={{ background: '#DC2626', color: '#fff', border: 'none' }} onClick={() => setEditingGallery({ title:'', category:'Videos', image:'', mediaType:'video', videoUrl:'' })}>
-                <FiVideo /> Upload Video
-              </button>
-            </div>
-          )}
-        />
-        <div className="ap-gallery-controls">
-          <div className="ap-search-bar" style={{ flex: 1, marginBottom: 0 }}>
-            <FiSearch />
-            <input placeholder="Search photos and videos..." value={search} onChange={e => setSearch(e.target.value)} />
-          </div>
-          <div className="ap-cat-tabs">
-            {cats.map(c => (
-              <button key={c} className={`ap-cat-tab ${galleryFilter === c ? 'active' : ''}`} onClick={() => setGalleryFilter(c)}>{c}</button>
-            ))}
-          </div>
+        {/* Gallery Sub-Navigation: Event Albums vs Individual Media Items */}
+        <div style={{ display: 'flex', gap: 10, marginBottom: 20, borderBottom: '1px solid #30363D', paddingBottom: 14 }}>
+          <button
+            type="button"
+            className={`ap-btn ${gallerySubTab === 'events' ? 'ap-btn-primary' : 'ap-btn-secondary'}`}
+            onClick={() => setGallerySubTab('events')}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '8px 16px' }}
+          >
+            <FiFolder size={15} /> Event Albums & Photo Groups ({galleryEvents.length})
+          </button>
+          <button
+            type="button"
+            className={`ap-btn ${gallerySubTab === 'items' ? 'ap-btn-primary' : 'ap-btn-secondary'}`}
+            onClick={() => setGallerySubTab('items')}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '8px 16px' }}
+          >
+            <FiImage size={15} /> Individual Photos & Videos ({gallery.length})
+          </button>
         </div>
 
-        {filtered.length === 0 ? <EmptyState icon={FiImage} message="No items found. Click 'Add Photo' or 'Upload Video' to add one." /> : (
-          <div className="ap-gallery-grid">
-            {filtered.map((item, i) => {
-              const realIdx = gallery.indexOf(item);
-              const isVid = item.mediaType === 'video' || item.category === 'Videos' || isVideoMedia(item);
-              const videoSrc = item.videoUrl || (isVid ? item.image : '');
-              return (
-                <div className="ap-gallery-card" key={i}>
-                  <div className="ap-gallery-thumb" style={{ position: 'relative', overflow: 'hidden' }}>
-                    {isVid && (!item.image || isVideoMedia(item.image) || !isActualImage(item.image)) ? (
-                      <video
-                        src={videoSrc}
-                        muted
-                        playsInline
-                        preload="metadata"
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', pointerEvents: 'none' }}
-                      />
-                    ) : item.image ? (
-                      <img
-                        src={getEmbedImageUrl(item.image)}
-                        alt={item.title || 'Gallery'}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                        onError={e => { e.target.style.display='none'; if (e.target.nextSibling) e.target.nextSibling.style.display='flex'; }}
-                      />
-                    ) : null}
-                    <div style={{ display: (item.image || (isVid && videoSrc)) ? 'none' : 'flex', position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center', background: '#21262D', color: '#374151', flexDirection: 'column', gap: 8 }}>
-                      {isVid ? <FiVideo size={32} style={{ color: '#EF4444' }} /> : <FiImage size={32} />}
-                      <span style={{ fontSize: 11, color: '#6B7280' }}>{isVid ? 'Video' : 'No image'}</span>
-                    </div>
-                    {isVid && (
-                      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-                        <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#DC2626', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 15px rgba(220,38,38,0.6)' }}>
-                          <FiPlay size={20} style={{ marginLeft: 2 }} />
-                        </div>
-                      </div>
-                    )}
-                    <div className="ap-gallery-thumb-overlay">
-                      {item.image && (
-                        <button
-                          className="ap-gallery-thumb-btn"
-                          onClick={() => {
-                            if (isVid && videoSrc) {
-                              window.open(videoSrc, '_blank');
-                            } else {
-                              window.open(getEmbedImageUrl(item.image), '_blank');
-                            }
-                          }}
-                          title={isVid ? 'Play video' : 'View full'}
-                        >
-                          {isVid ? <FiPlay /> : <FiEye />}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <div className="ap-gallery-info">
-                    <div>
-                      <p className="ap-gallery-title">{item.title || 'Untitled'}</p>
-                      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
-                        <span className="ap-badge ap-badge-purple">{item.category || 'Classrooms'}</span>
-                        {isVid && (
-                          <span className="ap-badge" style={{ background: 'rgba(239,68,68,0.2)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.3)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                            <FiVideo size={10} /> VIDEO
+        {gallerySubTab === 'events' ? (
+          /* ─── EVENT ALBUMS VIEW ─── */
+          <div>
+            <SectionHeader
+              title="Event Albums (Group of Photos in Event)"
+              subtitle="Create an event name first, then add multiple photos in that event group"
+              action={adminData.hasPermission('gallery', 'edit') && (
+                <button
+                  className="ap-btn ap-btn-primary"
+                  onClick={() => setEditingEvent({ name: '', date: new Date().toISOString().split('T')[0], category: 'Events', description: '', coverImage: '', photos: [] })}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                >
+                  <FiPlus /> Create New Event
+                </button>
+              )}
+            />
+
+            <div className="ap-search-bar" style={{ marginBottom: 20 }}>
+              <FiSearch />
+              <input placeholder="Search event albums by name..." value={search} onChange={e => setSearch(e.target.value)} />
+            </div>
+
+            {filteredEvents.length === 0 ? (
+              <EmptyState icon={FiFolder} message="No event albums found. Click 'Create New Event' to start grouping photos by event!" />
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 18 }}>
+                {filteredEvents.map((evt, i) => {
+                  const realIdx = galleryEvents.indexOf(evt);
+                  const pCount = evt.photos ? evt.photos.length : 0;
+                  const cover = evt.coverImage || (evt.photos && evt.photos[0]?.image) || '/images/bg-gallery-hero.png';
+                  return (
+                    <div className="ap-card" key={evt.id || i} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: 0, overflow: 'hidden' }}>
+                      <div style={{ position: 'relative', height: 160, background: '#0B132B' }}>
+                        <img
+                          src={getEmbedImageUrl(cover)}
+                          alt={evt.name}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                        <span style={{ position: 'absolute', top: 10, left: 10, background: 'rgba(0,0,0,0.7)', color: '#93C5FD', fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 20, backdropFilter: 'blur(4px)' }}>
+                          {evt.category || 'Events'}
+                        </span>
+                        <span style={{ position: 'absolute', top: 10, right: 10, background: '#DC2626', color: '#fff', fontSize: 11, fontWeight: 800, padding: '3px 10px', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 4, boxShadow: '0 2px 8px rgba(220,38,38,0.5)' }}>
+                          <FiImage size={11} /> {pCount} Photo{pCount === 1 ? '' : 's'}
+                        </span>
+                        {evt.date && (
+                          <span style={{ position: 'absolute', bottom: 8, left: 10, color: '#E2E8F0', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(0,0,0,0.65)', padding: '2px 8px', borderRadius: 4 }}>
+                            <FiCalendar size={11} /> {evt.date}
                           </span>
                         )}
                       </div>
+
+                      <div style={{ padding: 16, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                        <div>
+                          <h4 style={{ margin: 0, color: '#fff', fontSize: 16, fontWeight: 700, lineHeight: 1.3 }}>
+                            {evt.name}
+                          </h4>
+                          {evt.description && (
+                            <p style={{ margin: '6px 0 0', color: '#9CA3AF', fontSize: 12, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                              {evt.description}
+                            </p>
+                          )}
+                        </div>
+
+                        <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid #30363D', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                          <button
+                            type="button"
+                            className="ap-btn ap-btn-primary"
+                            onClick={() => setManagingEventPhotos(evt)}
+                            style={{ flex: 1, fontSize: 12, padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                          >
+                            <FiCamera size={13} /> Manage Photos ({pCount})
+                          </button>
+                          <div style={{ display: 'flex', gap: 4 }}>
+                            <button
+                              type="button"
+                              className="ap-icon-btn"
+                              title="Edit Event Name & Details"
+                              onClick={() => setEditingEvent({ ...evt, _index: realIdx })}
+                            >
+                              <FiEdit2 size={13} />
+                            </button>
+                            <button
+                              type="button"
+                              className="ap-icon-btn ap-icon-btn-danger"
+                              title="Delete Event Album"
+                              onClick={() => delGalleryEvent(evt.id || realIdx)}
+                            >
+                              <FiTrash2 size={13} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="ap-list-actions" style={{ marginTop: 8 }}>
-                      {adminData.hasPermission('gallery', 'edit') && (
-                        <button className="ap-icon-btn" onClick={() => setEditingGallery({ ...item, _index: realIdx })}><FiEdit2 /></button>
-                      )}
-                      {adminData.hasPermission('gallery', 'delete') && (
-                        <button className="ap-icon-btn ap-icon-btn-danger" onClick={() => delGallery(realIdx)}><FiTrash2 /></button>
-                      )}
-                    </div>
-                  </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {editingEvent && (
+              <EventModal
+                item={editingEvent}
+                onSave={saveGalleryEvent}
+                onClose={() => setEditingEvent(null)}
+              />
+            )}
+
+            {managingEventPhotos && (
+              <EventPhotosModal
+                event={managingEventPhotos}
+                onSavePhotos={saveEventPhotos}
+                onClose={() => setManagingEventPhotos(null)}
+              />
+            )}
+          </div>
+        ) : (
+          /* ─── INDIVIDUAL PHOTOS & VIDEOS VIEW ─── */
+          <div>
+            <SectionHeader
+              title="Individual Photos & Videos"
+              subtitle="Upload & manage standalone campus photos and videos"
+              action={adminData.hasPermission('gallery', 'edit') && (
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button className="ap-btn ap-btn-primary" onClick={() => setEditingGallery({ title:'', category:'Classrooms', image:'', mediaType:'image' })}>
+                    <FiPlus /> Add Photo
+                  </button>
+                  <button className="ap-btn" style={{ background: '#DC2626', color: '#fff', border: 'none' }} onClick={() => setEditingGallery({ title:'', category:'Videos', image:'', mediaType:'video', videoUrl:'' })}>
+                    <FiVideo /> Upload Video
+                  </button>
                 </div>
-              );
-            })}
+              )}
+            />
+            <div className="ap-gallery-controls">
+              <div className="ap-search-bar" style={{ flex: 1, marginBottom: 0 }}>
+                <FiSearch />
+                <input placeholder="Search photos and videos..." value={search} onChange={e => setSearch(e.target.value)} />
+              </div>
+              <div className="ap-cat-tabs">
+                {cats.map(c => (
+                  <button key={c} className={`ap-cat-tab ${galleryFilter === c ? 'active' : ''}`} onClick={() => setGalleryFilter(c)}>{c}</button>
+                ))}
+              </div>
+            </div>
+
+            {filteredItems.length === 0 ? <EmptyState icon={FiImage} message="No items found. Click 'Add Photo' or 'Upload Video' to add one." /> : (
+              <div className="ap-gallery-grid">
+                {filteredItems.map((item, i) => {
+                  const realIdx = gallery.indexOf(item);
+                  const isVid = item.mediaType === 'video' || item.category === 'Videos' || isVideoMedia(item);
+                  const videoSrc = item.videoUrl || (isVid ? item.image : '');
+                  return (
+                    <div className="ap-gallery-card" key={i}>
+                      <div className="ap-gallery-thumb" style={{ position: 'relative', overflow: 'hidden' }}>
+                        {isVid && (!item.image || isVideoMedia(item.image) || !isActualImage(item.image)) ? (
+                          <video
+                            src={videoSrc}
+                            muted
+                            playsInline
+                            preload="metadata"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', pointerEvents: 'none' }}
+                          />
+                        ) : item.image ? (
+                          <img
+                            src={getEmbedImageUrl(item.image)}
+                            alt={item.title || 'Gallery'}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                            onError={e => { e.target.style.display='none'; if (e.target.nextSibling) e.target.nextSibling.style.display='flex'; }}
+                          />
+                        ) : null}
+                        <div style={{ display: (item.image || (isVid && videoSrc)) ? 'none' : 'flex', position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center', background: '#21262D', color: '#374151', flexDirection: 'column', gap: 8 }}>
+                          {isVid ? <FiVideo size={32} style={{ color: '#EF4444' }} /> : <FiImage size={32} />}
+                          <span style={{ fontSize: 11, color: '#6B7280' }}>{isVid ? 'Video' : 'No image'}</span>
+                        </div>
+                        {isVid && (
+                          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+                            <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#DC2626', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 15px rgba(220,38,38,0.6)' }}>
+                              <FiPlay size={20} style={{ marginLeft: 2 }} />
+                            </div>
+                          </div>
+                        )}
+                        <div className="ap-gallery-thumb-overlay">
+                          {item.image && (
+                            <button
+                              className="ap-gallery-thumb-btn"
+                              onClick={() => {
+                                if (isVid && videoSrc) {
+                                  window.open(videoSrc, '_blank');
+                                } else {
+                                  window.open(getEmbedImageUrl(item.image), '_blank');
+                                }
+                              }}
+                              title={isVid ? 'Play video' : 'View full'}
+                            >
+                              {isVid ? <FiPlay /> : <FiEye />}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <div className="ap-gallery-info">
+                        <div>
+                          <p className="ap-gallery-title">{item.title || 'Untitled'}</p>
+                          <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
+                            <span className="ap-badge ap-badge-purple">{item.category || 'Classrooms'}</span>
+                            {isVid && (
+                              <span className="ap-badge" style={{ background: 'rgba(239,68,68,0.2)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.3)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                <FiVideo size={10} /> VIDEO
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="ap-list-actions" style={{ marginTop: 8 }}>
+                          {adminData.hasPermission('gallery', 'edit') && (
+                            <button className="ap-icon-btn" onClick={() => setEditingGallery({ ...item, _index: realIdx })}><FiEdit2 /></button>
+                          )}
+                          {adminData.hasPermission('gallery', 'delete') && (
+                            <button className="ap-icon-btn ap-icon-btn-danger" onClick={() => delGallery(realIdx)}><FiTrash2 /></button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {editingGallery && <GalleryModal item={editingGallery} onSave={saveGallery} onClose={() => setEditingGallery(null)} />}
           </div>
         )}
-        {editingGallery && <GalleryModal item={editingGallery} onSave={saveGallery} onClose={() => setEditingGallery(null)} />}
       </div>
     );
   };
@@ -2094,93 +2286,18 @@ function AdminPanel({ onLogout }) {
   };
 
   const renderBlog = () => {
-    const BLOG_CATS = ['General', 'Education Tips', 'Exam Guides', 'Results', 'Events', 'Announcements'];
     const emptyPost = { title:'', slug:'', excerpt:'', content:'', featuredImage:'', category:'General', author:'Noble Education', status:'draft', tags:[], readTimeMinutes:3, seo:{metaTitle:'',metaDescription:''} };
 
     if (editingBlogPost !== null) {
       const post = { ...emptyPost, ...(editingBlogPost === 'new' ? {} : editingBlogPost) };
       const isNew = editingBlogPost === 'new';
       return (
-        <div style={{ maxWidth: 780, padding: '0 0 40px' }}>
-          <button onClick={() => setEditingBlogPost(null)} className="ap-btn-secondary" style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <FiArrowLeft size={14} /> Back to Posts
-          </button>
-          <SectionHeader title={isNew ? 'New Blog Post' : `Edit: ${post.title}`} subtitle="Fill all fields. Draft posts are saved but not shown on the live site." />
-          <div className="ap-card" style={{ marginTop: 16 }}>
-            <div className="ap-form-grid">
-              <div className="ap-form-col">
-                <label className="ap-label">Title *</label>
-                <input className="ap-input" defaultValue={post.title} id="bp-title" placeholder="Post title..." />
-              </div>
-              <div className="ap-form-col">
-                <label className="ap-label">Slug (URL)</label>
-                <input className="ap-input" defaultValue={post.slug} id="bp-slug" placeholder="auto-generated-from-title" />
-              </div>
-              <div className="ap-form-col">
-                <label className="ap-label">Category</label>
-                <select className="ap-input" defaultValue={post.category} id="bp-cat">
-                  {BLOG_CATS.map(c => <option key={c}>{c}</option>)}
-                </select>
-              </div>
-              <div className="ap-form-col">
-                <label className="ap-label">Status</label>
-                <select className="ap-input" defaultValue={post.status} id="bp-status">
-                  <option value="draft">Draft</option>
-                  <option value="published">Published</option>
-                </select>
-              </div>
-              <div className="ap-form-col" style={{ gridColumn: '1/-1' }}>
-                <label className="ap-label">Featured Image URL</label>
-                <input className="ap-input" defaultValue={post.featuredImage} id="bp-img" placeholder="https://... or /images/..." />
-              </div>
-              <div className="ap-form-col">
-                <label className="ap-label">Author</label>
-                <input className="ap-input" defaultValue={post.author} id="bp-author" />
-              </div>
-              <div className="ap-form-col">
-                <label className="ap-label">Read Time (minutes)</label>
-                <input className="ap-input" type="number" min="1" max="60" defaultValue={post.readTimeMinutes} id="bp-rt" />
-              </div>
-              <div className="ap-form-col" style={{ gridColumn: '1/-1' }}>
-                <label className="ap-label">Excerpt (shown in listing)</label>
-                <textarea className="ap-input" rows={2} defaultValue={post.excerpt} id="bp-excerpt" placeholder="Short summary of the post..." />
-              </div>
-              <div className="ap-form-col" style={{ gridColumn: '1/-1' }}>
-                <label className="ap-label">Content (HTML supported)</label>
-                <textarea className="ap-input" rows={10} defaultValue={post.content} id="bp-content" placeholder="<p>Full post content here...</p>" style={{ fontFamily: 'monospace', fontSize: 13 }} />
-              </div>
-              <div className="ap-form-col">
-                <label className="ap-label">SEO Meta Title</label>
-                <input className="ap-input" defaultValue={post.seo?.metaTitle} id="bp-seo-title" />
-              </div>
-              <div className="ap-form-col">
-                <label className="ap-label">SEO Meta Description</label>
-                <input className="ap-input" defaultValue={post.seo?.metaDescription} id="bp-seo-desc" />
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
-              <button className="ap-btn-primary" onClick={() => {
-                const g = (id) => document.getElementById(id)?.value || '';
-                const title = g('bp-title');
-                if (!title.trim()) { showToast('Title is required', 'error'); return; }
-                const draft = {
-                  ...post,
-                  _index: isNew ? undefined : post._index,
-                  title, slug: g('bp-slug') || slugify(title),
-                  excerpt: g('bp-excerpt'), content: g('bp-content'),
-                  featuredImage: g('bp-img'), category: g('bp-cat'),
-                  author: g('bp-author'), status: g('bp-status'),
-                  readTimeMinutes: parseInt(g('bp-rt')) || 3,
-                  seo: { metaTitle: g('bp-seo-title') || title, metaDescription: g('bp-seo-desc') }
-                };
-                saveBlogPost(draft);
-              }}>
-                <FiSave size={14} /> Save Post
-              </button>
-              <button className="ap-btn-secondary" onClick={() => setEditingBlogPost(null)}>Cancel</button>
-            </div>
-          </div>
-        </div>
+        <BlogPostEditForm
+          post={post}
+          isNew={isNew}
+          onSave={saveBlogPost}
+          onCancel={() => setEditingBlogPost(null)}
+        />
       );
     }
 
@@ -5714,6 +5831,950 @@ function UniversalMediaInput({
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Event Albums & Photo Groups Modals ──────────────────────────────────────
+function EventModal({ item, onSave, onClose }) {
+  const isNew = !item?.name;
+  const [form, setForm] = useState({
+    id: item?.id || ('evt_' + Date.now()),
+    name: item?.name || '',
+    date: item?.date || new Date().toISOString().split('T')[0],
+    category: item?.category || 'Events',
+    description: item?.description || '',
+    coverImage: item?.coverImage || '',
+    photos: item?.photos || [],
+    _index: item?._index
+  });
+  const [errorMsg, setErrorMsg] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const fileRef = useRef(null);
+
+  const handleCoverUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setIsProcessing(true);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          let w = img.width, h = img.height;
+          const MAX = 900;
+          if (w > h ? w > MAX : h > MAX) {
+            if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+            else { w = Math.round(w * MAX / h); h = MAX; }
+          }
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          const data = canvas.toDataURL('image/jpeg', 0.72);
+          setForm(p => ({ ...p, coverImage: data }));
+        } catch { setErrorMsg('Failed to process image'); }
+        finally { setIsProcessing(false); }
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSave = () => {
+    if (!form.name.trim()) {
+      setErrorMsg('Event Name is required.');
+      return;
+    }
+    onSave(form);
+  };
+
+  return (
+    <Modal title={isNew ? 'Create New Event Album' : `Edit Event: ${form.name}`} onClose={onClose}>
+      {errorMsg && <div style={{ color: '#ef4444', marginBottom: 12, fontSize: 13 }}>{errorMsg}</div>}
+      <div className="ap-field">
+        <label className="ap-label">Event Name *</label>
+        <input
+          className="ap-input"
+          placeholder="e.g. Annual Felicitation Ceremony 2026, Science Day Exhibition..."
+          value={form.name}
+          onChange={e => setForm({ ...form, name: e.target.value })}
+        />
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
+        <div className="ap-field">
+          <label className="ap-label">Event Date</label>
+          <input
+            type="date"
+            className="ap-input"
+            value={form.date}
+            onChange={e => setForm({ ...form, date: e.target.value })}
+          />
+        </div>
+        <div className="ap-field">
+          <label className="ap-label">Category</label>
+          <select
+            className="ap-input"
+            value={form.category}
+            onChange={e => setForm({ ...form, category: e.target.value })}
+          >
+            <option value="Events">Events</option>
+            <option value="Seminars">Seminars</option>
+            <option value="Activities">Activities</option>
+            <option value="Classrooms">Classrooms</option>
+            <option value="Celebrations">Celebrations</option>
+          </select>
+        </div>
+      </div>
+      <div className="ap-field" style={{ marginTop: 12 }}>
+        <label className="ap-label">Short Description</label>
+        <textarea
+          className="ap-input"
+          rows={2}
+          placeholder="Brief summary of what happened at this event..."
+          value={form.description}
+          onChange={e => setForm({ ...form, description: e.target.value })}
+        />
+      </div>
+      <div className="ap-field" style={{ marginTop: 12 }}>
+        <label className="ap-label">Cover Image (Optional - will default to first photo added)</label>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            className="ap-input"
+            placeholder="Image URL or upload below..."
+            value={form.coverImage}
+            onChange={e => setForm({ ...form, coverImage: e.target.value })}
+            style={{ flex: 1 }}
+          />
+          <button
+            type="button"
+            className="ap-btn-secondary"
+            onClick={() => fileRef.current?.click()}
+            disabled={isProcessing}
+            style={{ whiteSpace: 'nowrap' }}
+          >
+            {isProcessing ? 'Processing...' : '📁 Upload File'}
+          </button>
+          <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleCoverUpload} />
+        </div>
+        {form.coverImage && (
+          <div style={{ marginTop: 8, height: 120, borderRadius: 8, overflow: 'hidden', background: '#000' }}>
+            <img src={getEmbedImageUrl(form.coverImage)} alt="Cover preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          </div>
+        )}
+      </div>
+
+      <div className="ap-modal-foot" style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+        <button className="ap-btn-secondary" onClick={onClose}>Cancel</button>
+        <button className="ap-btn-primary" onClick={handleSave}>
+          <FiSave /> {isNew ? 'Create Event' : 'Save Event Details'}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+function EventPhotosModal({ event, onSavePhotos, onClose }) {
+  const [photos, setPhotos] = useState(event.photos || []);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [singleUrl, setSingleUrl] = useState('');
+  const [singleTitle, setSingleTitle] = useState('');
+  const [addMode, setAddMode] = useState('batch');
+  const multiFileRef = useRef(null);
+
+  const handleBatchUpload = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setIsProcessing(true);
+    setErrorMsg('');
+
+    let processedCount = 0;
+    const newPhotos = [];
+
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            let w = img.width, h = img.height;
+            const MAX = 900;
+            if (w > h ? w > MAX : h > MAX) {
+              if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+              else { w = Math.round(w * MAX / h); h = MAX; }
+            }
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            const data = canvas.toDataURL('image/jpeg', 0.72);
+            const cleanTitle = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+            newPhotos.push({
+              id: 'p_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+              title: cleanTitle,
+              image: data,
+              date: event.date || ''
+            });
+          } catch (err) {
+            console.error(err);
+          } finally {
+            processedCount++;
+            if (processedCount === files.length) {
+              setPhotos(prev => [...prev, ...newPhotos]);
+              setIsProcessing(false);
+            }
+          }
+        };
+        img.onerror = () => {
+          processedCount++;
+          if (processedCount === files.length) setIsProcessing(false);
+        };
+        img.src = ev.target.result;
+      };
+      reader.onerror = () => {
+        processedCount++;
+        if (processedCount === files.length) setIsProcessing(false);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleAddSingleUrl = () => {
+    if (!singleUrl.trim()) return;
+    setPhotos(prev => [
+      ...prev,
+      {
+        id: 'p_' + Date.now(),
+        title: singleTitle.trim() || `${event.name} Photo`,
+        image: singleUrl.trim(),
+        date: event.date || ''
+      }
+    ]);
+    setSingleUrl('');
+    setSingleTitle('');
+  };
+
+  const removePhoto = (idx) => {
+    setPhotos(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const setAsCover = (photo) => {
+    onSavePhotos(event.id, photos, photo.image);
+  };
+
+  const updatePhotoTitle = (idx, newTitle) => {
+    setPhotos(prev => prev.map((p, i) => i === idx ? { ...p, title: newTitle } : p));
+  };
+
+  return (
+    <Modal title={`Add & Manage Photos in "${event.name}" (${photos.length} photos)`} onClose={onClose} wide>
+      {errorMsg && <div style={{ color: '#ef4444', marginBottom: 12 }}>{errorMsg}</div>}
+      
+      {/* Upload Action Box */}
+      <div style={{ background: '#161B22', border: '1px dashed #30363D', borderRadius: 12, padding: 18, marginBottom: 18 }}>
+        <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
+          <button
+            type="button"
+            className={`ap-btn ${addMode === 'batch' ? 'ap-btn-primary' : 'ap-btn-secondary'}`}
+            onClick={() => setAddMode('batch')}
+            style={{ fontSize: 13 }}
+          >
+            <FiUpload /> Batch Upload Photos from Device
+          </button>
+          <button
+            type="button"
+            className={`ap-btn ${addMode === 'url' ? 'ap-btn-primary' : 'ap-btn-secondary'}`}
+            onClick={() => setAddMode('url')}
+            style={{ fontSize: 13 }}
+          >
+            <FiLink /> Add Photo by URL
+          </button>
+        </div>
+
+        {addMode === 'batch' ? (
+          <div style={{ textAlign: 'center', padding: '12px 0' }}>
+            <p style={{ color: '#E6EDF3', fontWeight: 700, fontSize: 15, marginBottom: 4 }}>
+              Select Multiple Photos for this Event
+            </p>
+            <p style={{ color: '#8B949E', fontSize: 13, marginBottom: 14 }}>
+              You can pick 5, 10, 20+ photos at once (Hold Ctrl or Shift). They will be compressed and added to this event group.
+            </p>
+            <button
+              type="button"
+              className="ap-btn ap-btn-primary"
+              onClick={() => multiFileRef.current?.click()}
+              disabled={isProcessing}
+              style={{ padding: '10px 24px', fontSize: 14 }}
+            >
+              {isProcessing ? 'Processing & Compressing Photos...' : '📁 Choose Multiple Photo Files'}
+            </button>
+            <input
+              ref={multiFileRef}
+              type="file"
+              multiple
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={handleBatchUpload}
+            />
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <input
+              className="ap-input"
+              style={{ flex: 2, minWidth: 200 }}
+              placeholder="Paste Image URL (https://... or /images/...)"
+              value={singleUrl}
+              onChange={e => setSingleUrl(e.target.value)}
+            />
+            <input
+              className="ap-input"
+              style={{ flex: 1, minWidth: 150 }}
+              placeholder="Photo Caption (optional)"
+              value={singleTitle}
+              onChange={e => setSingleTitle(e.target.value)}
+            />
+            <button
+              type="button"
+              className="ap-btn ap-btn-primary"
+              onClick={handleAddSingleUrl}
+            >
+              <FiPlus /> Add Photo
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Photos Grid */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <h4 style={{ margin: 0, color: '#fff', fontSize: 14 }}>
+            Photos in this Event Group ({photos.length})
+          </h4>
+          {photos.length > 0 && (
+            <span style={{ fontSize: 12, color: '#8B949E' }}>
+              Edit captions or click ⭐ to set as event cover photo
+            </span>
+          )}
+        </div>
+
+        {photos.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 30, background: '#0D1117', borderRadius: 8, color: '#8B949E' }}>
+            No photos in this event group yet. Use the upload box above to add photos!
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: 12, maxHeight: '420px', overflowY: 'auto', paddingRight: 4 }}>
+            {photos.map((p, idx) => {
+              const isCover = event.coverImage === p.image;
+              return (
+                <div key={idx} style={{ background: '#161B22', borderRadius: 8, overflow: 'hidden', border: isCover ? '2px solid #F59E0B' : '1px solid #30363D', position: 'relative' }}>
+                  <div style={{ height: 110, position: 'relative', background: '#000' }}>
+                    <img src={getEmbedImageUrl(p.image)} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    {isCover && (
+                      <span style={{ position: 'absolute', top: 4, left: 4, background: '#F59E0B', color: '#000', fontSize: 10, fontWeight: 800, padding: '2px 6px', borderRadius: 4 }}>
+                        COVER
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(idx)}
+                      style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(220,38,38,0.85)', color: '#fff', border: 'none', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                      title="Remove from event"
+                    >
+                      <FiX size={12} />
+                    </button>
+                  </div>
+                  <div style={{ padding: 8 }}>
+                    <input
+                      style={{ width: '100%', background: '#0D1117', border: '1px solid #30363D', color: '#E6EDF3', fontSize: 11, padding: '4px 6px', borderRadius: 4 }}
+                      value={p.title || ''}
+                      placeholder="Caption..."
+                      onChange={(e) => updatePhotoTitle(idx, e.target.value)}
+                    />
+                    {!isCover && (
+                      <button
+                        type="button"
+                        onClick={() => setAsCover(p)}
+                        style={{ marginTop: 6, width: '100%', background: 'transparent', border: '1px solid #30363D', color: '#8B949E', fontSize: 10, padding: '2px 4px', borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+                      >
+                        ⭐ Set as Cover
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Modal Footer */}
+      <div className="ap-modal-foot" style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, borderTop: '1px solid #30363D', paddingTop: 14 }}>
+        <button className="ap-btn-secondary" onClick={onClose}>Close</button>
+        <button className="ap-btn-primary" onClick={() => onSavePhotos(event.id, photos)}>
+          <FiSave /> Save All {photos.length} Photos to Event
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+// ─── Blog Rich Content Editor with Media Anywhere ────────────────────────────
+function BlogContentEditor({ initialContent, onChange }) {
+  const [content, setContent] = useState(initialContent || '');
+  const [activeTab, setActiveTab] = useState('write');
+  const [activeModal, setActiveModal] = useState(null);
+  const textareaRef = useRef(null);
+
+  useEffect(() => {
+    if (onChange) onChange(content);
+  }, [content, onChange]);
+
+  const insertAtCursor = (html) => {
+    const textarea = document.getElementById('bp-content') || textareaRef.current;
+    if (!textarea) {
+      setContent(prev => (prev ? prev + '\n\n' + html : html));
+      return;
+    }
+    const start = textarea.selectionStart || 0;
+    const end = textarea.selectionEnd || 0;
+    const current = textarea.value;
+    const updated = current.substring(0, start) + '\n\n' + html + '\n\n' + current.substring(end);
+    setContent(updated);
+    textarea.value = updated;
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + html.length + 4, start + html.length + 4);
+    }, 50);
+  };
+
+  // Image insertion
+  const [imgUrl, setImgUrl] = useState('');
+  const [imgCaption, setImgCaption] = useState('');
+  const [imgAlign, setImgAlign] = useState('center');
+  const [imgProcessing, setImgProcessing] = useState(false);
+  const imgFileRef = useRef(null);
+
+  const handleLocalImgUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setImgProcessing(true);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          let w = img.width, h = img.height;
+          const MAX = 900;
+          if (w > h ? w > MAX : h > MAX) {
+            if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+            else { w = Math.round(w * MAX / h); h = MAX; }
+          }
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          const data = canvas.toDataURL('image/jpeg', 0.72);
+          setImgUrl(data);
+          if (!imgCaption) {
+            setImgCaption(file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '));
+          }
+        } catch (err) {
+          console.error(err);
+        } finally {
+          setImgProcessing(false);
+        }
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const confirmInsertImage = () => {
+    if (!imgUrl.trim()) return;
+    const alignClass = imgAlign === 'full' ? 'blog-figure-full' : (imgAlign === 'left' ? 'blog-figure-left' : (imgAlign === 'right' ? 'blog-figure-right' : 'blog-figure-center'));
+    const captionHtml = imgCaption.trim() ? `\n  <figcaption>${imgCaption.trim()}</figcaption>` : '';
+    const figureHtml = `<figure class="blog-figure ${alignClass}">\n  <img src="${imgUrl.trim()}" alt="${imgCaption.trim() || 'Blog photo'}" />${captionHtml}\n</figure>`;
+    insertAtCursor(figureHtml);
+    setImgUrl('');
+    setImgCaption('');
+    setActiveModal(null);
+  };
+
+  // Video insertion
+  const [videoUrl, setVideoUrl] = useState('');
+  const [videoCaption, setVideoCaption] = useState('');
+  const [videoAspect, setVideoAspect] = useState('16/9');
+
+  const confirmInsertVideo = () => {
+    const trimmed = (videoUrl || '').trim();
+    if (!trimmed) return;
+    const isYt = trimmed.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    const isShorts = videoAspect === 'shorts' || trimmed.includes('/shorts/');
+    let embedSnippet = '';
+
+    if (isYt && isYt[1]) {
+      const embedSrc = `https://www.youtube.com/embed/${isYt[1]}`;
+      embedSnippet = `<div class="blog-video-wrap${isShorts ? ' shorts' : ''}">\n  <iframe src="${embedSrc}" title="${videoCaption.trim() || 'Video'}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>\n</div>`;
+    } else {
+      embedSnippet = `<div class="blog-video-wrap${isShorts ? ' shorts' : ''}">\n  <video src="${trimmed}" controls playsinline preload="metadata"></video>\n</div>`;
+    }
+
+    if (videoCaption.trim()) {
+      embedSnippet += `\n<p class="text-xs text-center text-slate-500 italic mt-1">${videoCaption.trim()}</p>`;
+    }
+
+    insertAtCursor(embedSnippet);
+    setVideoUrl('');
+    setVideoCaption('');
+    setActiveModal(null);
+  };
+
+  // Grid insertion
+  const [gridImages, setGridImages] = useState([
+    { url: '', caption: '' },
+    { url: '', caption: '' }
+  ]);
+
+  const confirmInsertGrid = () => {
+    const valid = gridImages.filter(g => g.url && g.url.trim());
+    if (!valid.length) return;
+    const colClass = valid.length === 2 ? 'blog-gallery-grid-2' : (valid.length === 4 ? 'blog-gallery-grid-4' : 'blog-gallery-grid-3');
+    const itemsHtml = valid.map(g => `  <figure class="blog-figure">\n    <img src="${g.url.trim()}" alt="${g.caption || 'Photo'}" />\n    ${g.caption ? `<figcaption>${g.caption}</figcaption>` : ''}\n  </figure>`).join('\n');
+    const gridSnippet = `<div class="blog-gallery-grid ${colClass}">\n${itemsHtml}\n</div>`;
+    insertAtCursor(gridSnippet);
+    setActiveModal(null);
+  };
+
+  const wrapSelection = (prefix, suffix, defaultText = 'text') => {
+    const textarea = document.getElementById('bp-content') || textareaRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart || 0;
+    const end = textarea.selectionEnd || 0;
+    const current = textarea.value;
+    const selected = current.substring(start, end) || defaultText;
+    const updated = current.substring(0, start) + prefix + selected + suffix + current.substring(end);
+    setContent(updated);
+    textarea.value = updated;
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + prefix.length, start + prefix.length + selected.length);
+    }, 50);
+  };
+
+  return (
+    <div style={{ marginTop: 8 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button
+            type="button"
+            className={`ap-btn ${activeTab === 'write' ? 'ap-btn-primary' : 'ap-btn-secondary'}`}
+            onClick={() => setActiveTab('write')}
+            style={{ fontSize: 12, padding: '6px 14px' }}
+          >
+            ✏️ Write & Insert
+          </button>
+          <button
+            type="button"
+            className={`ap-btn ${activeTab === 'preview' ? 'ap-btn-primary' : 'ap-btn-secondary'}`}
+            onClick={() => {
+              const t = document.getElementById('bp-content');
+              if (t) setContent(t.value);
+              setActiveTab('preview');
+            }}
+            style={{ fontSize: 12, padding: '6px 14px' }}
+          >
+            👁️ Live Preview
+          </button>
+        </div>
+
+        {activeTab === 'write' && (
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="ap-btn"
+              style={{ background: '#2563EB', color: '#fff', border: 'none', fontSize: 12, padding: '5px 12px', display: 'flex', alignItems: 'center', gap: 5 }}
+              onClick={() => setActiveModal('image')}
+            >
+              <FiCamera size={13} /> + Photo Anywhere
+            </button>
+            <button
+              type="button"
+              className="ap-btn"
+              style={{ background: '#DC2626', color: '#fff', border: 'none', fontSize: 12, padding: '5px 12px', display: 'flex', alignItems: 'center', gap: 5 }}
+              onClick={() => setActiveModal('video')}
+            >
+              <FiVideo size={13} /> + Video Anywhere
+            </button>
+            <button
+              type="button"
+              className="ap-btn"
+              style={{ background: '#7C3AED', color: '#fff', border: 'none', fontSize: 12, padding: '5px 12px', display: 'flex', alignItems: 'center', gap: 5 }}
+              onClick={() => setActiveModal('grid')}
+            >
+              <FiLayers size={13} /> + Photo Grid
+            </button>
+          </div>
+        )}
+      </div>
+
+      {activeTab === 'write' ? (
+        <div>
+          <div style={{ display: 'flex', gap: 4, background: '#161B22', padding: '6px 8px', borderRadius: '8px 8px 0 0', border: '1px solid #30363D', borderBottom: 'none', flexWrap: 'wrap' }}>
+            <button type="button" onClick={() => wrapSelection('<h2>', '</h2>', 'Heading 2')} className="ap-btn-secondary" style={{ padding: '3px 8px', fontSize: 11 }}>H2</button>
+            <button type="button" onClick={() => wrapSelection('<h3>', '</h3>', 'Heading 3')} className="ap-btn-secondary" style={{ padding: '3px 8px', fontSize: 11 }}>H3</button>
+            <button type="button" onClick={() => wrapSelection('<strong>', '</strong>', 'bold text')} className="ap-btn-secondary" style={{ padding: '3px 8px', fontSize: 11, fontWeight: 'bold' }}>B</button>
+            <button type="button" onClick={() => wrapSelection('<em>', '</em>', 'italic text')} className="ap-btn-secondary" style={{ padding: '3px 8px', fontSize: 11, fontStyle: 'italic' }}>I</button>
+            <button type="button" onClick={() => wrapSelection('<p>', '</p>', 'Paragraph text')} className="ap-btn-secondary" style={{ padding: '3px 8px', fontSize: 11 }}>P</button>
+            <button type="button" onClick={() => insertAtCursor('<ul>\n  <li>Item 1</li>\n  <li>Item 2</li>\n</ul>')} className="ap-btn-secondary" style={{ padding: '3px 8px', fontSize: 11 }}>• List</button>
+            <button type="button" onClick={() => insertAtCursor('<div class="blog-callout blog-callout-tip">\n  <strong>Tip:</strong> Callout information box\n</div>')} className="ap-btn-secondary" style={{ padding: '3px 8px', fontSize: 11 }}>💡 Tip Box</button>
+            <button type="button" onClick={() => insertAtCursor('<blockquote>Quote or testimonial snippet</blockquote>')} className="ap-btn-secondary" style={{ padding: '3px 8px', fontSize: 11 }}>“ Quote</button>
+          </div>
+
+          <textarea
+            ref={textareaRef}
+            id="bp-content"
+            className="ap-input"
+            rows={14}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Type your blog post content here... Use '+ Photo Anywhere' or '+ Video Anywhere' above to embed media right into the text!"
+            style={{ fontFamily: 'monospace', fontSize: 13, borderRadius: '0 0 8px 8px' }}
+          />
+        </div>
+      ) : (
+        <div style={{ background: '#FFFFFF', color: '#334155', borderRadius: 8, padding: 24, minHeight: 320, border: '1px solid #CBD5E1', maxHeight: '520px', overflowY: 'auto' }}>
+          <div className="blog-post-content prose prose-slate max-w-none" dangerouslySetInnerHTML={{ __html: content || '<p style="color:#94a3b8; font-style:italic;">No content written yet. Switch to "Write & Insert" to add text, photos, and videos!</p>' }} />
+        </div>
+      )}
+
+      {/* Modal: Insert Photo Anywhere */}
+      {activeModal === 'image' && (
+        <Modal title="Insert Photo into Blog Post" onClose={() => setActiveModal(null)}>
+          <div className="ap-field">
+            <label className="ap-label">Photo Source</label>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+              <input
+                className="ap-input"
+                placeholder="Image URL (https://... or /images/...)"
+                value={imgUrl}
+                onChange={e => setImgUrl(e.target.value)}
+                style={{ flex: 1 }}
+              />
+              <button
+                type="button"
+                className="ap-btn-secondary"
+                onClick={() => imgFileRef.current?.click()}
+                disabled={imgProcessing}
+                style={{ whiteSpace: 'nowrap' }}
+              >
+                {imgProcessing ? 'Processing...' : '📁 Upload File'}
+              </button>
+              <input ref={imgFileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleLocalImgUpload} />
+            </div>
+            {imgUrl && (
+              <div style={{ height: 140, borderRadius: 8, overflow: 'hidden', background: '#000', marginBottom: 12 }}>
+                <img src={getEmbedImageUrl(imgUrl)} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              </div>
+            )}
+          </div>
+
+          <div className="ap-field">
+            <label className="ap-label">Photo Caption (shown below image)</label>
+            <input
+              className="ap-input"
+              placeholder="e.g. Students celebrating 10th board results"
+              value={imgCaption}
+              onChange={e => setImgCaption(e.target.value)}
+            />
+          </div>
+
+          <div className="ap-field" style={{ marginTop: 12 }}>
+            <label className="ap-label">Layout & Alignment</label>
+            <select
+              className="ap-input"
+              value={imgAlign}
+              onChange={e => setImgAlign(e.target.value)}
+            >
+              <option value="center">Centered with Caption (Standard)</option>
+              <option value="full">Full Width Banner</option>
+              <option value="left">Float Left (Text wraps around photo on the right)</option>
+              <option value="right">Float Right (Text wraps around photo on the left)</option>
+            </select>
+          </div>
+
+          <div className="ap-modal-foot" style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+            <button className="ap-btn-secondary" onClick={() => setActiveModal(null)}>Cancel</button>
+            <button className="ap-btn-primary" onClick={confirmInsertImage} disabled={!imgUrl.trim()}>
+              <FiPlus /> Insert Photo at Cursor
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal: Insert Video Anywhere */}
+      {activeModal === 'video' && (
+        <Modal title="Insert Video into Blog Post" onClose={() => setActiveModal(null)}>
+          <div className="ap-field">
+            <label className="ap-label">Video URL (YouTube, Vimeo, or direct MP4 link) *</label>
+            <input
+              className="ap-input"
+              placeholder="e.g. https://www.youtube.com/watch?v=2Vv-BfVoq4g or /images/campus-tour.mp4"
+              value={videoUrl}
+              onChange={e => setVideoUrl(e.target.value)}
+            />
+          </div>
+
+          <div className="ap-field" style={{ marginTop: 12 }}>
+            <label className="ap-label">Video Title / Caption (Optional)</label>
+            <input
+              className="ap-input"
+              placeholder="e.g. Campus Tour & Interactive Classrooms"
+              value={videoCaption}
+              onChange={e => setVideoCaption(e.target.value)}
+            />
+          </div>
+
+          <div className="ap-field" style={{ marginTop: 12 }}>
+            <label className="ap-label">Video Format / Aspect Ratio</label>
+            <select
+              className="ap-input"
+              value={videoAspect}
+              onChange={e => setVideoAspect(e.target.value)}
+            >
+              <option value="16/9">16:9 Standard Landscape (Regular Video)</option>
+              <option value="shorts">9:16 Vertical (YouTube Shorts / Reels)</option>
+            </select>
+          </div>
+
+          <div className="ap-modal-foot" style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+            <button className="ap-btn-secondary" onClick={() => setActiveModal(null)}>Cancel</button>
+            <button className="ap-btn-primary" onClick={confirmInsertVideo} disabled={!videoUrl.trim()}>
+              <FiVideo /> Insert Video Player at Cursor
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal: Insert Photo Grid */}
+      {activeModal === 'grid' && (
+        <Modal title="Insert Photo Grid into Blog Post" onClose={() => setActiveModal(null)}>
+          <p style={{ color: '#8B949E', fontSize: 13, marginBottom: 14 }}>
+            Add 2 to 4 photos to show side-by-side in a responsive photo grid inside the post.
+          </p>
+
+          {gridImages.map((g, idx) => (
+            <div key={idx} style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+              <input
+                className="ap-input"
+                style={{ flex: 2 }}
+                placeholder={`Photo #${idx + 1} Image URL`}
+                value={g.url}
+                onChange={e => {
+                  const u = [...gridImages];
+                  u[idx].url = e.target.value;
+                  setGridImages(u);
+                }}
+              />
+              <input
+                className="ap-input"
+                style={{ flex: 1 }}
+                placeholder="Caption"
+                value={g.caption}
+                onChange={e => {
+                  const u = [...gridImages];
+                  u[idx].caption = e.target.value;
+                  setGridImages(u);
+                }}
+              />
+            </div>
+          ))}
+
+          {gridImages.length < 4 && (
+            <button
+              type="button"
+              className="ap-btn-secondary"
+              onClick={() => setGridImages(prev => [...prev, { url: '', caption: '' }])}
+              style={{ fontSize: 12, padding: '4px 10px', marginTop: 4 }}
+            >
+              + Add Another Photo to Grid
+            </button>
+          )}
+
+          <div className="ap-modal-foot" style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+            <button className="ap-btn-secondary" onClick={() => setActiveModal(null)}>Cancel</button>
+            <button className="ap-btn-primary" onClick={confirmInsertGrid}>
+              <FiPlus /> Insert Photo Grid at Cursor
+            </button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+function BlogPostEditForm({ post, isNew, onSave, onCancel }) {
+  const BLOG_CATS = ['General', 'Education Tips', 'Exam Guides', 'Results', 'Events', 'Announcements'];
+  const [title, setTitle] = useState(post.title || '');
+  const [slug, setSlug] = useState(post.slug || '');
+  const [category, setCategory] = useState(post.category || 'General');
+  const [status, setStatus] = useState(post.status || 'draft');
+  const [featuredImage, setFeaturedImage] = useState(post.featuredImage || '');
+  const [author, setAuthor] = useState(post.author || 'Noble Education');
+  const [readTimeMinutes, setReadTimeMinutes] = useState(post.readTimeMinutes || 3);
+  const [excerpt, setExcerpt] = useState(post.excerpt || '');
+  const [content, setContent] = useState(post.content || '');
+  const [seoTitle, setSeoTitle] = useState(post.seo?.metaTitle || '');
+  const [seoDesc, setSeoDesc] = useState(post.seo?.metaDescription || '');
+  const featImgFileRef = useRef(null);
+
+  const handleFeatImgUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          let w = img.width, h = img.height;
+          const MAX = 900;
+          if (w > h ? w > MAX : h > MAX) {
+            if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+            else { w = Math.round(w * MAX / h); h = MAX; }
+          }
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          setFeaturedImage(canvas.toDataURL('image/jpeg', 0.72));
+        } catch (err) { console.error(err); }
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSave = () => {
+    if (!title.trim()) {
+      alert('Title is required');
+      return;
+    }
+    const finalContent = document.getElementById('bp-content')?.value || content;
+    const draft = {
+      ...post,
+      _index: isNew ? undefined : post._index,
+      title: title.trim(),
+      slug: slug.trim() || slugify(title.trim()),
+      category,
+      status,
+      featuredImage: featuredImage.trim(),
+      author: author.trim(),
+      readTimeMinutes: parseInt(readTimeMinutes) || 3,
+      excerpt: excerpt.trim(),
+      content: finalContent,
+      seo: {
+        metaTitle: seoTitle.trim() || title.trim(),
+        metaDescription: seoDesc.trim()
+      }
+    };
+    onSave(draft);
+  };
+
+  return (
+    <div style={{ maxWidth: 880, padding: '0 0 40px' }}>
+      <button onClick={onCancel} className="ap-btn-secondary" style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <FiArrowLeft size={14} /> Back to Posts
+      </button>
+      <SectionHeader
+        title={isNew ? 'New Blog Post' : `Edit: ${title || 'Post'}`}
+        subtitle="Write articles with embedded photos and videos anywhere in the content."
+      />
+      <div className="ap-card" style={{ marginTop: 16 }}>
+        <div className="ap-form-grid">
+          <div className="ap-form-col">
+            <label className="ap-label">Title *</label>
+            <input className="ap-input" value={title} onChange={e => setTitle(e.target.value)} placeholder="Post title..." />
+          </div>
+          <div className="ap-form-col">
+            <label className="ap-label">Slug (URL)</label>
+            <input className="ap-input" value={slug} onChange={e => setSlug(e.target.value)} placeholder="auto-generated-from-title" />
+          </div>
+          <div className="ap-form-col">
+            <label className="ap-label">Category</label>
+            <select className="ap-input" value={category} onChange={e => setCategory(e.target.value)}>
+              {BLOG_CATS.map(c => <option key={c}>{c}</option>)}
+            </select>
+          </div>
+          <div className="ap-form-col">
+            <label className="ap-label">Status</label>
+            <select className="ap-input" value={status} onChange={e => setStatus(e.target.value)}>
+              <option value="draft">Draft</option>
+              <option value="published">Published</option>
+            </select>
+          </div>
+          <div className="ap-form-col" style={{ gridColumn: '1/-1' }}>
+            <label className="ap-label">Featured Header Image</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                className="ap-input"
+                value={featuredImage}
+                onChange={e => setFeaturedImage(e.target.value)}
+                placeholder="https://... or /images/..."
+                style={{ flex: 1 }}
+              />
+              <button
+                type="button"
+                className="ap-btn-secondary"
+                onClick={() => featImgFileRef.current?.click()}
+                style={{ whiteSpace: 'nowrap' }}
+              >
+                📁 Upload Header
+              </button>
+              <input ref={featImgFileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFeatImgUpload} />
+            </div>
+            {featuredImage && (
+              <div style={{ marginTop: 8, height: 120, borderRadius: 8, overflow: 'hidden', background: '#000' }}>
+                <img src={getEmbedImageUrl(featuredImage)} alt="Featured" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+            )}
+          </div>
+          <div className="ap-form-col">
+            <label className="ap-label">Author</label>
+            <input className="ap-input" value={author} onChange={e => setAuthor(e.target.value)} />
+          </div>
+          <div className="ap-form-col">
+            <label className="ap-label">Read Time (minutes)</label>
+            <input className="ap-input" type="number" min="1" max="60" value={readTimeMinutes} onChange={e => setReadTimeMinutes(e.target.value)} />
+          </div>
+          <div className="ap-form-col" style={{ gridColumn: '1/-1' }}>
+            <label className="ap-label">Excerpt (shown in card listing)</label>
+            <textarea className="ap-input" rows={2} value={excerpt} onChange={e => setExcerpt(e.target.value)} placeholder="Short summary of the post..." />
+          </div>
+
+          {/* Full Rich Media Blog Content Editor */}
+          <div className="ap-form-col" style={{ gridColumn: '1/-1' }}>
+            <label className="ap-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Post Content (Insert Photos & Videos Anywhere)</span>
+              <span style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 'normal' }}>
+                Use + Photo and + Video buttons below to position media between paragraphs
+              </span>
+            </label>
+            <BlogContentEditor initialContent={content} onChange={setContent} />
+          </div>
+
+          <div className="ap-form-col">
+            <label className="ap-label">SEO Meta Title</label>
+            <input className="ap-input" value={seoTitle} onChange={e => setSeoTitle(e.target.value)} />
+          </div>
+          <div className="ap-form-col">
+            <label className="ap-label">SEO Meta Description</label>
+            <input className="ap-input" value={seoDesc} onChange={e => setSeoDesc(e.target.value)} />
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 12, marginTop: 24, borderTop: '1px solid #30363D', paddingTop: 16 }}>
+          <button className="ap-btn-primary" onClick={handleSave}>
+            <FiSave size={14} /> Save Post
+          </button>
+          <button className="ap-btn-secondary" onClick={onCancel}>Cancel</button>
+        </div>
+      </div>
     </div>
   );
 }

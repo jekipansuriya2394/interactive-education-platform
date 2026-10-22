@@ -1,0 +1,40 @@
+[
+  {
+    "id": "evt-felicitation-2026",
+    "name": "Annual Student Felicitation & Award Ceremony",
+    "date": "2026-08-15",
+    "category": "Events",
+    "coverImage": "/images/gallery-event-students.jpg",
+    "description": "Grand annual celebration honoring SSC, HSC, GUJCET & DDCET top academic rankers and award winners.",
+    "photos": [
+      { "id": "ge1", "title": "Event Welcome Reception Desk", "image": "/images/gallery-event-welcome.jpg" },
+      { "id": "ge2", "title": "Inaugural Lamp Lighting Ceremony", "image": "/images/gallery-event-lamp.jpg" },
+      { "id": "ge3", "title": "VIP Dignitaries & Guests on Stage", "image": "/images/gallery-event-vips.jpg" },
+      { "id": "ge4", "title": "Parent & Student Audience Hall", "image": "/images/gallery-event-audience.jpg" },
+      { "id": "ge5", "title": "Student Felicitation Ceremony", "image": "/images/gallery-event-student1.jpg" },
+      { "id": "ge6", "title": "Class Toppers Celebration Group", "image": "/images/gallery-event-students.jpg" },
+      { "id": "ge7", "title": "Academic Achiever Portrait", "image": "/images/gallery-event-student2.jpg" },
+      { "id": "ge8", "title": "Felicitation Group Photo (Boys)", "image": "/images/gallery-event-boys.jpg" },
+      { "id": "ge9", "title": "Felicitation Group Photo (Girls)", "image": "/images/gallery-event-girls.jpg" },
+      { "id": "ge10", "title": "VIP Felicitation & Award Stage", "image": "/images/gallery-event-felicitation.jpg" },
+      { "id": "ge11", "title": "Staff Coordinator Recognition", "image": "/images/gallery-event-felicitation-staff.jpg" },
+      { "id": "ge12", "title": "Topper Felicitation (Saree)", "image": "/images/gallery-event-felicitation-girl1.jpg" },
+      { "id": "ge13", "title": "Student Podium Speech", "image": "/images/gallery-event-speech.jpg" },
+      { "id": "ge14", "title": "Students Stage Dance Performance", "image": "/images/gallery-event-dance.jpg" },
+      { "id": "ge15", "title": "Topper Felicitation (Dress)", "image": "/images/gallery-event-felicitation-girl2.jpg" }
+    ]
+  },
+  {
+    "id": "evt-orientation-2026",
+    "name": "DDCET & Degree Engineering Orientation Seminar",
+    "date": "2026-07-10",
+    "category": "Seminars",
+    "coverImage": "/images/bg-contact-hero.png",
+    "description": "Comprehensive guidance on Gujarat engineering admissions, syllabus breakdown, and entrance strategy.",
+    "photos": [
+      { "id": "ge16", "title": "Parent Counseling Career Seminar", "image": "/images/bg-about-hero.png" },
+      { "id": "ge17", "title": "DDCET Preparation Class Orientation", "image": "/images/bg-contact-hero.png" },
+      { "id": "ge18", "title": "ACPC Online Choice Filling Workshop", "image": "/images/bg-admission-hero.png" }
+    ]
+  }
+]
