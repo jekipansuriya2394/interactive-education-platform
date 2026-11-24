@@ -5305,12 +5305,16 @@ function FounderModal({ item, onSave, onClose }) {
         <div>
           <label className="ap-label">Founder Photo *</label>
           <UniversalMediaInput
-            label=""
+            image={form.image}
             value={form.image}
-            onChange={(val) => setForm({ ...form, image: val })}
+            onChange={(val) => {
+              const img = typeof val === 'string' ? val : (val?.image || '');
+              setForm(p => ({ ...p, image: img }));
+            }}
             folder="faculty"
             mediaType="image"
             aspectRatio="3/4"
+            allowVideo={false}
           />
         </div>
 
@@ -5497,6 +5501,13 @@ function detectUrlType(url) {
 // ─── URL Input sub-component ──────────────────────────────────────────────────
 function UrlImageInput({ value, onChange }) {
   const [raw, setRaw] = useState(value || '');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    setRaw(value || '');
+  }, [value]);
+
   const type = detectUrlType(raw);
   const converted = convertToEmbedUrl(raw);
   const isConverted = converted !== raw && raw.length > 0;
@@ -5507,6 +5518,42 @@ function UrlImageInput({ value, onChange }) {
     onChange(convertToEmbedUrl(v));
   };
 
+  const handleFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (e.target) e.target.value = '';
+    if (!file) return;
+    setIsProcessing(true);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          let w = img.width, h = img.height;
+          const MAX = 800;
+          if (w > h ? w > MAX : h > MAX) {
+            if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+            else { w = Math.round(w * MAX / h); h = MAX; }
+          }
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          const data = canvas.toDataURL('image/jpeg', 0.70);
+          setRaw(data);
+          onChange?.(data);
+        } catch (err) {
+          console.error(err);
+        } finally {
+          setIsProcessing(false);
+        }
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
   const TYPE_LABELS = {
     googledrive: { label: '✅ Google Drive detected — link auto-converted!', color: '#10B981', bg: '#064E3B22' },
     dropbox:     { label: '✅ Dropbox detected — link auto-converted!', color: '#10B981', bg: '#064E3B22' },
@@ -5515,16 +5562,35 @@ function UrlImageInput({ value, onChange }) {
     unknown:     { label: '⚠️ Unrecognised URL — preview below to check if it loads', color: '#F59E0B', bg: '#78350F22' },
   };
 
-  const badge = raw.length > 10 && type ? TYPE_LABELS[type] : null;
+  const badge = raw.length > 10 && type && !raw.startsWith('data:') ? TYPE_LABELS[type] : null;
 
   return (
     <div style={{ marginTop: 12 }}>
-      <input
-        className="ap-input"
-        value={raw}
-        onChange={handleChange}
-        placeholder="Paste any image URL — Google Drive, Dropbox, Imgur, direct .jpg link…"
-      />
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input
+          className="ap-input"
+          value={raw}
+          onChange={handleChange}
+          placeholder="Paste image URL (Drive, Dropbox, Imgur, direct link)..."
+          style={{ flex: 1 }}
+        />
+        <button
+          type="button"
+          className="ap-btn-secondary"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isProcessing}
+          style={{ whiteSpace: 'nowrap' }}
+        >
+          {isProcessing ? 'Processing...' : '📁 Upload Photo'}
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handleFileUpload}
+        />
+      </div>
 
       {badge && (
         <div style={{ marginTop: 8, padding: '8px 12px', borderRadius: 10, background: badge.bg, border: `1px solid ${badge.color}33`, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -5532,7 +5598,7 @@ function UrlImageInput({ value, onChange }) {
         </div>
       )}
 
-      {isConverted && (
+      {isConverted && !raw.startsWith('data:') && (
         <details style={{ marginTop: 6 }}>
           <summary style={{ color: '#6B7280', fontSize: 11, cursor: 'pointer' }}>View converted embed URL</summary>
           <code style={{ display: 'block', fontSize: 10, wordBreak: 'break-all', color: '#9CA3AF', background: '#161B22', padding: '6px 10px', borderRadius: 8, marginTop: 4 }}>{converted}</code>
@@ -5540,7 +5606,7 @@ function UrlImageInput({ value, onChange }) {
       )}
 
       <p style={{ color: '#6B7280', fontSize: 11, marginTop: 8, lineHeight: 1.6 }}>
-        ✅ Supported: <strong style={{ color: '#9CA3AF' }}>Google Drive</strong>, Dropbox, OneDrive, Imgur, Imgbb, Cloudinary, PostImages, direct .jpg/.png links<br />
+        ✅ Supported: <strong style={{ color: '#9CA3AF' }}>Google Drive</strong>, Dropbox, OneDrive, Imgur, Imgbb, Cloudinary, direct .jpg/.png links or upload from device<br />
         ⚠️ Google Drive: file must be shared as <strong style={{ color: '#9CA3AF' }}>"Anyone with the link"</strong>
       </p>
     </div>
@@ -5550,15 +5616,17 @@ function UrlImageInput({ value, onChange }) {
 // ─── Universal Media Input (Photo / Video - File or URL with Auto Thumbnails) ─
 function UniversalMediaInput({
   image = '',
+  value = '',
   videoUrl = '',
   mediaType = 'image',
   aspectRatio = 'auto',
   onChange,
   allowVideo = true
 }) {
-  const isInitialVid = mediaType === 'video' || isVideoMedia({ videoUrl, image }) || !!videoUrl;
+  const activeImage = (typeof image === 'string' && image) || (typeof value === 'string' && value) || (value && value.image) || '';
+  const isInitialVid = allowVideo && (mediaType === 'video' || isVideoMedia({ videoUrl, image: activeImage }) || !!videoUrl);
   const [currentMediaType, setCurrentMediaType] = useState(isInitialVid ? 'video' : 'image');
-  const [photoUploadMode, setPhotoUploadMode] = useState(image && image.startsWith('data:') ? 'file' : 'url');
+  const [photoUploadMode, setPhotoUploadMode] = useState(activeImage && activeImage.startsWith('data:') ? 'file' : 'url');
   const [videoUploadMode, setVideoUploadMode] = useState(videoUrl && videoUrl.startsWith('data:') ? 'file' : 'url');
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -5566,16 +5634,17 @@ function UniversalMediaInput({
   const videoFileRef = useRef(null);
 
   useEffect(() => {
-    if (mediaType === 'video' || (!mediaType && videoUrl)) {
+    if (allowVideo && (mediaType === 'video' || (!mediaType && videoUrl))) {
       setCurrentMediaType('video');
-    } else if (mediaType === 'image') {
+    } else {
       setCurrentMediaType('image');
     }
-  }, [mediaType, videoUrl]);
+  }, [mediaType, videoUrl, allowVideo]);
 
   // Image Upload handler
   const handlePhotoUpload = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
+    if (e.target) e.target.value = '';
     if (!file) return;
     setIsProcessing(true);
     setErrorMsg('');
@@ -5586,15 +5655,18 @@ function UniversalMediaInput({
         try {
           const canvas = document.createElement('canvas');
           let w = img.width, h = img.height;
-          const MAX = 900;
+          const MAX = 800;
           if (w > h ? w > MAX : h > MAX) {
             if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
             else { w = Math.round(w * MAX / h); h = MAX; }
           }
           canvas.width = w;
           canvas.height = h;
-          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          const data = canvas.toDataURL('image/jpeg', 0.75);
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          const data = canvas.toDataURL('image/jpeg', 0.70);
           onChange?.({
             image: data,
             videoUrl: '',
@@ -5622,7 +5694,8 @@ function UniversalMediaInput({
 
   // Video Upload Handler
   const handleVideoUpload = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
+    if (e.target) e.target.value = '';
     if (!file) return;
 
     const sizeMb = file.size / (1024 * 1024);
@@ -5662,6 +5735,8 @@ function UniversalMediaInput({
             canvas.width = w;
             canvas.height = h;
             const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, w, h);
             ctx.drawImage(tempVideo, 0, 0, w, h);
             const thumbData = canvas.toDataURL('image/jpeg', 0.70);
 
@@ -5673,7 +5748,7 @@ function UniversalMediaInput({
             });
           } catch {
             onChange?.({
-              image: image || '',
+              image: activeImage || '',
               videoUrl: videoData,
               mediaType: 'video',
               aspectRatio: aspectRatio || 'auto'
@@ -5698,7 +5773,7 @@ function UniversalMediaInput({
 
         tempVideo.onerror = () => {
           onChange?.({
-            image: image || '',
+            image: activeImage || '',
             videoUrl: videoData,
             mediaType: 'video',
             aspectRatio: aspectRatio || 'auto'
@@ -5711,7 +5786,7 @@ function UniversalMediaInput({
         }, 1500);
       } catch {
         onChange?.({
-          image: image || '',
+          image: activeImage || '',
           videoUrl: videoData,
           mediaType: 'video',
           aspectRatio: aspectRatio || 'auto'
@@ -5731,12 +5806,12 @@ function UniversalMediaInput({
     const trimmed = (url || '').trim();
     const isShorts = trimmed.includes('/shorts/');
     const ytMatch = trimmed.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-    let thumb = image;
+    let thumb = activeImage;
     if (ytMatch && ytMatch[1]) {
       thumb = `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
     }
     onChange?.({
-      image: thumb || image,
+      image: thumb || activeImage,
       videoUrl: trimmed,
       mediaType: 'video',
       aspectRatio: isShorts ? '9/16' : (aspectRatio || 'auto')
@@ -5765,7 +5840,7 @@ function UniversalMediaInput({
               onClick={() => {
                 setCurrentMediaType('image');
                 onChange?.({
-                  image: image,
+                  image: activeImage,
                   videoUrl: '',
                   mediaType: 'image',
                   aspectRatio: 'auto'
@@ -5781,7 +5856,7 @@ function UniversalMediaInput({
               onClick={() => {
                 setCurrentMediaType('video');
                 onChange?.({
-                  image: image,
+                  image: activeImage,
                   videoUrl: videoUrl,
                   mediaType: 'video',
                   aspectRatio: aspectRatio || 'auto'
@@ -5841,16 +5916,16 @@ function UniversalMediaInput({
             </div>
           ) : (
             <UrlImageInput
-              value={image}
+              value={activeImage}
               onChange={handlePhotoUrlChange}
             />
           )}
 
           {/* Photo Live Preview */}
-          {image && (
+          {activeImage && (
             <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 12, background: '#161B22', padding: 8, borderRadius: 10, border: '1px solid #30363D' }}>
               <img
-                src={getEmbedImageUrl(image)}
+                src={getEmbedImageUrl(activeImage)}
                 alt="Preview"
                 style={{ height: 60, width: 90, borderRadius: 8, objectFit: 'cover' }}
                 onError={handleImageError}
@@ -5858,7 +5933,7 @@ function UniversalMediaInput({
               <div style={{ flex: 1, overflow: 'hidden' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: '#F0F6FC' }}>Photo Attached</div>
                 <div style={{ fontSize: 11, color: '#9CA3AF', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', marginTop: 2 }}>
-                  {image.startsWith('data:') ? 'Custom uploaded device photo' : image}
+                  {activeImage.startsWith('data:') ? 'Custom uploaded device photo' : activeImage}
                 </div>
               </div>
               <button
@@ -6051,7 +6126,8 @@ function EventModal({ item, onSave, onClose }) {
   const fileRef = useRef(null);
 
   const handleCoverUpload = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
+    if (e.target) e.target.value = '';
     if (!file) return;
     setIsProcessing(true);
     const reader = new FileReader();
@@ -6061,14 +6137,17 @@ function EventModal({ item, onSave, onClose }) {
         try {
           const canvas = document.createElement('canvas');
           let w = img.width, h = img.height;
-          const MAX = 900;
+          const MAX = 800;
           if (w > h ? w > MAX : h > MAX) {
             if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
             else { w = Math.round(w * MAX / h); h = MAX; }
           }
           canvas.width = w; canvas.height = h;
-          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          const data = canvas.toDataURL('image/jpeg', 0.72);
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          const data = canvas.toDataURL('image/jpeg', 0.70);
           setForm(p => ({ ...p, coverImage: data }));
         } catch { setErrorMsg('Failed to process image'); }
         finally { setIsProcessing(false); }
@@ -6182,6 +6261,7 @@ function EventPhotosModal({ event, onSavePhotos, onClose }) {
 
   const handleBatchUpload = (e) => {
     const files = Array.from(e.target.files || []);
+    if (e.target) e.target.value = '';
     if (!files.length) return;
     setIsProcessing(true);
     setErrorMsg('');
@@ -6197,14 +6277,17 @@ function EventPhotosModal({ event, onSavePhotos, onClose }) {
           try {
             const canvas = document.createElement('canvas');
             let w = img.width, h = img.height;
-            const MAX = 900;
+            const MAX = 800;
             if (w > h ? w > MAX : h > MAX) {
               if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
               else { w = Math.round(w * MAX / h); h = MAX; }
             }
             canvas.width = w; canvas.height = h;
-            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-            const data = canvas.toDataURL('image/jpeg', 0.72);
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, w, h);
+            ctx.drawImage(img, 0, 0, w, h);
+            const data = canvas.toDataURL('image/jpeg', 0.68);
             const cleanTitle = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
             newPhotos.push({
               id: 'p_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
@@ -6452,7 +6535,8 @@ function BlogContentEditor({ initialContent, onChange }) {
   const imgFileRef = useRef(null);
 
   const handleLocalImgUpload = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
+    if (e.target) e.target.value = '';
     if (!file) return;
     setImgProcessing(true);
     const reader = new FileReader();
@@ -6462,14 +6546,17 @@ function BlogContentEditor({ initialContent, onChange }) {
         try {
           const canvas = document.createElement('canvas');
           let w = img.width, h = img.height;
-          const MAX = 900;
+          const MAX = 800;
           if (w > h ? w > MAX : h > MAX) {
             if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
             else { w = Math.round(w * MAX / h); h = MAX; }
           }
           canvas.width = w; canvas.height = h;
-          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          const data = canvas.toDataURL('image/jpeg', 0.72);
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          const data = canvas.toDataURL('image/jpeg', 0.70);
           setImgUrl(data);
           if (!imgCaption) {
             setImgCaption(file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '));
@@ -6824,7 +6911,8 @@ function BlogPostEditForm({ post, isNew, onSave, onCancel }) {
   const featImgFileRef = useRef(null);
 
   const handleFeatImgUpload = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
+    if (e.target) e.target.value = '';
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
@@ -6833,14 +6921,17 @@ function BlogPostEditForm({ post, isNew, onSave, onCancel }) {
         try {
           const canvas = document.createElement('canvas');
           let w = img.width, h = img.height;
-          const MAX = 900;
+          const MAX = 800;
           if (w > h ? w > MAX : h > MAX) {
             if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
             else { w = Math.round(w * MAX / h); h = MAX; }
           }
           canvas.width = w; canvas.height = h;
-          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          setFeaturedImage(canvas.toDataURL('image/jpeg', 0.72));
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          setFeaturedImage(canvas.toDataURL('image/jpeg', 0.70));
         } catch (err) { console.error(err); }
       };
       img.src = ev.target.result;
@@ -6995,7 +7086,9 @@ function GalleryModal({ item, onSave, onClose }) {
   const videoFileRef = useRef(null);
 
   const handleImageUpload = (e) => {
-    const file = e.target.files[0]; if (!file) return;
+    const file = e.target.files?.[0];
+    if (e.target) e.target.value = '';
+    if (!file) return;
     setIsProcessing(true); setErrorMsg('');
     const reader = new FileReader();
     reader.onload = (ev) => {
@@ -7010,7 +7103,10 @@ function GalleryModal({ item, onSave, onClose }) {
             else { w = Math.round(w * MAX / h); h = MAX; }
           }
           canvas.width = w; canvas.height = h;
-          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
           const data = canvas.toDataURL('image/jpeg', 0.70);
           setForm(p => ({ ...p, image: data }));
           setIsProcessing(false);
@@ -7024,7 +7120,8 @@ function GalleryModal({ item, onSave, onClose }) {
   };
 
   const handleVideoUpload = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
+    if (e.target) e.target.value = '';
     if (!file) return;
 
     const sizeMb = file.size / (1024 * 1024);

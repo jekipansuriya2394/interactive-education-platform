@@ -7,6 +7,82 @@ import { coursesData } from '../data/coursesData';
 import { getFirebaseUrl } from './firebaseConfig';
 import { commitContent } from '../services/gitSyncService';
 
+// ─── Lightweight IndexedDB Engine (Unlimited quota for high-res photos) ───
+const IDB_NAME = 'noble_education_db';
+const IDB_VERSION = 1;
+const IDB_STORE = 'admin_data';
+
+function openIDB() {
+  return new Promise((resolve, reject) => {
+    if (typeof indexedDB === 'undefined') {
+      return reject(new Error('IndexedDB not supported'));
+    }
+    const request = indexedDB.open(IDB_NAME, IDB_VERSION);
+    request.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(IDB_STORE)) {
+        db.createObjectStore(IDB_STORE);
+      }
+    };
+    request.onsuccess = (e) => resolve(e.target.result);
+    request.onerror = (e) => reject(e.target.error);
+  });
+}
+
+export async function idbGet(key) {
+  try {
+    const db = await openIDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(IDB_STORE, 'readonly');
+      const store = tx.objectStore(IDB_STORE);
+      const req = store.get(key);
+      req.onsuccess = () => resolve(req.result !== undefined ? req.result : null);
+      req.onerror = () => resolve(null);
+    });
+  } catch {
+    return null;
+  }
+}
+
+export async function idbSet(key, value) {
+  try {
+    const db = await openIDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      const store = tx.objectStore(IDB_STORE);
+      const req = store.put(value, key);
+      req.onsuccess = () => resolve(true);
+      req.onerror = () => resolve(false);
+    });
+  } catch {
+    return false;
+  }
+}
+
+export async function idbGetAll() {
+  try {
+    const db = await openIDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(IDB_STORE, 'readonly');
+      const store = tx.objectStore(IDB_STORE);
+      const req = store.openCursor();
+      const all = {};
+      req.onsuccess = (e) => {
+        const cursor = e.target.result;
+        if (cursor) {
+          all[cursor.key] = cursor.value;
+          cursor.continue();
+        } else {
+          resolve(all);
+        }
+      };
+      req.onerror = () => resolve({});
+    });
+  } catch {
+    return {};
+  }
+}
+
 const PREFIX = 'noble_admin_';
 
 const DEFAULTS = {
@@ -841,13 +917,16 @@ export const adminData = {
       console.warn(`[adminData] localStorage write skipped for ${key} (quota limit):`, e);
     }
 
+    // Always persist to IndexedDB (virtually unlimited quota for images)
+    idbSet(key, value).catch(() => {});
+
     try {
       this.notifySubscribers(key, value);
     } catch {}
 
-    // 1. Instantly push this specific section to Cloud Database
+    // 1. Instantly push this specific section to local server & cloud database
     this.syncKeyToServer(key, value).catch(err => {
-      console.error(`[adminData] Error syncing ${key} to cloud:`, err);
+      console.error(`[adminData] Error syncing ${key} to server:`, err);
     });
 
     // 2. Commit & push changes to Git Repository via Worker API (non-blocking)
@@ -867,19 +946,22 @@ export const adminData = {
       console.warn(`[adminData] localStorage write skipped for ${key} (quota limit):`, e);
     }
 
+    // Always persist to IndexedDB (virtually unlimited quota for images)
+    await idbSet(key, value);
+
     try {
       this.notifySubscribers(key, value);
     } catch {}
 
-    // Instantly push this specific section to Cloud Database and return status
-    const cloudOk = await this.syncKeyToServer(key, value);
+    // Instantly push this specific section to local server & cloud database
+    const syncOk = await this.syncKeyToServer(key, value);
 
     // Commit & push changes to Git Repository via Worker API (non-blocking)
     try {
       commitContent(`content/${key}.json`, value, `chore(cms): update ${key} content`).catch(() => {});
     } catch (e) {}
 
-    return cloudOk;
+    return syncOk;
   },
 
   resetData(key) {
@@ -888,34 +970,56 @@ export const adminData = {
     }
   },
 
-  // ─── Real-Time Cloud Network Synchronisation Engine ──────────────────────────
+  // ─── Real-Time Cloud & Local Network Synchronisation Engine ──────────────────────────
   _lastSyncTime: 0,
   _lastFetchAttempt: 0,
   minSyncInterval: 2000,
 
   async syncKeyToServer(key, value) {
     if (!this.getSyncEnabled()) return false;
-    const firebaseUrl = getFirebaseUrl();
-    if (!firebaseUrl) return false;
+    let anyOk = false;
 
-    try {
-      const url = `${firebaseUrl}/data/${key}.json`;
-      const res = await fetch(url, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(value)
-      });
-      if (res.ok) {
-        this._lastSyncSuccess = Date.now();
-        console.log(`[CloudSync] Section "${key}" saved live to cloud database.`);
-        return true;
-      } else {
-        console.error(`[CloudSync] HTTP ${res.status} saving "${key}".`);
+    // 1. Instantly sync to local Vite server if running locally
+    if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+      try {
+        const base = window.location.pathname.startsWith('/interactive-education-platform') ? '/interactive-education-platform' : '';
+        const res = await fetch(`${base}/api/sync-data`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ [key]: value })
+        });
+        if (res.ok) {
+          anyOk = true;
+          this._lastSyncSuccess = Date.now();
+        }
+      } catch (e) {
+        console.warn(`[LocalSync] Error saving ${key} to local dev server:`, e);
       }
-    } catch (err) {
-      console.error(`[CloudSync] Network error saving "${key}":`, err);
     }
-    return false;
+
+    // 2. Sync to Firebase Cloud if configured
+    const firebaseUrl = getFirebaseUrl();
+    if (firebaseUrl && firebaseUrl.trim()) {
+      try {
+        const url = `${firebaseUrl}/data/${key}.json`;
+        const res = await fetch(url, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(value)
+        });
+        if (res.ok) {
+          this._lastSyncSuccess = Date.now();
+          anyOk = true;
+          console.log(`[CloudSync] Section "${key}" saved live to cloud database.`);
+        } else {
+          console.error(`[CloudSync] HTTP ${res.status} saving "${key}".`);
+        }
+      } catch (err) {
+        console.error(`[CloudSync] Network error saving "${key}":`, err);
+      }
+    }
+
+    return anyOk;
   },
 
   async fetchKeyFromServer(key) {
@@ -1067,10 +1171,13 @@ export const adminData = {
             this._memoryCache[k] = serverVal;
           }
 
+          // Persist to IndexedDB
+          idbSet(k, this._memoryCache[k]).catch(() => {});
+
           try {
             localStorage.setItem(PREFIX + k, serverValStr);
           } catch (e) {
-            // Ignore quota limit, memory cache has the fresh data
+            // Ignore quota limit, memory cache and IndexedDB have the fresh data
           }
 
           try {
@@ -1148,3 +1255,24 @@ export const adminData = {
     }
   }
 };
+
+// ─── Preload from IndexedDB on startup (loads base64 images into memory) ───
+if (typeof window !== 'undefined') {
+  idbGetAll().then((all) => {
+    if (all && typeof all === 'object' && Object.keys(all).length > 0) {
+      let anyChanged = false;
+      Object.entries(all).forEach(([k, v]) => {
+        if (v !== undefined && v !== null) {
+          if (!adminData._memoryCache) adminData._memoryCache = {};
+          if (adminData._memoryCache[k] === undefined) {
+            adminData._memoryCache[k] = v;
+            anyChanged = true;
+          }
+        }
+      });
+      if (anyChanged) {
+        adminData.notifySubscribers(null);
+      }
+    }
+  }).catch(() => {});
+}

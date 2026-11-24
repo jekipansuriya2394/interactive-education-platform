@@ -22,7 +22,7 @@ function localSyncPlugin() {
         if (normalizedUrlPath === '/api/sync-data') {
           res.setHeader('Access-Control-Allow-Origin', '*')
           res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
-          res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+          res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS')
 
           if (req.method === 'OPTIONS') {
             res.statusCode = 200
@@ -41,7 +41,7 @@ function localSyncPlugin() {
             return
           }
 
-          if (req.method === 'POST') {
+          if (req.method === 'POST' || req.method === 'PUT') {
             let body = ''
             req.on('data', chunk => { body += chunk })
             req.on('end', () => {
