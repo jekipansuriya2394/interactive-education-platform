@@ -221,18 +221,6 @@ export default function About() {
                             : '/images/faculty/founder-deval-patel.jpg';
                         }}
                       />
-
-                      {/* Top Experience Tag */}
-                      {person.experience && (
-                        <div className="absolute top-4 left-4 bg-slate-900/80 backdrop-blur-md text-amber-300 px-3.5 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wider border border-white/20 shadow-md flex items-center gap-1.5">
-                          <span>⭐</span> {person.experience}
-                        </div>
-                      )}
-
-                      {/* Top Role Badge */}
-                      <span className={`absolute top-4 right-4 text-xs font-black text-white px-4 py-1.5 rounded-full uppercase tracking-wider shadow-lg border border-white/20 backdrop-blur-md ${roleBadgeColor}`}>
-                        {person.role || (isFounder ? 'Founder & Trustee' : 'Managing Trustee')}
-                      </span>
                     </div>
 
                     {/* Middle: Bio Details Body with Clean Header Below Photo */}

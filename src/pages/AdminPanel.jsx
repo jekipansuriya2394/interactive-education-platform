@@ -4191,23 +4191,6 @@ function AdminPanel({ onLogout }) {
                         : '/images/faculty/founder-deval-patel.jpg';
                     }}
                   />
-                  <span style={{
-                    position: 'absolute', top: 12, right: 12,
-                    background: isFounder ? '#1C2E60' : '#DC2626',
-                    color: '#fff', fontSize: 11, fontWeight: 800, padding: '4px 12px', borderRadius: 20,
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.2)'
-                  }}>
-                    {person.role || (isFounder ? 'Founder & Trustee' : 'Managing Trustee')}
-                  </span>
-                  {person.experience && (
-                    <span style={{
-                      position: 'absolute', top: 12, left: 12,
-                      background: 'rgba(0,0,0,0.65)', color: '#FCD34D', fontSize: 11, fontWeight: 800,
-                      padding: '4px 10px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.15)'
-                    }}>
-                      ⭐ {person.experience}
-                    </span>
-                  )}
                 </div>
 
                 <div style={{ padding: 18, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
