@@ -184,6 +184,30 @@ const DEFAULTS = {
       ]
     }
   ],
+  founders: [
+    {
+      id: "fnd1",
+      name: "Deval Patel",
+      role: "Founder & Director",
+      qualification: "Senior Academic Mentor & Educational Strategist",
+      experience: "19+ Years Experience",
+      image: "/images/faculty/founder-deval-patel.jpg",
+      bio: "Visionary leader behind Noble Education's concept-driven coaching philosophy. Over 19 years dedicated to empowering students across school boards, GUJCET, and engineering entrance examinations in Vadodara.",
+      quote: "Our mission is to replace rote memorization with deep conceptual clarity, daily discipline, and personal mentorship for every student.",
+      badges: ["Academic Leadership", "Student Counseling", "Concept Mentorship"]
+    },
+    {
+      id: "fnd2",
+      name: "Dwarkesh Bhatt",
+      role: "Co-Founder & Academic Director",
+      qualification: "Senior Academic Mentor & Competitive Exam Strategist",
+      experience: "18+ Years Experience",
+      image: "/images/faculty/cofounder-dwarkesh-bhatt.jpg",
+      bio: "Pillar of academic excellence, curriculum structuring, and student performance tracking. Specializing in board exam success strategies, DDCET guidance, and competitive mentoring.",
+      quote: "True education is not just about scoring marks, but about unlocking confidence, strong foundations, and career potential in every learner.",
+      badges: ["Curriculum Strategy", "Board & Entrance Prep", "Career Mapping"]
+    }
+  ],
   testimonials: [
     {
       name: "Rohan Patel",

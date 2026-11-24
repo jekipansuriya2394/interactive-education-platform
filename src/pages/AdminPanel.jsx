@@ -129,6 +129,8 @@ function AdminPanel({ onLogout }) {
   const [schoolPhotos, setSchoolPhotos] = useState(() => adminData.getData('schoolPhotos') || []);
   const [blogPosts, setBlogPosts] = useState(() => adminData.getData('blogPosts') || []);
   const [galleryEvents, setGalleryEvents] = useState(() => adminData.getData('galleryEvents') || []);
+  const [founders, setFounders] = useState(() => adminData.getData('founders') || []);
+  const [editingFounder, setEditingFounder] = useState(null);
   const [editingEvent, setEditingEvent] = useState(null);
   const [managingEventPhotos, setManagingEventPhotos] = useState(null);
   const [gallerySubTab, setGallerySubTab] = useState('events');
@@ -279,6 +281,7 @@ function AdminPanel({ onLogout }) {
     setSchoolPhotos(adminData.getData('schoolPhotos') || []);
     setBlogPosts(adminData.getData('blogPosts') || []);
     setGalleryEvents(adminData.getData('galleryEvents') || []);
+    setFounders(adminData.getData('founders') || []);
     setSiteLogo(getLogoUrl(true));
     // Load audit log from localStorage
     try {
@@ -476,6 +479,20 @@ function AdminPanel({ onLogout }) {
     showToast('Saving event photos...', 'info');
     await adminData.setDataAsync('galleryEvents', u);
     showToast('✅ Event photos saved!');
+  };
+
+  // Founders (About Us Page)
+  const saveFounder = async (person) => {
+    const { _index, ...rest } = person;
+    const exists = founders.some((f, i) => (i === _index || f.id === rest.id));
+    const u = exists
+      ? founders.map((f, i) => (i === _index || f.id === rest.id) ? { ...f, ...rest } : f)
+      : [...founders, rest];
+    setFounders(u);
+    setEditingFounder(null);
+    showToast('Saving founder details...', 'info');
+    await adminData.setDataAsync('founders', u);
+    showToast('✅ Founder details updated successfully!');
   };
 
   // Partner Schools
@@ -4148,12 +4165,106 @@ function AdminPanel({ onLogout }) {
     );
   };
 
+  // ─── FOUNDERS & LEADERSHIP (ABOUT PAGE) ──────────────────────────────────
+  const renderFoundersManager = () => {
+    return (
+      <div>
+        <SectionHeader
+          title="Founders & Academic Leadership (About Us Page)"
+          subtitle="Manage Founder Deval Patel and Co-Founder Dwarkesh Bhatt photos, bios, credentials, and quotes displayed on the About Us page."
+        />
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
+          {founders.map((person, idx) => {
+            const isFounder = idx === 0 || (person.role && person.role.toLowerCase().includes('founder') && !person.role.toLowerCase().includes('co-founder'));
+            return (
+              <div key={person.id || idx} className="ap-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: 0, overflow: 'hidden' }}>
+                <div style={{ position: 'relative', height: 260, background: '#0F172A', overflow: 'hidden' }}>
+                  <img
+                    src={getEmbedImageUrl(person.image)}
+                    alt={person.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }}
+                    onError={(e) => {
+                      e.target.src = isFounder 
+                        ? '/images/faculty/founder-deval-patel.jpg' 
+                        : '/images/faculty/cofounder-dwarkesh-bhatt.jpg';
+                    }}
+                  />
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.95), rgba(15,23,42,0.2) 60%, transparent)' }} />
+                  <span style={{
+                    position: 'absolute', top: 12, right: 12,
+                    background: isFounder ? '#1C2E60' : '#DC2626',
+                    color: '#fff', fontSize: 11, fontWeight: 800, padding: '4px 12px', borderRadius: 20,
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.2)'
+                  }}>
+                    {person.role || (isFounder ? 'Founder & Director' : 'Co-Founder & Director')}
+                  </span>
+                  {person.experience && (
+                    <span style={{
+                      position: 'absolute', top: 12, left: 12,
+                      background: 'rgba(0,0,0,0.65)', color: '#FCD34D', fontSize: 11, fontWeight: 800,
+                      padding: '4px 10px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.15)'
+                    }}>
+                      ⭐ {person.experience}
+                    </span>
+                  )}
+                  <div style={{ position: 'absolute', bottom: 12, left: 16, right: 16 }}>
+                    <h3 style={{ margin: 0, color: '#FFFFFF', fontSize: 20, fontWeight: 900 }}>{person.name}</h3>
+                    <p style={{ margin: '3px 0 0', color: '#94A3B8', fontSize: 12 }}>{person.qualification}</p>
+                  </div>
+                </div>
+
+                <div style={{ padding: 18, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div>
+                    <p style={{ color: '#CBD5E1', fontSize: 13, lineHeight: 1.6, margin: '0 0 12px' }}>{person.bio}</p>
+                    {person.badges && person.badges.length > 0 && (
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+                        {person.badges.map((b, bi) => (
+                          <span key={bi} className="ap-badge ap-badge-blue" style={{ fontSize: 11 }}>✓ {b}</span>
+                        ))}
+                      </div>
+                    )}
+                    {person.quote && (
+                      <div style={{ borderLeft: `3px solid ${isFounder ? '#388BFD' : '#EF4444'}`, background: 'rgba(30,41,59,0.5)', padding: '10px 14px', borderRadius: '0 8px 8px 0', marginBottom: 14 }}>
+                        <p style={{ margin: 0, color: '#E2E8F0', fontSize: 12, fontStyle: 'italic' }}>"{person.quote}"</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 12, borderTop: '1px solid #1E293B' }}>
+                    <button
+                      type="button"
+                      className="ap-btn ap-btn-primary"
+                      onClick={() => setEditingFounder({ ...person, _index: idx })}
+                      style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}
+                    >
+                      <FiEdit2 size={13} /> Edit {person.name} Details
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {editingFounder && (
+          <FounderModal
+            item={editingFounder}
+            onSave={saveFounder}
+            onClose={() => setEditingFounder(null)}
+          />
+        )}
+      </div>
+    );
+  };
+
   // ─── ALL PHOTOS & MEDIA MASTER TAB ────────────────────────────────────
   const renderAllPhotos = () => {
-    const totalCount = (schoolPhotos.length || 0) + (gallery.length || 0) + (heroBanners.length || 0);
+    const totalCount = (schoolPhotos.length || 0) + (gallery.length || 0) + (heroBanners.length || 0) + (founders.length || 0);
 
     const photoSubTabs = [
       { key: 'brandLogo',    label: '🎨 Custom Brand Logo' },
+      { key: 'founders',     label: '👥 Founders (About Page)', badge: founders.length },
       { key: 'schoolPhotos', label: '🏫 School Pages Photos', badge: schoolPhotos.length },
       { key: 'gallery',      label: '📸 Main Campus Gallery', badge: gallery.length },
       { key: 'pagePhotos',   label: '🖼️ Website Page Photos' },
@@ -4207,6 +4318,7 @@ function AdminPanel({ onLogout }) {
 
         {/* Render Selected Sub-Tab Content */}
         {activePhotoSubTab === 'brandLogo' && renderBrandLogoCustomizerCard()}
+        {activePhotoSubTab === 'founders' && renderFoundersManager()}
         {activePhotoSubTab === 'schoolPhotos' && renderSchoolPhotos()}
         {activePhotoSubTab === 'gallery' && renderGallery()}
         {activePhotoSubTab === 'pagePhotos' && renderPagePhotos()}
@@ -5136,6 +5248,91 @@ function AnnouncementModal({ item, onSave, onClose }) {
       <input className="ap-input" value={form.text} onChange={e => setForm({ ...form, text: e.target.value })} placeholder="e.g. Admissions open for 2025-26 batch!" autoFocus />
       <p style={{ color: '#6B7280', fontSize: 12, margin: '6px 0 0' }}>This text will scroll in the announcement ticker bar.</p>
       <button className="ap-btn ap-btn-primary ap-btn-block" onClick={() => onSave(form)} style={{ marginTop: 20 }}><FiSave /> Save Announcement</button>
+    </Modal>
+  );
+}
+
+function FounderModal({ item, onSave, onClose }) {
+  const [form, setForm] = useState({
+    id: item.id || `fnd_${Date.now()}`,
+    name: item.name || '',
+    role: item.role || '',
+    qualification: item.qualification || '',
+    experience: item.experience || '',
+    image: item.image || '',
+    bio: item.bio || '',
+    quote: item.quote || '',
+    badges: item.badges || [],
+    _index: item._index
+  });
+  const [badgeInput, setBadgeInput] = useState((item.badges || []).join(', '));
+
+  const handleSave = () => {
+    if (!form.name.trim()) {
+      alert('Name is required.');
+      return;
+    }
+    const badges = badgeInput.split(',').map(b => b.trim()).filter(Boolean);
+    onSave({ ...form, badges });
+  };
+
+  return (
+    <Modal title={`Edit Profile: ${form.name || 'Founder'} (About Page)`} onClose={onClose} wide>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div>
+            <label className="ap-label">Full Name *</label>
+            <input className="ap-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. Deval Patel" />
+          </div>
+          <div>
+            <label className="ap-label">Official Role / Designation *</label>
+            <input className="ap-input" value={form.role} onChange={e => setForm({ ...form, role: e.target.value })} placeholder="e.g. Founder & Director" />
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div>
+            <label className="ap-label">Academic Qualification / Title</label>
+            <input className="ap-input" value={form.qualification} onChange={e => setForm({ ...form, qualification: e.target.value })} placeholder="e.g. Senior Academic Mentor & Educational Strategist" />
+          </div>
+          <div>
+            <label className="ap-label">Experience Tag</label>
+            <input className="ap-input" value={form.experience} onChange={e => setForm({ ...form, experience: e.target.value })} placeholder="e.g. 19+ Years Experience" />
+          </div>
+        </div>
+
+        <div>
+          <label className="ap-label">Founder Photo *</label>
+          <UniversalMediaInput
+            label=""
+            value={form.image}
+            onChange={(val) => setForm({ ...form, image: val })}
+            folder="faculty"
+            mediaType="image"
+            aspectRatio="3/4"
+          />
+        </div>
+
+        <div>
+          <label className="ap-label">Bio / Profile Description</label>
+          <textarea className="ap-input" rows={3} value={form.bio} onChange={e => setForm({ ...form, bio: e.target.value })} placeholder="Summary of leadership, achievements, and educational contribution..." />
+        </div>
+
+        <div>
+          <label className="ap-label">Vision Quote</label>
+          <textarea className="ap-input" rows={2} value={form.quote} onChange={e => setForm({ ...form, quote: e.target.value })} placeholder="Inspiring quote or motto for students and parents..." />
+        </div>
+
+        <div>
+          <label className="ap-label">Core Focus Badges (comma-separated)</label>
+          <input className="ap-input" value={badgeInput} onChange={e => setBadgeInput(e.target.value)} placeholder="e.g. Academic Leadership, Student Counseling, Concept Mentorship" />
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
+          <button type="button" className="ap-btn ap-btn-secondary" onClick={onClose}>Cancel</button>
+          <button type="button" className="ap-btn ap-btn-primary" onClick={handleSave}><FiSave /> Save Profile</button>
+        </div>
+      </div>
     </Modal>
   );
 }

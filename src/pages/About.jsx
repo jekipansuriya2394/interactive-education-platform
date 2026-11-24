@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiTarget, FiCompass, FiAward, FiBookOpen, FiCheckCircle, FiImage, FiArrowRight } from 'react-icons/fi';
+import { FiTarget, FiCompass, FiAward, FiBookOpen, FiCheckCircle, FiImage, FiArrowRight, FiUser, FiStar } from 'react-icons/fi';
 import { statsData } from '../data/statsData';
 import { navigate } from '../utils/router';
 import { adminData } from '../utils/adminData';
@@ -12,17 +12,31 @@ export default function About() {
     return all.about || [];
   });
   const [partnerSchools, setPartnerSchools] = useState(() => adminData.getData('partnerSchools') || []);
+  const [founders, setFounders] = useState(() => adminData.getData('founders') || []);
 
   useEffect(() => {
-    const refreshPhotos = () => {
+    const refreshData = () => {
       const all = adminData.getData('pageImages') || {};
       setAboutPhotos(all.about || []);
       setPartnerSchools(adminData.getData('partnerSchools') || []);
+      setFounders(adminData.getData('founders') || []);
     };
-    refreshPhotos();
-    const cleanup = adminData.initSync(refreshPhotos);
+    refreshData();
+    const cleanup = adminData.initSync(refreshData);
+    const cleanupFounders = adminData.subscribe('founders', (fresh) => {
+      if (Array.isArray(fresh) && fresh.length > 0) {
+        setFounders(fresh);
+      }
+    });
+    adminData.fetchKeyFromServer('founders').then(fresh => {
+      if (Array.isArray(fresh) && fresh.length > 0) {
+        setFounders(fresh);
+      }
+    });
+
     return () => {
       if (typeof cleanup === 'function') cleanup();
+      if (typeof cleanupFounders === 'function') cleanupFounders();
     };
   }, []);
 
@@ -157,6 +171,126 @@ export default function About() {
             <p className="text-zinc-600 text-xs sm:text-sm font-light leading-relaxed">
               To be the most trusted education provider in Vadodara by ensuring quality academic resources, transparent progress records, and career branch selector matches for parents and students.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── VISIONARY LEADERSHIP: FOUNDER & CO-FOUNDER ─── */}
+      <section className="py-24 bg-white relative overflow-hidden border-t border-slate-200/80">
+        {/* Subtle ambient lighting glows */}
+        <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[450px] h-[450px] bg-red-600/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-[450px] h-[450px] bg-[#1C2E60]/5 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          {/* Section Header */}
+          <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+            <span className="text-[#DC2626] font-extrabold tracking-widest text-xs uppercase bg-red-500/10 px-4 py-1.5 rounded-full border border-red-500/20 inline-flex items-center gap-2">
+              <FiAward className="text-sm" /> Visionary Leadership
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-black text-[#1C2E60] tracking-tight">
+              Meet Our Founder & Co-Founder
+            </h2>
+            <p className="text-zinc-600 text-sm sm:text-base font-light leading-relaxed">
+              Guided by dedicated educators with over 19 years of academic mentorship in Vadodara, committed to shaping future toppers, doctors, engineers, and secondary board achievers.
+            </p>
+          </div>
+
+          {/* Symmetrical Two-Column Founders Grid (Perfect Horizontal Alignment) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 max-w-5xl mx-auto items-stretch">
+            {founders && founders.length > 0 ? (
+              founders.map((person, idx) => {
+                const isFounder = idx === 0 || (person.role && person.role.toLowerCase().includes('founder') && !person.role.toLowerCase().includes('co-founder'));
+                const roleBadgeColor = isFounder ? 'bg-[#1C2E60]' : 'bg-[#DC2626]';
+                const quoteBgColor = isFounder ? 'bg-blue-50/70 border-[#1C2E60]' : 'bg-red-50/60 border-[#DC2626]';
+
+                return (
+                  <div
+                    key={person.id || idx}
+                    className="bg-white border-2 border-slate-200/90 rounded-[32px] overflow-hidden shadow-lg hover:shadow-2xl hover:border-[#DC2626]/40 transition-all duration-300 flex flex-col justify-between h-full group"
+                  >
+                    {/* Top: Photo & Identification Banner with Fixed Portrait Height & Sharp Alignment */}
+                    <div className="relative h-80 sm:h-96 w-full flex-shrink-0 overflow-hidden bg-slate-900">
+                      <img
+                        src={getEmbedImageUrl(person.image)}
+                        alt={person.name}
+                        className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500 block"
+                        onError={(e) => {
+                          e.target.src = isFounder 
+                            ? '/images/faculty/founder-deval-patel.jpg' 
+                            : '/images/faculty/cofounder-dwarkesh-bhatt.jpg';
+                        }}
+                      />
+                      
+                      {/* Dark Gradient Overlay for Maximum Readability */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-950/40 to-transparent" />
+
+                      {/* Top Experience Tag */}
+                      {person.experience && (
+                        <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md text-amber-300 px-3.5 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wider border border-white/20 shadow-md flex items-center gap-1.5">
+                          <span>⭐</span> {person.experience}
+                        </div>
+                      )}
+
+                      {/* Top Role Badge */}
+                      <span className={`absolute top-4 right-4 text-xs font-black text-white px-4 py-1.5 rounded-full uppercase tracking-wider shadow-lg border border-white/20 backdrop-blur-md ${roleBadgeColor}`}>
+                        {person.role || (isFounder ? 'Founder & Director' : 'Co-Founder & Director')}
+                      </span>
+
+                      {/* Bottom Name & Subtitle Box inside photo */}
+                      <div className="absolute bottom-5 left-5 right-5">
+                        <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest block mb-1">
+                          {isFounder ? 'LEADERSHIP FOUNDATION' : 'ACADEMIC EXCELLENCE'}
+                        </span>
+                        <h3 className="text-2xl sm:text-3xl font-black text-white leading-tight">
+                          {person.name}
+                        </h3>
+                        {person.qualification && (
+                          <p className="text-zinc-300 text-xs sm:text-sm font-medium mt-1 leading-snug">
+                            {person.qualification}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Middle: Bio Details Body with Standardized Alignment */}
+                    <div className="p-6 sm:p-8 flex-1 flex flex-col justify-between">
+                      <div>
+                        {/* Bio Paragraph */}
+                        <p className="text-slate-600 text-xs sm:text-sm font-light leading-relaxed mb-5">
+                          {person.bio}
+                        </p>
+
+                        {/* Focus Badges */}
+                        {person.badges && person.badges.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mb-5">
+                            {person.badges.map((badge, bIdx) => (
+                              <span
+                                key={bIdx}
+                                className="text-[11px] font-bold text-[#1C2E60] bg-slate-100 hover:bg-red-50 hover:text-[#DC2626] transition-colors border border-slate-200/80 px-3 py-1 rounded-xl"
+                              >
+                                ✓ {badge}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Bottom Quote Box */}
+                      {person.quote && (
+                        <div className={`border-l-4 ${quoteBgColor} p-4 rounded-r-2xl mt-2`}>
+                          <p className="text-slate-700 text-xs italic leading-relaxed font-normal">
+                            "{person.quote}"
+                          </p>
+                          <span className="text-[10px] font-extrabold text-[#1C2E60] block mt-2 uppercase tracking-wider">
+                            — {person.name}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            ) : null}
           </div>
         </div>
       </section>
