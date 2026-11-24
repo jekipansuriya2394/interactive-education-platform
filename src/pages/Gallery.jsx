@@ -90,10 +90,11 @@ function GalleryMediaThumb({ item, isVid }) {
   }
 
   // 2. Video with custom image poster
-  if (isVid && item.image && isActualImage(item.image) && !item.image.includes('bg-gallery-hero')) {
+  const imgStr = typeof item.image === 'string' ? item.image : (item.image?.image || '');
+  if (isVid && imgStr && isActualImage(imgStr) && !imgStr.includes('bg-gallery-hero')) {
     return (
       <div className="relative overflow-hidden" style={frameStyle}>
-        <GalleryImg src={item.image} alt={item.title} />
+        <GalleryImg src={imgStr} alt={item.title} />
         <div className="absolute inset-0 bg-black/20 group-hover:bg-black/35 transition-colors flex items-center justify-center">
           <div className="w-14 h-14 rounded-full bg-red-600 text-white flex items-center justify-center shadow-xl shadow-red-600/60 group-hover:scale-110 transition-transform">
             <FiPlay size={24} style={{ marginLeft: 2 }} />
