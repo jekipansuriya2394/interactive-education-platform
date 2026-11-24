@@ -4180,7 +4180,7 @@ function AdminPanel({ onLogout }) {
             const isFounder = isDwarkesh || (person.role && person.role.toLowerCase().includes('founder'));
             return (
               <div key={person.id || idx} className="ap-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: 0, overflow: 'hidden' }}>
-                <div style={{ position: 'relative', height: 260, background: '#0F172A', overflow: 'hidden' }}>
+                <div style={{ position: 'relative', height: 380, background: '#0F172A', overflow: 'hidden' }}>
                   <img
                     src={getEmbedImageUrl(person.image)}
                     alt={person.name}
@@ -4191,7 +4191,6 @@ function AdminPanel({ onLogout }) {
                         : '/images/faculty/founder-deval-patel.jpg';
                     }}
                   />
-                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.95), rgba(15,23,42,0.2) 60%, transparent)' }} />
                   <span style={{
                     position: 'absolute', top: 12, right: 12,
                     background: isFounder ? '#1C2E60' : '#DC2626',
@@ -4209,14 +4208,20 @@ function AdminPanel({ onLogout }) {
                       ⭐ {person.experience}
                     </span>
                   )}
-                  <div style={{ position: 'absolute', bottom: 12, left: 16, right: 16 }}>
-                    <h3 style={{ margin: 0, color: '#FFFFFF', fontSize: 20, fontWeight: 900 }}>{person.name}</h3>
-                    <p style={{ margin: '3px 0 0', color: '#94A3B8', fontSize: 12 }}>{person.qualification}</p>
-                  </div>
                 </div>
 
                 <div style={{ padding: 18, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <div>
+                    {/* Header below photo */}
+                    <div style={{ borderBottom: '1px solid #1E293B', paddingBottom: 12, marginBottom: 14 }}>
+                      <span style={{ color: '#F59E0B', fontSize: 11, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 4 }}>
+                        {isFounder ? 'FOUNDER & TRUSTEE' : 'MANAGING TRUSTEE'}
+                      </span>
+                      <h3 style={{ margin: 0, color: '#FFFFFF', fontSize: 22, fontWeight: 900 }}>{person.name}</h3>
+                      {person.qualification && (
+                        <p style={{ margin: '4px 0 0', color: '#EF4444', fontSize: 13, fontWeight: 700 }}>{person.qualification}</p>
+                      )}
+                    </div>
                     <p style={{ color: '#CBD5E1', fontSize: 13, lineHeight: 1.6, margin: '0 0 12px' }}>{person.bio}</p>
                     {person.badges && person.badges.length > 0 && (
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>

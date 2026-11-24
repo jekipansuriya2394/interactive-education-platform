@@ -209,25 +209,22 @@ export default function About() {
                     key={person.id || idx}
                     className="bg-white border-2 border-slate-200/90 rounded-[32px] overflow-hidden shadow-lg hover:shadow-2xl hover:border-[#DC2626]/40 transition-all duration-300 flex flex-col justify-between h-full group"
                   >
-                    {/* Top: Photo & Identification Banner with Fixed Portrait Height & Sharp Alignment */}
-                    <div className="relative h-80 sm:h-96 w-full flex-shrink-0 overflow-hidden bg-slate-900">
+                    {/* Top: Photo Container with Generous Height & Completely Clear Portrait View */}
+                    <div className="relative h-[440px] sm:h-[500px] w-full flex-shrink-0 overflow-hidden bg-slate-100">
                       <img
                         src={getEmbedImageUrl(person.image)}
                         alt={person.name}
-                        className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500 block"
+                        className="w-full h-full object-cover object-top group-hover:scale-102 transition-transform duration-500 block"
                         onError={(e) => {
                           e.target.src = isDwarkesh 
                             ? '/images/faculty/cofounder-dwarkesh-bhatt.jpg' 
                             : '/images/faculty/founder-deval-patel.jpg';
                         }}
                       />
-                      
-                      {/* Dark Gradient Overlay for Maximum Readability */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-950/40 to-transparent" />
 
                       {/* Top Experience Tag */}
                       {person.experience && (
-                        <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md text-amber-300 px-3.5 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wider border border-white/20 shadow-md flex items-center gap-1.5">
+                        <div className="absolute top-4 left-4 bg-slate-900/80 backdrop-blur-md text-amber-300 px-3.5 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wider border border-white/20 shadow-md flex items-center gap-1.5">
                           <span>⭐</span> {person.experience}
                         </div>
                       )}
@@ -236,26 +233,26 @@ export default function About() {
                       <span className={`absolute top-4 right-4 text-xs font-black text-white px-4 py-1.5 rounded-full uppercase tracking-wider shadow-lg border border-white/20 backdrop-blur-md ${roleBadgeColor}`}>
                         {person.role || (isFounder ? 'Founder & Trustee' : 'Managing Trustee')}
                       </span>
-
-                      {/* Bottom Name & Subtitle Box inside photo */}
-                      <div className="absolute bottom-5 left-5 right-5">
-                        <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest block mb-1">
-                          {isFounder ? 'FOUNDER & TRUSTEE' : 'MANAGING TRUSTEE'}
-                        </span>
-                        <h3 className="text-2xl sm:text-3xl font-black text-white leading-tight">
-                          {person.name}
-                        </h3>
-                        {person.qualification && (
-                          <p className="text-zinc-300 text-xs sm:text-sm font-medium mt-1 leading-snug">
-                            {person.qualification}
-                          </p>
-                        )}
-                      </div>
                     </div>
 
-                    {/* Middle: Bio Details Body with Standardized Alignment */}
+                    {/* Middle: Bio Details Body with Clean Header Below Photo */}
                     <div className="p-6 sm:p-8 flex-1 flex flex-col justify-between">
                       <div>
+                        {/* Dedicated Name, Role & Qualification Header (Unobstructed View) */}
+                        <div className="border-b border-slate-100 pb-5 mb-5">
+                          <span className="text-[11px] font-black text-amber-600 uppercase tracking-widest block mb-1">
+                            {isFounder ? 'FOUNDER & TRUSTEE' : 'MANAGING TRUSTEE'}
+                          </span>
+                          <h3 className="text-2xl sm:text-3xl font-black text-[#1C2E60] leading-tight">
+                            {person.name}
+                          </h3>
+                          {person.qualification && (
+                            <p className="text-[#DC2626] text-xs sm:text-sm font-bold mt-1.5 leading-snug">
+                              {person.qualification}
+                            </p>
+                          )}
+                        </div>
+
                         {/* Bio Paragraph with consistent min-height for symmetrical alignment */}
                         <p className="text-slate-600 text-xs sm:text-sm font-light leading-relaxed mb-5 min-h-[72px]">
                           {person.bio}
