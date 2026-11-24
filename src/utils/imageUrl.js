@@ -10,7 +10,13 @@ export const FALLBACK_SLIDE_SVG = `data:image/svg+xml;utf8,<svg xmlns="http://ww
  */
 export function getEmbedImageUrl(raw) {
   if (!raw) return FALLBACK_SLIDE_SVG;
-  const url = raw.trim();
+  let str = raw;
+  if (typeof raw === 'object') {
+    str = raw.image || raw.url || raw.src || '';
+  }
+  if (!str || typeof str !== 'string') return FALLBACK_SLIDE_SVG;
+  const url = str.trim();
+  if (!url) return FALLBACK_SLIDE_SVG;
 
   // Local public assets (starting with '/') should be served under Vite base URL
   if (url.startsWith('/')) {
@@ -119,14 +125,20 @@ export function handleImageError(e) {
  */
 export function detectImageUrlSource(url) {
   if (!url) return null;
-  if (url.startsWith('data:video/')) return 'video';
-  if (url.startsWith('data:')) return 'upload';
-  if (/drive\.google\.com|googleusercontent\.com|wsrv\.nl/.test(url)) return 'googledrive';
-  if (/youtube\.com|youtu\.be/.test(url)) return 'youtube';
-  if (/dropbox\.com/.test(url)) return 'dropbox';
-  if (/1drv\.ms|onedrive\.live\.com/.test(url)) return 'onedrive';
-  if (/imgur\.com|imgbb\.com|ibb\.co|postimages\.org|cloudinary\.com/.test(url)) return 'direct';
-  if (/\.(jpg|jpeg|png|webp|gif|bmp|svg)(\?|$)/i.test(url)) return 'direct';
+  let str = url;
+  if (typeof str === 'object') {
+    str = str.image || str.url || str.src || '';
+  }
+  if (!str || typeof str !== 'string') return null;
+  const s = str.trim();
+  if (s.startsWith('data:video/')) return 'video';
+  if (s.startsWith('data:')) return 'upload';
+  if (/drive\.google\.com|googleusercontent\.com|wsrv\.nl/.test(s)) return 'googledrive';
+  if (/youtube\.com|youtu\.be/.test(s)) return 'youtube';
+  if (/dropbox\.com/.test(s)) return 'dropbox';
+  if (/1drv\.ms|onedrive\.live\.com/.test(s)) return 'onedrive';
+  if (/imgur\.com|imgbb\.com|ibb\.co|postimages\.org|cloudinary\.com/.test(s)) return 'direct';
+  if (/\.(jpg|jpeg|png|webp|gif|bmp|svg)(\?|$)/i.test(s)) return 'direct';
   return 'unknown';
 }
 

@@ -802,12 +802,15 @@ export const adminData = {
           return parsed.map((item, idx) => {
             const def = defaults[idx] || {};
             const isRoyal = (item?.name === 'Royal School' || def?.name === 'Royal School');
-            const mapUrl = (isRoyal && (!item?.mapUrl || item?.mapUrl.includes('Royal+School+Kamla+Nagar') || item?.mapUrl.includes('share.google')))
+            const rawMap = typeof item?.mapUrl === 'string' ? item.mapUrl : (def.mapUrl || '');
+            const mapUrl = (isRoyal && (!rawMap || rawMap.includes('Royal+School+Kamla+Nagar') || rawMap.includes('share.google')))
               ? 'https://maps.app.goo.gl/zbwa45FgrFd8PBdE8'
-              : (item?.mapUrl || def.mapUrl || '');
+              : rawMap;
+            const rawImg = typeof item?.image === 'string' ? item.image : (item?.image?.image || def?.image || '');
             return {
               ...def,
               ...item,
+              image: rawImg,
               mapUrl,
               address: item?.address || def.address || 'Waghodia Road, Vadodara',
               medium: item?.medium || def.medium || 'English Medium',
@@ -825,9 +828,10 @@ export const adminData = {
             const role = isDwarkesh 
               ? 'Founder & Trustee' 
               : (isDeval ? 'Managing Trustee' : (item?.role || def?.role || 'Trustee'));
+            const rawImg = typeof item?.image === 'string' ? item.image : (item?.image?.image || '');
             const image = isDwarkesh
-              ? (item?.image && !item.image.includes('founder-deval-patel') ? item.image : '/images/faculty/cofounder-dwarkesh-bhatt.jpg')
-              : (isDeval ? (item?.image && !item.image.includes('cofounder-dwarkesh-bhatt') ? item.image : '/images/faculty/founder-deval-patel.jpg') : (item?.image || def?.image));
+              ? (rawImg && !rawImg.includes('founder-deval-patel') ? rawImg : '/images/faculty/cofounder-dwarkesh-bhatt.jpg')
+              : (isDeval ? (rawImg && !rawImg.includes('cofounder-dwarkesh-bhatt') ? rawImg : '/images/faculty/founder-deval-patel.jpg') : (rawImg || def?.image));
             return {
               ...def,
               ...item,

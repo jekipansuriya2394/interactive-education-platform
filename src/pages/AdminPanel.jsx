@@ -9047,6 +9047,21 @@ class AdminErrorBoundary extends React.Component {
     console.error('AdminPanel Error Boundary caught an error:', error, errorInfo);
   }
 
+  handleResetCacheAndReload = () => {
+    try {
+      const toRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('noble_admin_') && !k.includes('users')) {
+          toRemove.push(k);
+        }
+      }
+      toRemove.forEach(k => localStorage.removeItem(k));
+      sessionStorage.clear();
+    } catch {}
+    window.location.reload();
+  };
+
   render() {
     if (this.state.hasError) {
       return (
@@ -9054,21 +9069,47 @@ class AdminErrorBoundary extends React.Component {
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: '#0B132B', color: '#fff', fontFamily: 'Inter, system-ui, sans-serif',
-          zIndex: 999999
+          zIndex: 999999, padding: 20
         }}>
-          <div style={{ textAlign: 'center', maxWidth: 400 }}>
-            <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 12 }}>Admin Panel</h2>
-            <p style={{ color: '#9CA3AF', marginBottom: 24 }}>Something went wrong. Click below to reload.</p>
-            <button
-              onClick={() => window.location.reload()}
-              style={{
-                background: '#2563EB', color: '#fff', border: 'none', padding: '14px 28px',
-                borderRadius: 12, fontWeight: 700, fontSize: 15, cursor: 'pointer',
-                boxShadow: '0 4px 14px rgba(37,99,235,0.4)'
-              }}
-            >
-              Reload Admin Panel
-            </button>
+          <div style={{ textAlign: 'center', maxWidth: 480, background: '#161B22', border: '1px solid #30363D', borderRadius: 16, padding: 32, boxShadow: '0 12px 40px rgba(0,0,0,0.5)' }}>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>⚠️</div>
+            <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8, color: '#F0F6FC' }}>Admin Panel Notice</h2>
+            <p style={{ color: '#9CA3AF', marginBottom: 16, fontSize: 14 }}>
+              Something interrupted the admin panel rendering.
+            </p>
+            {this.state.error?.message && (
+              <div style={{
+                background: '#0D1117', border: '1px solid #EF444455', color: '#FCA5A5',
+                padding: '10px 14px', borderRadius: 10, fontSize: 12, marginBottom: 20,
+                textAlign: 'left', wordBreak: 'break-word', fontFamily: 'monospace'
+              }}>
+                {this.state.error.message}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => window.location.reload()}
+                style={{
+                  background: '#2563EB', color: '#fff', border: 'none', padding: '12px 24px',
+                  borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: 'pointer',
+                  boxShadow: '0 4px 14px rgba(37,99,235,0.4)'
+                }}
+              >
+                Reload Admin Panel
+              </button>
+              <button
+                onClick={this.handleResetCacheAndReload}
+                style={{
+                  background: '#374151', color: '#F3F4F6', border: '1px solid #4B5563', padding: '12px 20px',
+                  borderRadius: 10, fontWeight: 600, fontSize: 13, cursor: 'pointer'
+                }}
+              >
+                Reset Cache & Reload
+              </button>
+            </div>
+            <div style={{ marginTop: 20 }}>
+              <a href="/" style={{ color: '#60A5FA', fontSize: 13, textDecoration: 'none' }}>← Return to Main Website</a>
+            </div>
           </div>
         </div>
       );
