@@ -175,7 +175,7 @@ export default function About() {
         </div>
       </section>
 
-      {/* ─── VISIONARY LEADERSHIP: FOUNDER & CO-FOUNDER ─── */}
+      {/* ─── VISIONARY LEADERSHIP: FOUNDER & TRUSTEE ─── */}
       <section className="py-24 bg-white relative overflow-hidden border-t border-slate-200/80">
         {/* Subtle ambient lighting glows */}
         <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[450px] h-[450px] bg-red-600/5 rounded-full blur-3xl pointer-events-none" />
@@ -185,13 +185,13 @@ export default function About() {
           {/* Section Header */}
           <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
             <span className="text-[#DC2626] font-extrabold tracking-widest text-xs uppercase bg-red-500/10 px-4 py-1.5 rounded-full border border-red-500/20 inline-flex items-center gap-2">
-              <FiAward className="text-sm" /> Visionary Leadership
+              <FiAward className="text-sm" /> Visionary Leadership & Trust
             </span>
             <h2 className="text-3xl sm:text-4xl font-black text-[#1C2E60] tracking-tight">
-              Meet Our Founder & Co-Founder
+              Meet Our Founder & Trustees
             </h2>
             <p className="text-zinc-600 text-sm sm:text-base font-light leading-relaxed">
-              Guided by dedicated educators with over 19 years of academic mentorship in Vadodara, committed to shaping future toppers, doctors, engineers, and secondary board achievers.
+              Guided by dedicated educational visionaries with over 19 years of academic leadership and mentorship in Vadodara, committed to shaping future toppers, doctors, engineers, and board champions.
             </p>
           </div>
 
@@ -199,7 +199,8 @@ export default function About() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 max-w-5xl mx-auto items-stretch">
             {founders && founders.length > 0 ? (
               founders.map((person, idx) => {
-                const isFounder = idx === 0 || (person.role && person.role.toLowerCase().includes('founder') && !person.role.toLowerCase().includes('co-founder'));
+                const isDwarkesh = person.name && person.name.toLowerCase().includes('dwarkesh');
+                const isFounder = isDwarkesh || (person.role && person.role.toLowerCase().includes('founder'));
                 const roleBadgeColor = isFounder ? 'bg-[#1C2E60]' : 'bg-[#DC2626]';
                 const quoteBgColor = isFounder ? 'bg-blue-50/70 border-[#1C2E60]' : 'bg-red-50/60 border-[#DC2626]';
 
@@ -215,9 +216,9 @@ export default function About() {
                         alt={person.name}
                         className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500 block"
                         onError={(e) => {
-                          e.target.src = isFounder 
-                            ? '/images/faculty/founder-deval-patel.jpg' 
-                            : '/images/faculty/cofounder-dwarkesh-bhatt.jpg';
+                          e.target.src = isDwarkesh 
+                            ? '/images/faculty/cofounder-dwarkesh-bhatt.jpg' 
+                            : '/images/faculty/founder-deval-patel.jpg';
                         }}
                       />
                       
@@ -233,13 +234,13 @@ export default function About() {
 
                       {/* Top Role Badge */}
                       <span className={`absolute top-4 right-4 text-xs font-black text-white px-4 py-1.5 rounded-full uppercase tracking-wider shadow-lg border border-white/20 backdrop-blur-md ${roleBadgeColor}`}>
-                        {person.role || (isFounder ? 'Founder & Director' : 'Co-Founder & Director')}
+                        {person.role || (isFounder ? 'Founder & Trustee' : 'Managing Trustee')}
                       </span>
 
                       {/* Bottom Name & Subtitle Box inside photo */}
                       <div className="absolute bottom-5 left-5 right-5">
                         <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest block mb-1">
-                          {isFounder ? 'LEADERSHIP FOUNDATION' : 'ACADEMIC EXCELLENCE'}
+                          {isFounder ? 'FOUNDER & TRUSTEE' : 'MANAGING TRUSTEE'}
                         </span>
                         <h3 className="text-2xl sm:text-3xl font-black text-white leading-tight">
                           {person.name}
@@ -255,8 +256,8 @@ export default function About() {
                     {/* Middle: Bio Details Body with Standardized Alignment */}
                     <div className="p-6 sm:p-8 flex-1 flex flex-col justify-between">
                       <div>
-                        {/* Bio Paragraph */}
-                        <p className="text-slate-600 text-xs sm:text-sm font-light leading-relaxed mb-5">
+                        {/* Bio Paragraph with consistent min-height for symmetrical alignment */}
+                        <p className="text-slate-600 text-xs sm:text-sm font-light leading-relaxed mb-5 min-h-[72px]">
                           {person.bio}
                         </p>
 
@@ -277,12 +278,12 @@ export default function About() {
 
                       {/* Bottom Quote Box */}
                       {person.quote && (
-                        <div className={`border-l-4 ${quoteBgColor} p-4 rounded-r-2xl mt-2`}>
+                        <div className={`border-l-4 ${quoteBgColor} p-4 rounded-r-2xl mt-4 min-h-[96px] flex flex-col justify-between`}>
                           <p className="text-slate-700 text-xs italic leading-relaxed font-normal">
                             "{person.quote}"
                           </p>
                           <span className="text-[10px] font-extrabold text-[#1C2E60] block mt-2 uppercase tracking-wider">
-                            — {person.name}
+                            — {person.name} ({person.role || (isFounder ? 'Founder & Trustee' : 'Managing Trustee')})
                           </span>
                         </div>
                       )}

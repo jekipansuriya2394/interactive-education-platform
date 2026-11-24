@@ -187,25 +187,25 @@ const DEFAULTS = {
   founders: [
     {
       id: "fnd1",
-      name: "Deval Patel",
-      role: "Founder & Director",
-      qualification: "Senior Academic Mentor & Educational Strategist",
-      experience: "19+ Years Experience",
-      image: "/images/faculty/founder-deval-patel.jpg",
-      bio: "Visionary leader behind Noble Education's concept-driven coaching philosophy. Over 19 years dedicated to empowering students across school boards, GUJCET, and engineering entrance examinations in Vadodara.",
-      quote: "Our mission is to replace rote memorization with deep conceptual clarity, daily discipline, and personal mentorship for every student.",
-      badges: ["Academic Leadership", "Student Counseling", "Concept Mentorship"]
+      name: "Dwarkesh Bhatt",
+      role: "Founder & Trustee",
+      qualification: "Founder & Academic Director",
+      experience: "19+ Years Academic Mentorship",
+      image: "/images/faculty/cofounder-dwarkesh-bhatt.jpg",
+      bio: "Visionary Founder & Trustee leading Noble Education's concept-driven coaching philosophy and academic excellence. Over 19 years dedicated to mentoring students across secondary boards, GUJCET, NEET/JEE, and engineering entrance examinations in Vadodara.",
+      quote: "True education is not just about scoring marks, but about unlocking confidence, strong foundations, and lifelong career potential in every learner.",
+      badges: ["Founder & Trustee", "Academic Strategy", "Board & Entrance Mentorship"]
     },
     {
       id: "fnd2",
-      name: "Dwarkesh Bhatt",
-      role: "Co-Founder & Academic Director",
-      qualification: "Senior Academic Mentor & Competitive Exam Strategist",
-      experience: "18+ Years Experience",
-      image: "/images/faculty/cofounder-dwarkesh-bhatt.jpg",
-      bio: "Pillar of academic excellence, curriculum structuring, and student performance tracking. Specializing in board exam success strategies, DDCET guidance, and competitive mentoring.",
-      quote: "True education is not just about scoring marks, but about unlocking confidence, strong foundations, and career potential in every learner.",
-      badges: ["Curriculum Strategy", "Board & Entrance Prep", "Career Mapping"]
+      name: "Deval Patel",
+      role: "Managing Trustee",
+      qualification: "Managing Trustee & Senior Educational Mentor",
+      experience: "19+ Years Leadership",
+      image: "/images/faculty/founder-deval-patel.jpg",
+      bio: "Managing Trustee steering institutional vision, student counseling, and academic discipline across Noble Education campuses. Committed to ensuring every learner benefits from personal mentorship, rigorous practice mocks, and direct pathways to top colleges.",
+      quote: "Our mission is to replace rote memorization with deep conceptual clarity, daily discipline, and personal mentorship for every student.",
+      badges: ["Managing Trustee", "Institutional Leadership", "Student Counseling"]
     }
   ],
   testimonials: [
@@ -736,6 +736,28 @@ export const adminData = {
               address: item?.address || def.address || 'Waghodia Road, Vadodara',
               medium: item?.medium || def.medium || 'English Medium',
               contact: item?.contact || def.contact || '91042 06999',
+            };
+          });
+        }
+        if (key === 'founders' && Array.isArray(parsed) && parsed.length > 0) {
+          const defaults = DEFAULTS.founders || [];
+          return parsed.map((item, idx) => {
+            const def = defaults[idx] || {};
+            const name = item?.name || def?.name || '';
+            const isDwarkesh = name.toLowerCase().includes('dwarkesh');
+            const isDeval = name.toLowerCase().includes('deval');
+            const role = isDwarkesh 
+              ? 'Founder & Trustee' 
+              : (isDeval ? 'Managing Trustee' : (item?.role || def?.role || 'Trustee'));
+            const image = isDwarkesh
+              ? (item?.image && !item.image.includes('founder-deval-patel') ? item.image : '/images/faculty/cofounder-dwarkesh-bhatt.jpg')
+              : (isDeval ? (item?.image && !item.image.includes('cofounder-dwarkesh-bhatt') ? item.image : '/images/faculty/founder-deval-patel.jpg') : (item?.image || def?.image));
+            return {
+              ...def,
+              ...item,
+              role,
+              image,
+              name: name || (isDwarkesh ? 'Dwarkesh Bhatt' : 'Deval Patel')
             };
           });
         }

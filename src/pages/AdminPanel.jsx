@@ -4170,13 +4170,14 @@ function AdminPanel({ onLogout }) {
     return (
       <div>
         <SectionHeader
-          title="Founders & Academic Leadership (About Us Page)"
-          subtitle="Manage Founder Deval Patel and Co-Founder Dwarkesh Bhatt photos, bios, credentials, and quotes displayed on the About Us page."
+          title="Founders & Board of Trustees (About Us Page)"
+          subtitle="Manage Founder & Trustee Dwarkesh Bhatt and Managing Trustee Deval Patel photos, bios, credentials, and quotes displayed on the About Us page."
         />
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
           {founders.map((person, idx) => {
-            const isFounder = idx === 0 || (person.role && person.role.toLowerCase().includes('founder') && !person.role.toLowerCase().includes('co-founder'));
+            const isDwarkesh = person.name && person.name.toLowerCase().includes('dwarkesh');
+            const isFounder = isDwarkesh || (person.role && person.role.toLowerCase().includes('founder'));
             return (
               <div key={person.id || idx} className="ap-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: 0, overflow: 'hidden' }}>
                 <div style={{ position: 'relative', height: 260, background: '#0F172A', overflow: 'hidden' }}>
@@ -4185,9 +4186,9 @@ function AdminPanel({ onLogout }) {
                     alt={person.name}
                     style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }}
                     onError={(e) => {
-                      e.target.src = isFounder 
-                        ? '/images/faculty/founder-deval-patel.jpg' 
-                        : '/images/faculty/cofounder-dwarkesh-bhatt.jpg';
+                      e.target.src = isDwarkesh 
+                        ? '/images/faculty/cofounder-dwarkesh-bhatt.jpg' 
+                        : '/images/faculty/founder-deval-patel.jpg';
                     }}
                   />
                   <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.95), rgba(15,23,42,0.2) 60%, transparent)' }} />
@@ -4197,7 +4198,7 @@ function AdminPanel({ onLogout }) {
                     color: '#fff', fontSize: 11, fontWeight: 800, padding: '4px 12px', borderRadius: 20,
                     boxShadow: '0 4px 12px rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.2)'
                   }}>
-                    {person.role || (isFounder ? 'Founder & Director' : 'Co-Founder & Director')}
+                    {person.role || (isFounder ? 'Founder & Trustee' : 'Managing Trustee')}
                   </span>
                   {person.experience && (
                     <span style={{
@@ -5282,11 +5283,11 @@ function FounderModal({ item, onSave, onClose }) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div>
             <label className="ap-label">Full Name *</label>
-            <input className="ap-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. Deval Patel" />
+            <input className="ap-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. Dwarkesh Bhatt or Deval Patel" />
           </div>
           <div>
             <label className="ap-label">Official Role / Designation *</label>
-            <input className="ap-input" value={form.role} onChange={e => setForm({ ...form, role: e.target.value })} placeholder="e.g. Founder & Director" />
+            <input className="ap-input" value={form.role} onChange={e => setForm({ ...form, role: e.target.value })} placeholder="e.g. Founder & Trustee or Managing Trustee" />
           </div>
         </div>
 
