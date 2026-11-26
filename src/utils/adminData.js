@@ -525,7 +525,19 @@ const DEFAULTS = {
     { id: "sp8", schoolName: "New Heaven Vidyalaya", title: "New Heaven Vidyalaya Campus Premises", category: "Premises", image: "https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?w=600&auto=format&fit=crop&q=80", desc: "Gujarati Medium 11th & 12th Science campus premises" },
     { id: "sp9", schoolName: "New Heaven Vidyalaya", title: "Physics & Chemistry Practical Laboratory Desk", category: "Classrooms", image: "/images/bg-courses-hero.png", desc: "Equipped practical desks for GSEB 11th & 12th Science" },
     { id: "sp10", schoolName: "New Heaven Vidyalaya", title: "GUJCET & NEET Practice Test Hall", category: "Classrooms", image: "/images/bg-results-hero.png", desc: "Simulated exam hall practice for competitive students" }
-  ]
+  ],
+  instagramConfig: {
+    enabled: true,
+    handle: 'nobleeducation_official',
+    profileUrl: 'https://instagram.com/nobleeducation_official',
+    syncMethod: 'webhook', // 'webhook' | 'graph_api' | 'feed_url'
+    graphApiToken: '',
+    feedUrl: '',
+    autoSyncOnVisit: true,
+    lastSyncedAt: null,
+    postsSynced: 0,
+    webhookSecret: 'noble_ig_sync_2026'
+  }
 };
 
 export const adminData = {

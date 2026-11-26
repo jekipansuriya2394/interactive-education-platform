@@ -313,6 +313,98 @@ export default {
         }, 200, corsHeaders);
       }
 
+      // 10. POST & GET /api/instagram/webhook
+      // Webhook receiver for automated Instagram post ingestion (Zapier / Make / Pabbly / Meta)
+      if (path === '/api/instagram/webhook' && (request.method === 'POST' || request.method === 'GET')) {
+        // Meta webhook challenge verification
+        if (request.method === 'GET') {
+          const hubChallenge = url.searchParams.get('hub.challenge');
+          if (hubChallenge) {
+            return new Response(hubChallenge, { status: 200 });
+          }
+          return jsonResponse({ status: 'active', message: 'Instagram webhook endpoint is active' }, 200, corsHeaders);
+        }
+
+        let body = {};
+        try {
+          body = await request.json();
+        } catch(e) {
+          return errorResponse('Invalid JSON payload', 400, corsHeaders);
+        }
+
+        const post = body.entry?.[0]?.changes?.[0]?.value || body.data || body;
+        const caption = post.caption || post.title || post.text || 'Noble Education Instagram Update';
+        const permalink = post.permalink || post.url || post.link || '';
+        const mediaUrl = post.media_url || post.imageUrl || post.image || '';
+        const isVideo = (post.media_type === 'VIDEO') || (permalink && permalink.includes('/reel/'));
+        const shortcodeMatch = (permalink || '').match(/(?:p|reel)\/([A-Za-z0-9_-]+)/);
+        const shortcode = shortcodeMatch ? shortcodeMatch[1] : ('ig_' + Date.now());
+
+        const finalImage = mediaUrl || (shortcode ? `https://www.instagram.com/p/${shortcode}/media/?size=l` : '');
+
+        const newGalleryItem = {
+          id: `ig_${shortcode}`,
+          title: caption.length > 90 ? caption.substring(0, 87) + '...' : caption,
+          caption: caption,
+          category: 'Instagram',
+          mediaType: isVideo ? 'video' : 'photo',
+          image: finalImage,
+          videoUrl: isVideo ? permalink : '',
+          permalink: permalink || 'https://instagram.com/nobleeducation_official',
+          isInstagram: true,
+          aspectRatio: isVideo ? '9/16' : '1/1',
+          createdAt: post.timestamp || new Date().toISOString()
+        };
+
+        const owner = env.GH_OWNER || 'jekipansuriya2394';
+        const repo = env.GH_REPO || 'interactive-education-platform';
+        const branch = env.GH_BRANCH || 'main';
+
+        let existingGallery = [];
+        let sha = undefined;
+        try {
+          const getRes = await githubRequest(`/repos/${owner}/${repo}/contents/content/gallery.json`, {}, env);
+          if (getRes.status === 200) {
+            const getData = await getRes.json();
+            sha = getData.sha;
+            const contentDecoded = decodeURIComponent(escape(atob(getData.content.replace(/\s/g, ''))));
+            existingGallery = JSON.parse(contentDecoded);
+          }
+        } catch(err) {
+          console.error('Error fetching existing gallery:', err);
+        }
+
+        const exists = existingGallery.some(item => item.id === newGalleryItem.id || (permalink && item.permalink === permalink));
+        if (exists) {
+          return jsonResponse({ success: true, message: 'Item already exists in gallery', item: newGalleryItem }, 200, corsHeaders);
+        }
+
+        const updatedGallery = [newGalleryItem, ...existingGallery];
+        const updatedJsonStr = JSON.stringify(updatedGallery, null, 2);
+
+        const putBody = {
+          message: `chore(instagram): auto-sync new post ${shortcode} to gallery`,
+          content: toBase64(updatedJsonStr),
+          branch: branch
+        };
+        if (sha) putBody.sha = sha;
+
+        const putRes = await githubRequest(`/repos/${owner}/${repo}/contents/content/gallery.json`, {
+          method: 'PUT',
+          body: JSON.stringify(putBody)
+        }, env);
+
+        if (!putRes.ok) {
+          return errorResponse('Failed to commit Instagram post to GitHub', 500, corsHeaders);
+        }
+
+        return jsonResponse({
+          success: true,
+          message: 'Instagram post automatically added to gallery!',
+          item: newGalleryItem
+        }, 200, corsHeaders);
+      }
+
       // Authentication Middleware for protected routes
       let user = null;
       if (path.startsWith('/api/auth/verify') || path.startsWith('/api/git/') || path.startsWith('/api/media/')) {

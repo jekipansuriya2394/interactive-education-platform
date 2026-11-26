@@ -6,9 +6,10 @@ import {
   FiStar, FiUsers, FiCompass, FiCpu, FiFileText, FiSave, FiEye, FiEyeOff,
   FiLock, FiRefreshCw, FiAlertTriangle, FiChevronRight, FiSearch,
   FiExternalLink, FiCamera, FiLink, FiArrowLeft, FiVideo, FiPlay, FiLayers,
-  FiArrowUp, FiArrowDown, FiTag, FiFolder, FiCalendar
+  FiArrowUp, FiArrowDown, FiTag, FiFolder, FiCalendar, FiInstagram
 } from 'react-icons/fi';
 import { adminData } from '../utils/adminData';
+import { syncInstagramFeed, importInstagramByUrl, DEFAULT_INSTAGRAM_CONFIG } from '../utils/instagramSync';
 import { getFirebaseUrl, setFirebaseUrl, testFirebaseConnection } from '../utils/firebaseConfig';
 import { inquiryService } from '../utils/inquiryService';
 import { commitContent, getDeploymentStatus, getCommitLog, uploadMedia, checkWorkerHealth } from '../services/gitSyncService';
@@ -134,6 +135,10 @@ function AdminPanel({ onLogout }) {
   const [editingEvent, setEditingEvent] = useState(null);
   const [managingEventPhotos, setManagingEventPhotos] = useState(null);
   const [gallerySubTab, setGallerySubTab] = useState('events');
+  const [instagramConfig, setInstagramConfig] = useState(() => adminData.getData('instagramConfig') || DEFAULT_INSTAGRAM_CONFIG);
+  const [igUrlInput, setIgUrlInput] = useState('');
+  const [isSyncingIg, setIsSyncingIg] = useState(false);
+  const [isImportingIg, setIsImportingIg] = useState(false);
   const [deploymentRuns, setDeploymentRuns] = useState([]);
   const [commitLog, setCommitLog] = useState([]);
   const [workerHealth, setWorkerHealth] = useState({ ok: null, latencyMs: 0 });
@@ -282,6 +287,7 @@ function AdminPanel({ onLogout }) {
     setBlogPosts(adminData.getData('blogPosts') || []);
     setGalleryEvents(adminData.getData('galleryEvents') || []);
     setFounders(adminData.getData('founders') || []);
+    setInstagramConfig(adminData.getData('instagramConfig') || DEFAULT_INSTAGRAM_CONFIG);
     setSiteLogo(getLogoUrl(true));
     // Load audit log from localStorage
     try {
@@ -437,6 +443,53 @@ function AdminPanel({ onLogout }) {
     showToast('Updating live website...', 'info');
     await adminData.setDataAsync('gallery', u);
     showToast('Deleted from gallery.', 'error');
+  };
+
+  // Instagram Auto-Sync Handlers
+  const saveInstagramConfig = async (cfg) => {
+    setInstagramConfig(cfg);
+    showToast('Saving Instagram configuration...', 'info');
+    await adminData.setDataAsync('instagramConfig', cfg);
+    showToast('✅ Instagram settings saved!');
+  };
+
+  const handleSyncInstagram = async () => {
+    setIsSyncingIg(true);
+    showToast('Connecting to Instagram...', 'info');
+    try {
+      const res = await syncInstagramFeed();
+      if (res.success) {
+        showToast(`✅ ${res.message}`);
+        setGallery(adminData.getData('gallery') || []);
+        setInstagramConfig(adminData.getData('instagramConfig') || DEFAULT_INSTAGRAM_CONFIG);
+      } else {
+        showToast(res.message, 'error');
+      }
+    } catch (err) {
+      showToast('Instagram sync error: ' + err.message, 'error');
+    } finally {
+      setIsSyncingIg(false);
+    }
+  };
+
+  const handleImportInstagramPost = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!igUrlInput || !igUrlInput.trim()) {
+      showToast('Please enter an Instagram post or reel URL', 'error');
+      return;
+    }
+    setIsImportingIg(true);
+    showToast('Importing post from Instagram...', 'info');
+    try {
+      await importInstagramByUrl(igUrlInput.trim());
+      setGallery(adminData.getData('gallery') || []);
+      setIgUrlInput('');
+      showToast('✅ Instagram post added to Gallery successfully!');
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setIsImportingIg(false);
+    }
   };
 
   // Gallery Events (Photo Groups)
@@ -1326,8 +1379,8 @@ function AdminPanel({ onLogout }) {
 
     return (
       <div>
-        {/* Gallery Sub-Navigation: Event Albums vs Individual Media Items */}
-        <div style={{ display: 'flex', gap: 10, marginBottom: 20, borderBottom: '1px solid #30363D', paddingBottom: 14 }}>
+        {/* Gallery Sub-Navigation: Event Albums vs Individual Media Items vs Instagram Auto-Sync */}
+        <div style={{ display: 'flex', gap: 10, marginBottom: 20, borderBottom: '1px solid #30363D', paddingBottom: 14, flexWrap: 'wrap' }}>
           <button
             type="button"
             className={`ap-btn ${gallerySubTab === 'events' ? 'ap-btn-primary' : 'ap-btn-secondary'}`}
@@ -1343,6 +1396,24 @@ function AdminPanel({ onLogout }) {
             style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, padding: '8px 16px' }}
           >
             <FiImage size={15} /> Individual Photos & Videos ({gallery.length})
+          </button>
+          <button
+            type="button"
+            className={`ap-btn ${gallerySubTab === 'instagram' ? 'ap-btn-primary' : 'ap-btn-secondary'}`}
+            onClick={() => setGallerySubTab('instagram')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              fontSize: 13,
+              padding: '8px 16px',
+              background: gallerySubTab === 'instagram' ? 'linear-gradient(45deg, #f09433 0%, #dc2743 50%, #bc1888 100%)' : undefined,
+              color: gallerySubTab === 'instagram' ? '#fff' : undefined,
+              border: gallerySubTab === 'instagram' ? 'none' : undefined,
+              boxShadow: gallerySubTab === 'instagram' ? '0 4px 14px rgba(220, 39, 67, 0.4)' : undefined
+            }}
+          >
+            <FiInstagram size={15} /> 📸 Instagram Auto-Sync
           </button>
         </div>
 
@@ -1460,7 +1531,7 @@ function AdminPanel({ onLogout }) {
               />
             )}
           </div>
-        ) : (
+        ) : gallerySubTab === 'items' ? (
           /* ─── INDIVIDUAL PHOTOS & VIDEOS VIEW ─── */
           <div>
             <SectionHeader
@@ -1571,7 +1642,395 @@ function AdminPanel({ onLogout }) {
             )}
             {editingGallery && <GalleryModal item={editingGallery} onSave={saveGallery} onClose={() => setEditingGallery(null)} />}
           </div>
-        )}
+        ) : gallerySubTab === 'instagram' ? (
+          renderInstagramSyncView()
+        ) : null}
+      </div>
+    );
+  };
+
+  // ─── INSTAGRAM AUTO-SYNC VIEW ───────────────────────────────────────────
+  const renderInstagramSyncView = () => {
+    const igPosts = gallery.filter(g => g.isInstagram || g.category === 'Instagram' || (g.permalink && g.permalink.includes('instagram.com')));
+    const workerEndpoint = `${getWorkerUrl()}/api/instagram/webhook`;
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <SectionHeader
+          title="📸 Instagram Auto-Sync (Gallery Integration)"
+          subtitle="Automatically publish your Instagram photos and reels to the website Gallery section as soon as you post them on Instagram."
+          action={
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="ap-btn ap-btn-primary"
+                onClick={handleSyncInstagram}
+                disabled={isSyncingIg}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontSize: 13,
+                  background: 'linear-gradient(45deg, #f09433 0%, #dc2743 50%, #bc1888 100%)',
+                  border: 'none',
+                  boxShadow: '0 4px 14px rgba(220, 39, 67, 0.4)'
+                }}
+              >
+                <FiRefreshCw size={14} className={isSyncingIg ? 'animate-spin' : ''} />
+                {isSyncingIg ? 'Syncing...' : 'Sync Now with Instagram'}
+              </button>
+            </div>
+          }
+        />
+
+        {/* Status Metrics Bar */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
+          <div className="ap-card" style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '18px 20px' }}>
+            <div style={{
+              width: 48,
+              height: 48,
+              borderRadius: 14,
+              background: 'linear-gradient(45deg, #f09433 0%, #dc2743 50%, #bc1888 100%)',
+              color: '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 16px rgba(220, 39, 67, 0.3)'
+            }}>
+              <FiInstagram size={24} />
+            </div>
+            <div>
+              <span style={{ fontSize: 11, color: '#94A3B8', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>
+                Profile Handle
+              </span>
+              <p style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#F1F5F9' }}>
+                @{instagramConfig.handle || 'nobleeducation_official'}
+              </p>
+            </div>
+          </div>
+
+          <div className="ap-card" style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '18px 20px' }}>
+            <div style={{
+              width: 48,
+              height: 48,
+              borderRadius: 14,
+              background: 'rgba(56, 139, 253, 0.15)',
+              color: '#388BFD',
+              border: '1px solid rgba(56, 139, 253, 0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <FiImage size={24} />
+            </div>
+            <div>
+              <span style={{ fontSize: 11, color: '#94A3B8', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>
+                Synced Posts in Gallery
+              </span>
+              <p style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#F1F5F9' }}>
+                {igPosts.length} Post{igPosts.length === 1 ? '' : 's'}
+              </p>
+            </div>
+          </div>
+
+          <div className="ap-card" style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '18px 20px' }}>
+            <div style={{
+              width: 48,
+              height: 48,
+              borderRadius: 14,
+              background: 'rgba(35, 134, 54, 0.15)',
+              color: '#3FB950',
+              border: '1px solid rgba(35, 134, 54, 0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <FiCheckCircle size={24} />
+            </div>
+            <div>
+              <span style={{ fontSize: 11, color: '#94A3B8', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>
+                Auto-Sync Status
+              </span>
+              <p style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#3FB950' }}>
+                Active & Ready
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 1: Instant Post Importer */}
+        <div className="ap-card" style={{ border: '1px solid rgba(220, 39, 67, 0.25)', background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+            <span style={{ fontSize: 20 }}>⚡</span>
+            <h3 style={{ margin: 0, color: '#F8FAFC', fontSize: 16, fontWeight: 800 }}>
+              Quick Import: Add Any Instagram Post or Reel Instantly
+            </h3>
+          </div>
+          <p style={{ color: '#94A3B8', fontSize: 13, lineHeight: 1.5, margin: '0 0 16px' }}>
+            Paste the link of any Instagram post or reel (e.g. <code style={{ color: '#F43F5E' }}>https://www.instagram.com/p/...</code> or <code style={{ color: '#F43F5E' }}>https://www.instagram.com/reel/...</code>) to immediately import and display it in the Gallery section.
+          </p>
+          <form onSubmit={handleImportInstagramPost} style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <input
+              type="url"
+              className="ap-input"
+              style={{ flex: '1 1 320px', fontSize: 13 }}
+              placeholder="Paste Instagram post or reel URL (e.g. https://www.instagram.com/p/ABC123xyz/)"
+              value={igUrlInput}
+              onChange={(e) => setIgUrlInput(e.target.value)}
+              disabled={isImportingIg}
+            />
+            <button
+              type="submit"
+              className="ap-btn ap-btn-primary"
+              disabled={isImportingIg || !igUrlInput.trim()}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                fontSize: 13,
+                padding: '10px 20px',
+                background: 'linear-gradient(45deg, #f09433 0%, #dc2743 50%, #bc1888 100%)',
+                border: 'none',
+                boxShadow: '0 4px 12px rgba(220, 39, 67, 0.4)'
+              }}
+            >
+              <FiInstagram size={15} />
+              {isImportingIg ? 'Importing...' : 'Import to Gallery'}
+            </button>
+          </form>
+        </div>
+
+        {/* Card 2: Automatic Real-Time Auto-Posting via Webhook (Recommended) */}
+        <div className="ap-card">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+            <div>
+              <h3 style={{ margin: 0, color: '#F8FAFC', fontSize: 16, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ color: '#F43F5E' }}>🤖</span> Method 1: Automated Auto-Sync via Webhook (100% Automatic)
+              </h3>
+              <p style={{ color: '#94A3B8', fontSize: 12, margin: '4px 0 0' }}>
+                Whenever you post on Instagram, Zapier / Make.com triggers this webhook to automatically add the post to your website gallery.
+              </p>
+            </div>
+            <span className="ap-badge ap-badge-blue" style={{ fontSize: 11, padding: '4px 10px' }}>Recommended for Auto-Posting</span>
+          </div>
+
+          <div style={{ background: '#0D1117', border: '1px solid #30363D', borderRadius: 12, padding: 16, marginBottom: 16 }}>
+            <label style={{ fontSize: 11, color: '#8B949E', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>
+              Your Instant Instagram Webhook URL
+            </label>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+              <input
+                type="text"
+                readOnly
+                className="ap-input"
+                style={{ flex: 1, fontFamily: 'monospace', fontSize: 12, color: '#58A6FF', background: '#161B22' }}
+                value={workerEndpoint}
+              />
+              <button
+                type="button"
+                className="ap-btn ap-btn-secondary"
+                onClick={() => {
+                  navigator.clipboard.writeText(workerEndpoint);
+                  showToast('✅ Webhook URL copied to clipboard!');
+                }}
+                style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                Copy URL
+              </button>
+            </div>
+          </div>
+
+          <div style={{ background: 'rgba(30, 41, 59, 0.4)', borderRadius: 12, padding: 16, border: '1px solid #334155' }}>
+            <h4 style={{ margin: '0 0 10px', color: '#E2E8F0', fontSize: 13, fontWeight: 700 }}>
+              How to set up auto-posting in 2 minutes (Free via Zapier / Make.com / Pabbly):
+            </h4>
+            <ol style={{ margin: 0, paddingLeft: 20, color: '#94A3B8', fontSize: 12, lineHeight: 1.8 }}>
+              <li>Create a free account on <strong style={{ color: '#F1F5F9' }}>Zapier.com</strong> or <strong style={{ color: '#F1F5F9' }}>Make.com</strong>.</li>
+              <li>Set Trigger to: <strong style={{ color: '#F1F5F9' }}>Instagram for Business</strong> &rarr; <strong style={{ color: '#F1F5F9' }}>New Media Posted</strong>.</li>
+              <li>Set Action to: <strong style={{ color: '#F1F5F9' }}>Webhooks by Zapier</strong> &rarr; <strong style={{ color: '#F1F5F9' }}>POST</strong>.</li>
+              <li>Paste the <strong style={{ color: '#388BFD' }}>Webhook URL</strong> above.</li>
+              <li>In the webhook payload, pass: <code style={{ color: '#F43F5E' }}>caption</code>, <code style={{ color: '#F43F5E' }}>media_url</code>, and <code style={{ color: '#F43F5E' }}>permalink</code>.</li>
+            </ol>
+            <p style={{ margin: '10px 0 0', color: '#10B981', fontSize: 12, fontWeight: 600 }}>
+              ✨ That's it! Any time you post on Instagram, it instantly calls the webhook and publishes to your website gallery automatically!
+            </p>
+          </div>
+        </div>
+
+        {/* Card 3: Meta Graph API Token or JSON Feed URL (Optional Alternative) */}
+        <div className="ap-card">
+          <h3 style={{ margin: '0 0 8px', color: '#F8FAFC', fontSize: 16, fontWeight: 800 }}>
+            Method 2: Instagram Graph API Token or Feed URL (Alternative)
+          </h3>
+          <p style={{ color: '#94A3B8', fontSize: 12, margin: '0 0 16px', lineHeight: 1.5 }}>
+            If you have a Meta Long-Lived Access Token or a JSON feed service (like Behold.so, Curator.io, or RSS.app), you can provide it here to pull posts automatically.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 16 }}>
+            <div className="ap-form-group">
+              <label className="ap-label">Instagram Profile Handle</label>
+              <input
+                type="text"
+                className="ap-input"
+                value={instagramConfig.handle}
+                onChange={e => setInstagramConfig({ ...instagramConfig, handle: e.target.value.replace(/^@/, '') })}
+                placeholder="nobleeducation_official"
+              />
+            </div>
+
+            <div className="ap-form-group">
+              <label className="ap-label">Custom JSON Feed URL (Behold.so / Curator / RSS)</label>
+              <input
+                type="url"
+                className="ap-input"
+                value={instagramConfig.feedUrl || ''}
+                onChange={e => setInstagramConfig({ ...instagramConfig, feedUrl: e.target.value })}
+                placeholder="https://feeds.behold.so/..."
+              />
+            </div>
+          </div>
+
+          <div className="ap-form-group" style={{ marginBottom: 16 }}>
+            <label className="ap-label">Meta Long-Lived User Access Token (Graph API)</label>
+            <input
+              type="password"
+              className="ap-input"
+              value={instagramConfig.graphApiToken || ''}
+              onChange={e => setInstagramConfig({ ...instagramConfig, graphApiToken: e.target.value })}
+              placeholder="Paste Meta User Token (IGQVJ...)"
+            />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, paddingTop: 10, borderTop: '1px solid #1E293B' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#E2E8F0', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={instagramConfig.autoSyncOnVisit !== false}
+                onChange={e => setInstagramConfig({ ...instagramConfig, autoSyncOnVisit: e.target.checked })}
+              />
+              Auto-fetch latest posts when visitors open Gallery page
+            </label>
+            <button
+              type="button"
+              className="ap-btn ap-btn-primary"
+              onClick={() => saveInstagramConfig(instagramConfig)}
+              style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}
+            >
+              <FiSave size={14} /> Save Instagram Configuration
+            </button>
+          </div>
+        </div>
+
+        {/* Card 4: Manage Synced Instagram Posts */}
+        <div className="ap-card">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div>
+              <h3 style={{ margin: 0, color: '#F8FAFC', fontSize: 16, fontWeight: 800 }}>
+                Synced Instagram Posts in Website Gallery ({igPosts.length})
+              </h3>
+              <p style={{ color: '#94A3B8', fontSize: 12, margin: '4px 0 0' }}>
+                These are the Instagram posts currently visible in your public gallery.
+              </p>
+            </div>
+          </div>
+
+          {igPosts.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '36px 20px', background: 'rgba(30, 41, 59, 0.3)', borderRadius: 12, border: '1px dashed #334155' }}>
+              <div style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                background: 'linear-gradient(45deg, #f09433 0%, #dc2743 50%, #bc1888 100%)',
+                color: '#fff',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 10
+              }}>
+                <FiInstagram size={22} />
+              </div>
+              <p style={{ color: '#E2E8F0', fontSize: 14, fontWeight: 700, margin: '0 0 4px' }}>
+                No Instagram posts in gallery yet
+              </p>
+              <p style={{ color: '#94A3B8', fontSize: 12, margin: 0 }}>
+                Use the Quick Import form above to add an Instagram post, or set up the automated webhook!
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16 }}>
+              {igPosts.map((post) => {
+                const realIdx = gallery.findIndex(g => g.id === post.id);
+                return (
+                  <div
+                    key={post.id}
+                    style={{
+                      background: '#0F172A',
+                      border: '1px solid #1E293B',
+                      borderRadius: 14,
+                      overflow: 'hidden',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between'
+                    }}
+                  >
+                    <div style={{ position: 'relative', height: 180, background: '#1E293B', overflow: 'hidden' }}>
+                      <img
+                        src={getEmbedImageUrl(post.image)}
+                        alt={post.title}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        onError={(e) => { e.target.style.display = 'none'; }}
+                      />
+                      <span style={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        background: 'linear-gradient(45deg, #f09433 0%, #dc2743 50%, #bc1888 100%)',
+                        color: '#fff',
+                        fontSize: 10,
+                        fontWeight: 800,
+                        padding: '3px 8px',
+                        borderRadius: 20,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.5)'
+                      }}>
+                        <FiInstagram size={10} /> Instagram
+                      </span>
+                    </div>
+
+                    <div style={{ padding: 12, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <p style={{ color: '#E2E8F0', fontSize: 12, fontWeight: 700, margin: '0 0 8px', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                        {post.title || post.caption || 'Instagram Post'}
+                      </p>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8, borderTop: '1px solid #1E293B' }}>
+                        {post.permalink && (
+                          <a
+                            href={post.permalink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: '#F43F5E', fontSize: 11, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}
+                          >
+                            <FiExternalLink size={12} /> View on IG
+                          </a>
+                        )}
+                        <button
+                          type="button"
+                          className="ap-icon-btn ap-icon-btn-danger"
+                          onClick={() => delGallery(realIdx)}
+                          title="Remove from Gallery"
+                          style={{ marginLeft: 'auto' }}
+                        >
+                          <FiTrash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     );
   };

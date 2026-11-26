@@ -3,9 +3,10 @@ import ReactDOM from 'react-dom';
 import {
   FiImage, FiAlertTriangle, FiX, FiChevronLeft, FiChevronRight,
   FiLoader, FiPlay, FiVideo, FiFolder, FiCalendar, FiArrowLeft,
-  FiGrid, FiLayers, FiMaximize2
+  FiGrid, FiLayers, FiMaximize2, FiInstagram, FiExternalLink
 } from 'react-icons/fi';
 import { adminData } from '../utils/adminData';
+import { syncInstagramFeed } from '../utils/instagramSync';
 import { getEmbedImageUrl, getYouTubeEmbedUrl, isVideoMedia, isActualImage, getEmbedMediaUrl } from '../utils/imageUrl';
 
 function GalleryImg({ src, alt, className, style }) {
@@ -132,9 +133,15 @@ function GalleryMediaThumb({ item, isVid }) {
   }
 
   // 4. Default Photo card
+  const isIg = item.isInstagram || item.category === 'Instagram' || (item.permalink && item.permalink.includes('instagram.com'));
   return (
     <div className="relative overflow-hidden">
       <GalleryImg src={item.image || item.url || item.src} alt={item.title} />
+      {isIg && (
+        <span className="absolute top-4 right-4 bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] text-white text-[11px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-lg z-10 border border-white/20">
+          <FiInstagram size={12} /> Instagram
+        </span>
+      )}
     </div>
   );
 }
@@ -175,6 +182,9 @@ export default function Gallery() {
       }
     });
 
+    // 4. Auto-sync Instagram feed in background
+    syncInstagramFeed().catch(() => {});
+
     return () => {
       if (typeof cleanupGallery === 'function') cleanupGallery();
       if (typeof cleanupEvents === 'function') cleanupEvents();
@@ -187,7 +197,7 @@ export default function Gallery() {
     setLightboxError(false);
   }, [selectedIndex]);
 
-  const categories = ['All', 'Event Albums', 'Videos', 'Classrooms', 'Seminars', 'Activities', 'Events'];
+  const categories = ['All', 'Event Albums', 'Instagram', 'Videos', 'Classrooms', 'Seminars', 'Activities', 'Events'];
 
   // Current active media list for lightbox (either photos in selected event, or filtered gallery items)
   const currentMediaList = selectedEvent
@@ -195,6 +205,8 @@ export default function Gallery() {
     : (
       activeFilter === 'All'
         ? items
+        : activeFilter === 'Instagram'
+        ? items.filter(i => i.isInstagram || i.category === 'Instagram' || (i.permalink && i.permalink.includes('instagram.com')))
         : activeFilter === 'Videos'
         ? items.filter(i => i.category === 'Videos' || i.mediaType === 'video' || isVideoMedia(i))
         : activeFilter === 'Event Albums'
@@ -541,15 +553,40 @@ export default function Gallery() {
 
         {/* Photo Title Caption */}
         {!lightboxLoading && !lightboxError && (selectedItem.title || selectedItem.caption) && (
-          <div style={{ marginTop: '16px', textAlign: 'center', maxWidth: '640px', background: 'rgba(0, 0, 0, 0.65)', backdropFilter: 'blur(8px)', padding: '10px 24px', borderRadius: '40px', border: '1px solid rgba(255, 255, 255, 0.15)' }}>
-            <h3 style={{ color: '#ffffff', fontSize: '15px', fontWeight: 700, margin: 0 }}>
+          <div style={{ marginTop: '16px', textAlign: 'center', maxWidth: '640px', background: 'rgba(0, 0, 0, 0.75)', backdropFilter: 'blur(10px)', padding: '12px 24px', borderRadius: '40px', border: '1px solid rgba(255, 255, 255, 0.18)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+            <h3 style={{ color: '#ffffff', fontSize: '15px', fontWeight: 700, margin: 0, lineHeight: 1.4 }}>
               {selectedItem.title || selectedItem.caption}
             </h3>
-            {selectedItem.category && (
-              <span style={{ fontSize: '10px', fontWeight: 800, color: '#93c5fd', background: 'rgba(30, 58, 138, 0.8)', border: '1px solid rgba(96, 165, 250, 0.4)', padding: '2px 10px', borderRadius: '20px', marginTop: '6px', display: 'inline-block', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                {selectedItem.category}
-              </span>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              {selectedItem.category && (
+                <span style={{ fontSize: '10px', fontWeight: 800, color: '#93c5fd', background: 'rgba(30, 58, 138, 0.8)', border: '1px solid rgba(96, 165, 250, 0.4)', padding: '2px 10px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                  {selectedItem.category}
+                </span>
+              )}
+              {(selectedItem.isInstagram || (selectedItem.permalink && selectedItem.permalink.includes('instagram.com'))) && (
+                <a
+                  href={selectedItem.permalink || 'https://instagram.com/nobleeducation_official'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    color: '#ffffff',
+                    background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
+                    padding: '4px 14px',
+                    borderRadius: '20px',
+                    textDecoration: 'none',
+                    boxShadow: '0 4px 12px rgba(220, 39, 67, 0.4)'
+                  }}
+                >
+                  <FiInstagram size={13} /> View on Instagram <FiExternalLink size={12} />
+                </a>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -810,6 +847,36 @@ export default function Gallery() {
          ───────────────────────────────────────────────────────────────────────────── */}
       {!isViewingEventsOnly && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          {/* Instagram Header Banner (shown when Instagram filter is active) */}
+          {activeFilter === 'Instagram' && (
+            <div className="mb-8 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-purple-900 via-pink-800 to-rose-700 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden">
+              <div className="flex items-center gap-5 z-10">
+                <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shadow-inner flex-shrink-0">
+                  <FiInstagram size={34} />
+                </div>
+                <div>
+                  <span className="text-[11px] font-black uppercase tracking-widest text-pink-200 block mb-1">
+                    Official Instagram Feed
+                  </span>
+                  <h3 className="text-2xl sm:text-3xl font-black text-white">
+                    @nobleeducation_official
+                  </h3>
+                  <p className="text-white/80 text-xs sm:text-sm mt-1">
+                    Real-time updates, classroom moments, events & student toppers auto-synced from Instagram.
+                  </p>
+                </div>
+              </div>
+              <a
+                href="https://instagram.com/nobleeducation_official"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="z-10 inline-flex items-center gap-2 bg-white text-pink-700 font-extrabold text-sm px-6 py-3 rounded-full hover:bg-pink-50 transition-all shadow-lg hover:scale-105 flex-shrink-0"
+              >
+                <FiInstagram size={18} /> Follow on Instagram <FiExternalLink size={14} />
+              </a>
+            </div>
+          )}
+
           <div className="flex items-center justify-between mb-6 pb-3 border-b border-slate-200">
             <div>
               <h2 className="text-2xl font-black text-[#1C2E60] flex items-center gap-2.5">
@@ -824,14 +891,37 @@ export default function Gallery() {
 
           {currentMediaList.length === 0 ? (
             <div className="text-center py-20 bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
-              <FiImage size={48} className="mx-auto text-zinc-300 mb-4" />
-              <p className="text-zinc-600 font-bold">No photos in this category yet.</p>
-              <p className="text-zinc-400 text-xs mt-1">Photos can be added from the Admin Panel.</p>
+              {activeFilter === 'Instagram' ? (
+                <>
+                  <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] text-white flex items-center justify-center mx-auto mb-4 shadow-lg shadow-pink-500/20">
+                    <FiInstagram size={32} />
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-800 mb-1">No Instagram Posts Synced Yet</h3>
+                  <p className="text-slate-500 text-xs max-w-md mx-auto mb-5">
+                    Connect your Instagram account or import posts in the Admin Panel to display your feed here automatically.
+                  </p>
+                  <a
+                    href="https://instagram.com/nobleeducation_official"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-xs font-bold text-white bg-gradient-to-r from-pink-600 to-purple-600 px-5 py-2.5 rounded-full shadow-md hover:opacity-95"
+                  >
+                    <FiInstagram size={14} /> Visit @nobleeducation_official <FiExternalLink size={12} />
+                  </a>
+                </>
+              ) : (
+                <>
+                  <FiImage size={48} className="mx-auto text-zinc-300 mb-4" />
+                  <p className="text-zinc-600 font-bold">No photos in this category yet.</p>
+                  <p className="text-zinc-400 text-xs mt-1">Photos can be added from the Admin Panel.</p>
+                </>
+              )}
             </div>
           ) : (
             <div className="columns-1 sm:columns-2 lg:columns-3 gap-6">
               {currentMediaList.map((item, idx) => {
                 const isVid = item.mediaType === 'video' || item.category === 'Videos' || isVideoMedia(item);
+                const isItemIg = item.isInstagram || item.category === 'Instagram' || (item.permalink && item.permalink.includes('instagram.com'));
                 return (
                   <div
                     key={idx}
@@ -843,16 +933,33 @@ export default function Gallery() {
                     {item.title && (
                       <div className="px-5 py-4">
                         <p className="font-bold text-[#0f172a] text-sm">{item.title}</p>
-                        <div className="flex items-center gap-2 mt-1 flex-wrap">
-                          {item.category && (
-                            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full inline-block uppercase tracking-wider">
-                              {item.category}
+                        <div className="flex items-center gap-2 mt-2 flex-wrap">
+                          {isItemIg ? (
+                            <span className="text-[10px] font-black text-white bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 shadow-sm">
+                              <FiInstagram size={10} /> Instagram
                             </span>
+                          ) : (
+                            item.category && (
+                              <span className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full inline-block uppercase tracking-wider">
+                                {item.category}
+                              </span>
+                            )
                           )}
                           {isVid && (
                             <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-100 px-2 py-0.5 rounded-full inline-block uppercase tracking-wider">
                               Video
                             </span>
+                          )}
+                          {item.permalink && (
+                            <a
+                              href={item.permalink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-[10px] font-semibold text-slate-400 hover:text-pink-600 inline-flex items-center gap-1 ml-auto"
+                            >
+                              Post ↗
+                            </a>
                           )}
                         </div>
                       </div>
